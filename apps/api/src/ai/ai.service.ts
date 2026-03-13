@@ -1,26 +1,51 @@
-import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { Injectable, Logger } from '@nestjs/common';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 @Injectable()
 export class AiService {
-  private model: string;
+  private readonly logger = new Logger(AiService.name);
 
-  constructor(private configService: ConfigService) {
-    // Get GOOGLE_GEMINI_MODEL from environment variables, default to 'gemini-1.5-flash-001'
-    this.model = this.configService.get<string>('GOOGLE_GEMINI_MODEL') || 'gemini-1.5-flash-001';
+  constructor() {}
 
-    // Validate GOOGLE_API_KEY
-    const apiKey = this.configService.get<string>('GOOGLE_API_KEY');
-    if (!apiKey) {
-      throw new Error('Missing GOOGLE_API_KEY. Please set it in the environment variables.');
+  async optimizeResume(rawText: string, jobDescription: string) {
+    try {
+      const apiKey = process.env.GOOGLE_API_KEY || '';
+      if (!apiKey) {
+        throw new Error('Missing GOOGLE_API_KEY. Please set it in your environment.');
+      }
+
+      const modelName = process.env.GOOGLE_GEMINI_MODEL;
+      if (!modelName) {
+        throw new Error(
+          'Missing GOOGLE_GEMINI_MODEL. Set it to a valid Gemini model name returned by the ListModels API.'
+        );
+      }
+
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const model = genAI.getGenerativeModel({
+        model: modelName,
+        generationConfig: { responseMimeType: 'application/json' },
+      });
+
+      const prompt = `
+        You are an expert ATS resume optimizer.
+        Analyze the following resume against the provided job description.
+        Output MUST be valid JSON matching this schema:
+        {
+          "matchScore": number (0-100),
+          "gapAnalysis": { "missingSkills": string[], "strengths": string[] },
+          "rewrites": { "summary": string, "experienceText": string }
+        }
+        
+        Resume: ${rawText}
+        Job Description: ${jobDescription}
+      `;
+
+      const result = await model.generateContent(prompt);
+      return JSON.parse(result.response.text());
+    } catch (error: any) {
+      this.logger.error('Optimization failed', error?.message || error);
+      throw new Error('AI processing failed');
     }
   }
-
-  // Improved error logging
-  private handleError(error: any): void {
-    console.error('An error occurred:', error.message || error);
-    // Further logging logic can be added here
-  }
-
-  // ... other methods that utilize the model and handle errors accordingly
 }

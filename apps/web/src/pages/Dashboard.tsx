@@ -75,7 +75,7 @@ function AccordionSection({
   children: React.ReactNode;
 }) {
   return (
-    <div className="border rounded-lg">
+    <div className="border rounded-lg bg-white">
       <button
         onClick={onToggle}
         className="w-full flex items-center justify-between px-4 py-3 text-left"
@@ -84,6 +84,19 @@ function AccordionSection({
         <span className="text-slate-400">{isOpen ? '−' : '+'}</span>
       </button>
       {isOpen && <div className="px-4 pb-4 text-sm text-slate-700 leading-relaxed">{children}</div>}
+    </div>
+  );
+}
+
+function ResultsSkeleton() {
+  return (
+    <div className="space-y-4 animate-pulse">
+      <div className="h-6 bg-slate-200 rounded w-1/3" />
+      <div className="h-24 bg-slate-200 rounded" />
+      <div className="h-6 bg-slate-200 rounded w-1/4" />
+      <div className="h-32 bg-slate-200 rounded" />
+      <div className="h-6 bg-slate-200 rounded w-1/4" />
+      <div className="h-32 bg-slate-200 rounded" />
     </div>
   );
 }
@@ -97,9 +110,27 @@ export default function DashboardPage() {
   const [result, setResult] = useState<OptimizationResponse | null>(null);
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
   const [accordion, setAccordion] = useState<AccordionState>(defaultAccordion);
+  const [isDragging, setIsDragging] = useState(false);
   const resultsRef = useRef<HTMLDivElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const keywordData = result?.keywordAnalysis || result?.gapAnalysis?.keywordAnalysis;
+
+  const handleFileSelect = (file?: File | null) => {
+    if (!file) return;
+    if (file.type !== 'application/pdf') {
+      alert('Please upload a PDF file.');
+      return;
+    }
+    setFile(file);
+  };
+
+  const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setIsDragging(false);
+    const droppedFile = event.dataTransfer.files?.[0];
+    handleFileSelect(droppedFile);
+  };
 
   const handleUploadAndAnalyze = async () => {
     if (!file || !jobTitle || !jobDescription) return alert('Fill all fields');
@@ -129,6 +160,29 @@ export default function DashboardPage() {
       alert('Optimization failed. Check logs.');
       setStatus('idle');
     }
+  };
+
+  const handleExportReport = () => {
+    if (!result) return;
+    const report = [
+      `Match Score: ${result.matchScore}%`,
+      `ATS Score: ${result.atsScore}%`,
+      `\nMatched Keywords:\n${keywordData?.matched?.join(', ') || ''}`,
+      `\nMissing Keywords:\n${keywordData?.missing?.join(', ') || ''}`,
+      `\nSuggested Additions:\n${keywordData?.suggestedAdditions?.join(', ') || ''}`,
+      `\nSummary Rewrite:\n${result.rewrites?.summary || ''}`,
+      `\nExperience Enhancements:\n${result.rewrites?.experienceText || ''}`,
+    ].join('\n');
+
+    const blob = new Blob([report], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'ats_report.txt';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   useEffect(() => {
@@ -173,7 +227,31 @@ export default function DashboardPage() {
             <CardContent className="space-y-4">
               <div>
                 <label className="text-sm font-medium mb-1 block text-slate-500">1. Upload PDF Resume</label>
-                <Input type="file" accept=".pdf" onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFile(e.target.files?.[0] || null)} />
+                <div
+                  onDragOver={(event) => {
+                    event.preventDefault();
+                    setIsDragging(true);
+                  }}
+                  onDragLeave={() => setIsDragging(false)}
+                  onDrop={handleDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`cursor-pointer border-2 border-dashed rounded-lg p-4 transition ${isDragging ? 'border-blue-500 bg-blue-50' : 'border-slate-200 bg-slate-50 hover:border-blue-400'}`}
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".pdf"
+                    className="hidden"
+                    onChange={(e) => handleFileSelect(e.target.files?.[0])}
+                  />
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-slate-700">Drag & drop PDF here</p>
+                      <p className="text-xs text-slate-500">{file ? file.name : 'or click to browse'}</p>
+                    </div>
+                    <Button type="button" variant="outline" size="sm">Browse</Button>
+                  </div>
+                </div>
               </div>
 
               <div>
@@ -210,24 +288,29 @@ export default function DashboardPage() {
 
           {/* Results */}
           <Card className="shadow-md bg-white" ref={resultsRef}>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>AI Optimization Results</CardTitle>
+              <Button type="button" variant="outline" size="sm" onClick={handleExportReport} disabled={!result}>
+                Export Report
+              </Button>
             </CardHeader>
-            <CardContent>
-              {!result && status !== 'done' ? (
+            <CardContent className="max-h-[72vh] overflow-y-auto pr-1">
+              {status === 'uploading' || status === 'optimizing' ? (
+                <ResultsSkeleton />
+              ) : !result && status !== 'done' ? (
                 <div className="h-full flex flex-col items-center justify-center text-slate-400 min-h-[400px]">
                   <p>Upload a resume and job description to see the AI magic.</p>
                 </div>
               ) : (
-                <div className="space-y-6">
-                  {/* Tabs */}
-                  <div className="flex gap-2">
-                    <TabButton active={activeTab === 'overview'} onClick={() => setActiveTab('overview')}>Overview</TabButton>
-                    <TabButton active={activeTab === 'keywords'} onClick={() => setActiveTab('keywords')}>Keywords</TabButton>
-                    <TabButton active={activeTab === 'rewrites'} onClick={() => setActiveTab('rewrites')}>Rewrites</TabButton>
+                <div className="space-y-6 transition-all duration-300">
+                  <div className="sticky top-0 bg-white pt-2 pb-4 z-10">
+                    <div className="flex gap-2">
+                      <TabButton active={activeTab === 'overview'} onClick={() => setActiveTab('overview')}>Overview</TabButton>
+                      <TabButton active={activeTab === 'keywords'} onClick={() => setActiveTab('keywords')}>Keywords</TabButton>
+                      <TabButton active={activeTab === 'rewrites'} onClick={() => setActiveTab('rewrites')}>Rewrites</TabButton>
+                    </div>
                   </div>
 
-                  {/* Overview */}
                   {activeTab === 'overview' && (
                     <div className="space-y-6">
                       <div className="grid md:grid-cols-2 gap-6">
@@ -257,7 +340,6 @@ export default function DashboardPage() {
                     </div>
                   )}
 
-                  {/* Keywords */}
                   {activeTab === 'keywords' && (
                     <div className="space-y-4">
                       <div>
@@ -289,7 +371,6 @@ export default function DashboardPage() {
                     </div>
                   )}
 
-                  {/* Rewrites */}
                   {activeTab === 'rewrites' && (
                     <div className="space-y-4">
                       <AccordionSection
@@ -360,4 +441,4 @@ export default function DashboardPage() {
       </div>
     </div>
   );
-} 
+}

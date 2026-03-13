@@ -1,0 +1,49 @@
+// This is your Prisma schema file.
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String   @id @default(uuid())
+  email           String   @unique
+  hashedPassword  String
+  fullName        String?
+  subscription    String   @default("free")
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  resumes         Resume[]
+}
+
+model Resume {
+  id               String     @id @default(uuid())
+  userId           String
+  user             User       @relation(fields: [userId], references: [id])
+  originalFilename String
+  s3Key            String     @unique
+  rawText          String?    @db.Text
+  parsedData       Json?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+  analyses         Analysis[]
+}
+
+model Analysis {
+  id              String   @id @default(uuid())
+  resumeId        String
+  resume          Resume   @relation(fields: [resumeId], references: [id])
+  jobTitle        String
+  companyName     String?
+  jobDescription  String   @db.Text
+  status          String   @default("pending") // pending, processing, completed, failed
+  matchScore      Float?
+  gapAnalysis     Json?
+  rewrites        Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}

@@ -20,6 +20,11 @@ type AccordionState = {
   adjectives: boolean;
 };
 
+type ToastState = {
+  type: 'success' | 'error';
+  message: string;
+};
+
 const defaultAccordion: AccordionState = {
   summary: true,
   experience: true,
@@ -37,7 +42,7 @@ function ScoreRing({ label, value }: { label: string; value?: number }) {
         <div
           className="absolute inset-0 rounded-full"
           style={{
-            background: `conic-gradient(#2563eb ${safeValue * 3.6}deg, #e5e7eb 0deg)`
+            background: `conic-gradient(#2563eb ${safeValue * 3.6}deg, #e5e7eb 0deg)`,
           }}
         />
         <div className="absolute inset-2 rounded-full bg-white flex items-center justify-center text-sm font-semibold">
@@ -56,7 +61,7 @@ function TabButton({ active, children, onClick }: { active: boolean; children: R
   return (
     <button
       onClick={onClick}
-      className={`px-4 py-2 text-sm font-medium rounded-md transition ${active ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+      className={`px-4 py-2 text-sm font-medium rounded-md transition ${active ? 'bg-slate-900 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
     >
       {children}
     </button>
@@ -67,7 +72,7 @@ function AccordionSection({
   title,
   isOpen,
   onToggle,
-  children
+  children,
 }: {
   title: string;
   isOpen: boolean;
@@ -101,6 +106,14 @@ function ResultsSkeleton() {
   );
 }
 
+function Toast({ toast }: { toast: ToastState }) {
+  return (
+    <div className={`fixed right-6 top-6 z-50 rounded-lg px-4 py-3 text-sm shadow-lg transition ${toast.type === 'success' ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'}`}> 
+      {toast.message}
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const { user, logout } = useAuthStore();
   const [file, setFile] = useState<File | null>(null);
@@ -111,15 +124,21 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
   const [accordion, setAccordion] = useState<AccordionState>(defaultAccordion);
   const [isDragging, setIsDragging] = useState(false);
+  const [toast, setToast] = useState<ToastState | null>(null);
   const resultsRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const keywordData = result?.keywordAnalysis || result?.gapAnalysis?.keywordAnalysis;
 
+  const showToast = (nextToast: ToastState) => {
+    setToast(nextToast);
+    setTimeout(() => setToast(null), 2000);
+  };
+
   const handleFileSelect = (file?: File | null) => {
     if (!file) return;
     if (file.type !== 'application/pdf') {
-      alert('Please upload a PDF file.');
+      showToast({ type: 'error', message: 'Please upload a PDF file.' });
       return;
     }
     setFile(file);
@@ -133,7 +152,10 @@ export default function DashboardPage() {
   };
 
   const handleUploadAndAnalyze = async () => {
-    if (!file || !jobTitle || !jobDescription) return alert('Fill all fields');
+    if (!file || !jobTitle || !jobDescription) {
+      showToast({ type: 'error', message: 'Please complete all fields.' });
+      return;
+    }
     setStatus('uploading');
 
     try {
@@ -149,15 +171,16 @@ export default function DashboardPage() {
       const { data: analysisRes } = await api.post('/analysis/run', {
         resumeId: uploadRes.resumeId,
         jobTitle,
-        jobDescription
+        jobDescription,
       });
 
       setResult(analysisRes);
       setStatus('done');
       setActiveTab('overview');
+      showToast({ type: 'success', message: 'Analysis completed successfully.' });
     } catch (e) {
       console.error(e);
-      alert('Optimization failed. Check logs.');
+      showToast({ type: 'error', message: 'Optimization failed. Check logs.' });
       setStatus('idle');
     }
   };
@@ -183,6 +206,7 @@ export default function DashboardPage() {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+    showToast({ type: 'success', message: 'Report exported.' });
   };
 
   useEffect(() => {
@@ -197,15 +221,16 @@ export default function DashboardPage() {
     if (!text) return;
     try {
       await navigator.clipboard.writeText(text);
-      alert('Copied to clipboard');
+      showToast({ type: 'success', message: 'Copied to clipboard.' });
     } catch (e) {
       console.error(e);
-      alert('Copy failed.');
+      showToast({ type: 'error', message: 'Copy failed.' });
     }
   };
 
   return (
     <div className="min-h-screen bg-slate-50 p-8">
+      {toast && <Toast toast={toast} />}
       <div className="max-w-6xl mx-auto space-y-8">
         <header className="flex justify-between items-center pb-6 border-b">
           <div>
@@ -333,7 +358,7 @@ export default function DashboardPage() {
                         onToggle={() => setAccordion({ ...accordion, summary: !accordion.summary })}
                       >
                         <div className="flex justify-end mb-2">
-                          <button className="text-xs text-blue-600 hover:underline" onClick={() => handleCopy(result?.rewrites?.summary)}>Copy</button>
+                          <button className="text-xs text-blue-600 hover:underline" onClick={() => handleCopy(result?.rewrites?.summary)}>⧉ Copy</button>
                         </div>
                         {result?.rewrites?.summary}
                       </AccordionSection>
@@ -341,22 +366,24 @@ export default function DashboardPage() {
                   )}
 
                   {activeTab === 'keywords' && (
-                    <div className="space-y-4">
-                      <div>
-                        <p className="text-sm text-slate-500 mb-1">Matched Keywords</p>
-                        <div className="flex flex-wrap gap-2">
-                          {keywordData?.matched?.map((kw: string, i: number) => (
-                            <Badge key={i} className="bg-green-100 text-green-800 hover:bg-green-200">{kw}</Badge>
-                          ))}
+                    <div className="space-y-6">
+                      <div className="grid sm:grid-cols-2 gap-6">
+                        <div>
+                          <p className="text-sm text-slate-500 mb-1">Matched Keywords</p>
+                          <div className="flex flex-wrap gap-2">
+                            {keywordData?.matched?.map((kw: string, i: number) => (
+                              <Badge key={i} className="bg-green-100 text-green-800 hover:bg-green-200">{kw}</Badge>
+                            ))}
+                          </div>
                         </div>
-                      </div>
 
-                      <div>
-                        <p className="text-sm text-slate-500 mb-1">Missing Keywords</p>
-                        <div className="flex flex-wrap gap-2">
-                          {keywordData?.missing?.map((kw: string, i: number) => (
-                            <Badge key={i} className="bg-red-100 text-red-800 hover:bg-red-200">{kw}</Badge>
-                          ))}
+                        <div>
+                          <p className="text-sm text-slate-500 mb-1">Missing Keywords</p>
+                          <div className="flex flex-wrap gap-2">
+                            {keywordData?.missing?.map((kw: string, i: number) => (
+                              <Badge key={i} className="bg-red-100 text-red-800 hover:bg-red-200">{kw}</Badge>
+                            ))}
+                          </div>
                         </div>
                       </div>
 
@@ -379,7 +406,7 @@ export default function DashboardPage() {
                         onToggle={() => setAccordion({ ...accordion, experience: !accordion.experience })}
                       >
                         <div className="flex justify-end mb-2">
-                          <button className="text-xs text-blue-600 hover:underline" onClick={() => handleCopy(result?.rewrites?.experienceText)}>Copy</button>
+                          <button className="text-xs text-blue-600 hover:underline" onClick={() => handleCopy(result?.rewrites?.experienceText)}>⧉ Copy</button>
                         </div>
                         <div className="whitespace-pre-wrap">{result?.rewrites?.experienceText}</div>
                       </AccordionSection>

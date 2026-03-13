@@ -5,7 +5,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 export class AiService {
   private readonly logger = new Logger(AiService.name);
 
-  constructor() {}
+  constructor() { }
 
   async optimizeResume(rawText: string, jobDescription: string) {
     try {

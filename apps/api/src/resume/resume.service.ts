@@ -7,7 +7,7 @@ import { PrismaService } from '../prisma/prisma.service';
 export class ResumeService {
   private readonly logger = new Logger(ResumeService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async parseAndSave(userId: string, file: any) {
     try {
@@ -20,7 +20,7 @@ export class ResumeService {
           originalFilename: file.originalname,
           s3Key: `local-storage/${Date.now()}_${file.originalname}`,
           rawText,
-        }
+        },
       });
 
       return { resumeId: resume.id, status: 'completed' };
@@ -34,9 +34,27 @@ export class ResumeService {
     return new Promise((resolve, reject) => {
       // @ts-ignore
       const pdfParser = new PDFParser(this, 1);
-      
-      pdfParser.on('pdfParser_dataError', (errData: any) => reject(errData.parserError));
-      pdfParser.on('pdfParser_dataReady', (pdfData: any) => {
+
+      // Temporarily suppress noisy pdf2json warnings
+      const originalWarn = console.warn;
+      console.warn = (...args: any[]) => {
+        const msg = args?.[0]?.toString?.() || '';
+        if (
+          msg.includes('Unsupported: field.type of Link') ||
+          msg.includes('NOT valid form element')
+        ) {
+          return;
+        }
+        originalWarn(...args);
+      };
+
+      pdfParser.on('pdfParser_dataError', (errData: any) => {
+        console.warn = originalWarn;
+        reject(errData.parserError);
+      });
+
+      pdfParser.on('pdfParser_dataReady', () => {
+        console.warn = originalWarn;
         resolve(pdfParser.getRawTextContent());
       });
 

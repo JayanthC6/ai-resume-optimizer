@@ -22,10 +22,33 @@ export interface OptimizationRequest {
   jobDescription: string;
 }
 
+export interface KeywordAnalysis {
+  matched: string[];
+  missing: string[];
+  suggestedAdditions: string[];
+}
+
+export interface GapAnalysis {
+  missingSkills: string[];
+  strengths: string[];
+  keywordAnalysis?: KeywordAnalysis;
+}
+
+export interface RewriteSuggestions {
+  summary: string;
+  experienceText: string;
+  actionVerbUpgrades?: string[];
+  measurableImpactSuggestions?: string[];
+  toolTechAdditions?: string[];
+  weakAdjectivesToRemove?: string[];
+}
+
 export interface OptimizationResponse {
   analysisId: string;
   matchScore?: number;
-  gapAnalysis?: any;
-  rewrites?: any;
+  atsScore?: number;
+  keywordAnalysis?: KeywordAnalysis;
+  gapAnalysis?: GapAnalysis;
+  rewrites?: RewriteSuggestions;
   status: 'pending' | 'processing' | 'completed' | 'failed';
 }

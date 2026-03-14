@@ -108,7 +108,7 @@ function ResultsSkeleton() {
 
 function Toast({ toast }: { toast: ToastState }) {
   return (
-    <div className={`fixed right-6 top-6 z-50 rounded-lg px-4 py-3 text-sm shadow-lg transition ${toast.type === 'success' ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'}`}> 
+    <div className={`fixed right-6 top-6 z-50 rounded-lg px-4 py-3 text-sm shadow-lg transition ${toast.type === 'success' ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'}`}>
       {toast.message}
     </div>
   );
@@ -229,13 +229,18 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 p-8">
+    <div className="min-h-screen bg-[conic-gradient(at_top_right,_var(--tw-gradient-stops))] from-blue-50 via-white to-blue-50 p-8 flex flex-col items-center">
       {toast && <Toast toast={toast} />}
-      <div className="max-w-6xl mx-auto space-y-8">
-        <header className="flex justify-between items-center pb-6 border-b">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Optimizer Workspace</h1>
-            <p className="text-sm text-slate-500">ATS-ready resume optimization dashboard</p>
+      <div className="w-full max-w-6xl space-y-8 relative z-10">
+        <header className="flex justify-between items-center pb-6 border-b border-slate-200">
+          <div className="flex items-center gap-4">
+            <div className="h-16 w-56 sm:h-20 sm:w-72 outline-none border-none bg-transparent">
+              <img src="/logo.png" alt="HiredLens" className="h-full w-full object-contain mix-blend-darken drop-shadow-sm border-none" />
+            </div>
+            <div className="border-l border-slate-300 pl-4">
+              <h1 className="text-2xl font-bold tracking-tight text-slate-900">Workspace</h1>
+              <p className="text-sm text-slate-500 hidden sm:block">ATS-ready resume optimization dashboard</p>
+            </div>
           </div>
           <div className="flex items-center gap-4">
             <span className="text-sm font-medium text-slate-600">Welcome, {user?.fullName || user?.email}</span>

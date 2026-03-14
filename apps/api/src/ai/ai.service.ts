@@ -33,8 +33,29 @@ export class AiService {
         Output MUST be valid JSON matching this schema:
         {
           "matchScore": number (0-100),
-          "gapAnalysis": { "missingSkills": string[], "strengths": string[] },
-          "rewrites": { "summary": string, "experienceText": string }
+          "atsScore": number (0-100),
+          "keywordAnalysis": {
+            "matched": string[],
+            "missing": string[],
+            "suggestedAdditions": string[]
+          },
+          "gapAnalysis": {
+            "missingSkills": string[],
+            "strengths": string[],
+            "keywordAnalysis": {
+              "matched": string[],
+              "missing": string[],
+              "suggestedAdditions": string[]
+            }
+          },
+          "rewrites": {
+            "summary": string,
+            "experienceText": string,
+            "actionVerbUpgrades": string[],
+            "measurableImpactSuggestions": string[],
+            "toolTechAdditions": string[],
+            "weakAdjectivesToRemove": string[]
+          }
         }
         
         Resume: ${rawText}

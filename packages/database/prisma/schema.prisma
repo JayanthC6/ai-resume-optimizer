@@ -42,7 +42,9 @@ model Analysis {
   jobDescription  String   @db.Text
   status          String   @default("pending") // pending, processing, completed, failed
   matchScore      Float?
+  atsScore        Float?
   gapAnalysis     Json?
+  keywordAnalysis Json?
   rewrites        Json?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt

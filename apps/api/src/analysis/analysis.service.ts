@@ -8,7 +8,7 @@ export class AnalysisService {
   constructor(
     private prisma: PrismaService,
     private aiService: AiService
-  ) {}
+  ) { }
 
   async runAnalysis(userId: string, dto: OptimizationRequest) {
     // 1. Fetch the raw resume
@@ -35,7 +35,7 @@ export class AnalysisService {
     // Running inline for V1 Alpha MVP
     try {
       const aiResult = await this.aiService.optimizeResume(
-        resume.rawText, 
+        resume.rawText,
         dto.jobDescription
       );
 
@@ -44,7 +44,9 @@ export class AnalysisService {
         data: {
           status: 'completed',
           matchScore: aiResult.matchScore,
+          atsScore: aiResult.atsScore,
           gapAnalysis: aiResult.gapAnalysis,
+          keywordAnalysis: aiResult.keywordAnalysis,
           rewrites: aiResult.rewrites
         }
       });
@@ -53,7 +55,7 @@ export class AnalysisService {
         where: { id: analysis.id },
         data: { status: 'failed' }
       }).catch(err => console.error(err));
-      
+
       throw new Error('Analysis Engine Pipeline Failed');
     }
   }

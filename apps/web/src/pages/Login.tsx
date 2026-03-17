@@ -19,7 +19,7 @@ export default function LoginPage() {
     try {
       const { data } = await api.post('/auth/login', { email, password });
       setAuth(data.user, data.accessToken);
-      navigate('/');
+      navigate('/dashboard');
     } catch (err) {
       alert('Login failed. Please check credentials.');
     }
@@ -31,9 +31,9 @@ export default function LoginPage() {
       <div className="pointer-events-none absolute -right-24 bottom-0 h-80 w-80 rounded-full bg-blue-400/30 blur-3xl" />
 
       <div className="absolute left-6 top-6 z-10 sm:left-8 sm:top-8">
-        <div className="h-14 w-52 sm:h-20 sm:w-72">
+        <Link to="/" className="block h-14 w-52 sm:h-20 sm:w-72">
           <img src="/logo.png" alt="HiredLens" className="h-full w-full object-contain drop-shadow-sm" />
-        </div>
+        </Link>
       </div>
 
       <div className="relative z-10 mx-auto grid w-full max-w-6xl items-center gap-10 pt-20 lg:grid-cols-2 lg:pt-10">

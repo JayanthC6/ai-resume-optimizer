@@ -20,7 +20,7 @@ export default function RegisterPage() {
     try {
       const { data } = await api.post('/auth/register', { email, password, fullName });
       setAuth(data.user, data.accessToken);
-      navigate('/');
+      navigate('/dashboard');
     } catch (err: any) {
       if (!err.response) {
         alert('Cannot connect to API. Ensure backend is running on http://localhost:8000 and restart web dev server.');
@@ -40,9 +40,9 @@ export default function RegisterPage() {
       <div className="pointer-events-none absolute -right-24 top-0 h-80 w-80 rounded-full bg-cyan-300/30 blur-3xl" />
 
       <div className="absolute left-6 top-6 z-10 sm:left-8 sm:top-8">
-        <div className="h-14 w-52 sm:h-20 sm:w-72">
+        <Link to="/" className="block h-14 w-52 sm:h-20 sm:w-72">
           <img src="/logo.png" alt="HiredLens" className="h-full w-full object-contain drop-shadow-sm" />
-        </div>
+        </Link>
       </div>
 
       <div className="relative z-10 mx-auto grid w-full max-w-6xl items-center gap-10 pt-20 lg:grid-cols-2 lg:pt-10">

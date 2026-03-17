@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useAuthStore } from '../store/authStore';
 import api from '../lib/api';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -250,9 +251,9 @@ export default function DashboardPage() {
         <header className="rounded-2xl border border-white/70 bg-white/80 p-5 shadow-lg shadow-slate-200/50 backdrop-blur-md sm:p-6">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-center gap-4">
-              <div className="h-14 w-52 sm:h-20 sm:w-72">
+              <Link to="/" className="block h-14 w-52 sm:h-20 sm:w-72">
                 <img src="/logo.png" alt="HiredLens" className="h-full w-full object-contain drop-shadow-sm" />
-              </div>
+              </Link>
               <div className="hidden border-l border-slate-300 pl-4 sm:block">
                 <h1 className="text-2xl font-bold tracking-tight text-slate-900">Optimization Workspace</h1>
                 <p className="text-sm text-slate-500">Upload, analyze, and tailor your resume for every role</p>

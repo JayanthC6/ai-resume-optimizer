@@ -4,10 +4,10 @@ import { JwtAuthGuard } from '../auth/jwt.guard';
 import { OptimizationRequest } from '@repo/types';
 
 class RunAnalysisDto implements OptimizationRequest {
-  resumeId: string;
-  jobTitle: string;
+  resumeId!: string;
+  jobTitle!: string;
   companyName?: string;
-  jobDescription: string;
+  jobDescription!: string;
 }
 
 @Controller('analysis')

@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from '../ai/ai.service';
-import { OptimizationRequest } from '@repo/types';
+import { OptimizationRequest, ResumeRegenerationRequest } from '@repo/types';
 
 @Injectable()
 export class AnalysisService {
@@ -71,5 +71,21 @@ export class AnalysisService {
     }
 
     return analysis;
+  }
+
+  async regenerateResume(userId: string, dto: ResumeRegenerationRequest) {
+    const resume = await this.prisma.resume.findFirst({
+      where: { id: dto.resumeId, userId },
+    });
+
+    if (!resume || !resume.rawText) {
+      throw new NotFoundException('Resume not found or not parsed');
+    }
+
+    return this.aiService.regenerateResume(
+      resume.rawText,
+      dto.jobTitle,
+      dto.jobDescription,
+    );
   }
 }

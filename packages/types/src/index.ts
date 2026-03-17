@@ -22,6 +22,18 @@ export interface OptimizationRequest {
   jobDescription: string;
 }
 
+export interface ResumeRegenerationRequest {
+  resumeId: string;
+  jobTitle: string;
+  companyName?: string;
+  jobDescription: string;
+}
+
+export interface ResumeRegenerationResponse {
+  regeneratedResume: string;
+  highlights?: string[];
+}
+
 export interface KeywordAnalysis {
   matched: string[];
   missing: string[];
@@ -45,6 +57,8 @@ export interface RewriteSuggestions {
 
 export interface OptimizationResponse {
   analysisId: string;
+  id?: string;
+  resumeId?: string;
   matchScore?: number;
   atsScore?: number;
   keywordAnalysis?: KeywordAnalysis;

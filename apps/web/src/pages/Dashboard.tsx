@@ -8,8 +8,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { Download, FileText, LogOut, Sparkles, Target, UploadCloud } from 'lucide-react';
-import type { OptimizationResponse } from '@repo/types';
+import { Download, FileText, LogOut, Sparkles, Target, UploadCloud, WandSparkles } from 'lucide-react';
+import { jsPDF } from 'jspdf';
+import type { OptimizationResponse, ResumeRegenerationResponse } from '@repo/types';
 
 type TabKey = 'overview' | 'keywords' | 'rewrites';
 
@@ -137,6 +138,9 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
   const [accordion, setAccordion] = useState<AccordionState>(defaultAccordion);
   const [isDragging, setIsDragging] = useState(false);
+  const [resumeId, setResumeId] = useState<string | null>(null);
+  const [isRegenerating, setIsRegenerating] = useState(false);
+  const [regeneratedResume, setRegeneratedResume] = useState<ResumeRegenerationResponse | null>(null);
   const [toast, setToast] = useState<ToastState | null>(null);
   const resultsRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -178,6 +182,9 @@ export default function DashboardPage() {
       const { data: uploadRes } = await api.post('/resume/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
+
+      setResumeId(uploadRes.resumeId);
+      setRegeneratedResume(null);
 
       setStatus('optimizing');
 
@@ -239,6 +246,71 @@ export default function DashboardPage() {
       console.error(e);
       showToast({ type: 'error', message: 'Copy failed.' });
     }
+  };
+
+  const handleRegenerateResume = async () => {
+    if (!resumeId || !jobTitle || !jobDescription) {
+      showToast({ type: 'error', message: 'Upload resume, add job title, and paste JD first.' });
+      return;
+    }
+
+    setIsRegenerating(true);
+    try {
+      const { data } = await api.post<ResumeRegenerationResponse>('/analysis/regenerate', {
+        resumeId,
+        jobTitle,
+        jobDescription,
+      });
+
+      setRegeneratedResume(data);
+      setActiveTab('rewrites');
+      showToast({ type: 'success', message: 'Regenerated resume draft is ready.' });
+    } catch (e) {
+      console.error(e);
+      showToast({ type: 'error', message: 'Resume regeneration failed.' });
+    } finally {
+      setIsRegenerating(false);
+    }
+  };
+
+  const handleExportRegeneratedPdf = () => {
+    const draft = regeneratedResume?.regeneratedResume?.trim();
+    if (!draft) {
+      showToast({ type: 'error', message: 'No regenerated draft to export.' });
+      return;
+    }
+
+    const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+    const marginX = 48;
+    const marginY = 56;
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const maxLineWidth = pageWidth - marginX * 2;
+    const fileSafeTitle = (jobTitle || 'resume').replace(/[^a-z0-9]/gi, '_').toLowerCase();
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(16);
+    doc.text('Regenerated Resume Draft', marginX, marginY);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.text(`Target Role: ${jobTitle || 'N/A'}`, marginX, marginY + 18);
+
+    doc.setFontSize(11);
+    const lines = doc.splitTextToSize(draft, maxLineWidth) as string[];
+    let y = marginY + 42;
+
+    for (const line of lines) {
+      if (y > pageHeight - marginY) {
+        doc.addPage();
+        y = marginY;
+      }
+      doc.text(line, marginX, y);
+      y += 16;
+    }
+
+    doc.save(`regenerated_resume_${fileSafeTitle}.pdf`);
+    showToast({ type: 'success', message: 'Regenerated resume exported as PDF.' });
   };
 
   return (
@@ -350,6 +422,17 @@ export default function DashboardPage() {
               {(status === 'uploading' || status === 'optimizing') && (
                 <Progress value={status === 'uploading' ? 30 : 80} className="h-2 w-full rounded-full bg-slate-100" />
               )}
+
+              <Button
+                type="button"
+                variant="outline"
+                className="h-11 w-full rounded-xl border-sky-200 bg-white text-sky-700 hover:bg-sky-50"
+                onClick={handleRegenerateResume}
+                disabled={isRegenerating || !resumeId || !jobTitle || !jobDescription}
+              >
+                <WandSparkles className="h-4 w-4" />
+                {isRegenerating ? 'Regenerating Resume...' : 'Regenerate Resume For This Role'}
+              </Button>
             </CardContent>
           </Card>
 
@@ -446,6 +529,46 @@ export default function DashboardPage() {
 
                   {activeTab === 'rewrites' && (
                     <div className="space-y-4">
+                      <AccordionSection
+                        title="Regenerated Resume Draft"
+                        isOpen={true}
+                        onToggle={() => undefined}
+                      >
+                        {regeneratedResume ? (
+                          <div>
+                            <div className="mb-2 flex justify-end gap-3">
+                              <button
+                                className="text-xs font-semibold text-sky-600 hover:underline"
+                                onClick={() => handleCopy(regeneratedResume.regeneratedResume)}
+                              >
+                                Copy Draft
+                              </button>
+                              <button
+                                className="text-xs font-semibold text-sky-600 hover:underline"
+                                onClick={handleExportRegeneratedPdf}
+                              >
+                                Export PDF
+                              </button>
+                            </div>
+                            <div className="whitespace-pre-wrap rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm">
+                              {regeneratedResume.regeneratedResume}
+                            </div>
+                            {regeneratedResume.highlights && regeneratedResume.highlights.length > 0 && (
+                              <div className="mt-3">
+                                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Highlights</p>
+                                <ul className="list-disc ml-6 text-sm text-slate-700">
+                                  {regeneratedResume.highlights.map((item, idx) => (
+                                    <li key={idx}>{item}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-slate-500">Click "Regenerate Resume For This Role" to generate a full tailored draft.</p>
+                        )}
+                      </AccordionSection>
+
                       <AccordionSection
                         title="Experience Bullet Enhancements"
                         isOpen={accordion.experience}

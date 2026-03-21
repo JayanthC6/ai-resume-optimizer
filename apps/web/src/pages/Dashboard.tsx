@@ -10,9 +10,19 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Download, FileText, LogOut, Sparkles, Target, UploadCloud, WandSparkles } from 'lucide-react';
 import { jsPDF } from 'jspdf';
-import type { OptimizationResponse, ResumeRegenerationResponse } from '@repo/types';
+import type {
+  CreditUsage,
+  GithubAnalyzerResult,
+  InterviewQuestionSet,
+  OptimizationResponse,
+  RecruiterView,
+  ResumeRegenerationResponse,
+  ResumeTemplate,
+  SkillGapRoadmap,
+  TeamAnalytics,
+} from '@repo/types';
 
-type TabKey = 'overview' | 'keywords' | 'rewrites';
+type TabKey = 'overview' | 'keywords' | 'rewrites' | 'roadmap' | 'interview' | 'recruiter' | 'portfolio' | 'business';
 
 type AccordionState = {
   summary: boolean;
@@ -141,6 +151,18 @@ export default function DashboardPage() {
   const [resumeId, setResumeId] = useState<string | null>(null);
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [regeneratedResume, setRegeneratedResume] = useState<ResumeRegenerationResponse | null>(null);
+  const [skillGapRoadmap, setSkillGapRoadmap] = useState<SkillGapRoadmap | null>(null);
+  const [interviewQuestionSet, setInterviewQuestionSet] = useState<InterviewQuestionSet | null>(null);
+  const [recruiterView, setRecruiterView] = useState<RecruiterView | null>(null);
+  const [githubAnalyzer, setGithubAnalyzer] = useState<GithubAnalyzerResult | null>(null);
+  const [creditUsage, setCreditUsage] = useState<CreditUsage | null>(null);
+  const [templates, setTemplates] = useState<ResumeTemplate[]>([]);
+  const [teamAnalytics, setTeamAnalytics] = useState<TeamAnalytics | null>(null);
+  const [githubProfileUrl, setGithubProfileUrl] = useState('');
+  const [isGeneratingRoadmap, setIsGeneratingRoadmap] = useState(false);
+  const [isGeneratingInterview, setIsGeneratingInterview] = useState(false);
+  const [isGeneratingRecruiterView, setIsGeneratingRecruiterView] = useState(false);
+  const [isAnalyzingGithub, setIsAnalyzingGithub] = useState(false);
   const [toast, setToast] = useState<ToastState | null>(null);
   const resultsRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -195,6 +217,11 @@ export default function DashboardPage() {
       });
 
       setResult(analysisRes);
+      setSkillGapRoadmap(analysisRes.skillGapRoadmap || null);
+      setInterviewQuestionSet(analysisRes.interviewQuestionSet || null);
+      setRecruiterView(analysisRes.recruiterView || null);
+      setCreditUsage(analysisRes.creditUsage || null);
+      setGithubAnalyzer(null);
       setStatus('done');
       setActiveTab('overview');
       showToast({ type: 'success', message: 'Analysis completed successfully.' });
@@ -272,6 +299,120 @@ export default function DashboardPage() {
       setIsRegenerating(false);
     }
   };
+
+  const ensureCoreInputs = () => {
+    if (!resumeId || !jobTitle || !jobDescription) {
+      showToast({ type: 'error', message: 'Upload resume, add job title, and paste JD first.' });
+      return false;
+    }
+    return true;
+  };
+
+  const handleGenerateRoadmap = async () => {
+    if (!ensureCoreInputs()) return;
+    setIsGeneratingRoadmap(true);
+    try {
+      const { data } = await api.post<SkillGapRoadmap>('/analysis/roadmap', {
+        resumeId,
+        jobTitle,
+        jobDescription,
+      });
+      setSkillGapRoadmap(data);
+      setActiveTab('roadmap');
+      showToast({ type: 'success', message: 'Skill roadmap generated.' });
+    } catch (e) {
+      console.error(e);
+      showToast({ type: 'error', message: 'Roadmap generation failed.' });
+    } finally {
+      setIsGeneratingRoadmap(false);
+    }
+  };
+
+  const handleGenerateInterviewQuestions = async () => {
+    if (!ensureCoreInputs()) return;
+    setIsGeneratingInterview(true);
+    try {
+      const { data } = await api.post<InterviewQuestionSet>('/analysis/interview-questions', {
+        resumeId,
+        jobTitle,
+        jobDescription,
+      });
+      setInterviewQuestionSet(data);
+      setActiveTab('interview');
+      showToast({ type: 'success', message: 'Interview question set generated.' });
+    } catch (e) {
+      console.error(e);
+      showToast({ type: 'error', message: 'Interview generation failed.' });
+    } finally {
+      setIsGeneratingInterview(false);
+    }
+  };
+
+  const handleGenerateRecruiterView = async () => {
+    if (!ensureCoreInputs()) return;
+    setIsGeneratingRecruiterView(true);
+    try {
+      const { data } = await api.post<RecruiterView>('/analysis/recruiter-view', {
+        resumeId,
+        jobTitle,
+        jobDescription,
+      });
+      setRecruiterView(data);
+      setActiveTab('recruiter');
+      showToast({ type: 'success', message: 'Recruiter scan preview generated.' });
+    } catch (e) {
+      console.error(e);
+      showToast({ type: 'error', message: 'Recruiter preview generation failed.' });
+    } finally {
+      setIsGeneratingRecruiterView(false);
+    }
+  };
+
+  const handleAnalyzeGithubPortfolio = async () => {
+    if (!ensureCoreInputs()) return;
+    if (!githubProfileUrl.trim()) {
+      showToast({ type: 'error', message: 'Enter your GitHub profile URL.' });
+      return;
+    }
+
+    setIsAnalyzingGithub(true);
+    try {
+      const { data } = await api.post<GithubAnalyzerResult>('/analysis/github-analyzer', {
+        resumeId,
+        jobTitle,
+        jobDescription,
+        githubProfileUrl,
+      });
+      setGithubAnalyzer(data);
+      setActiveTab('portfolio');
+      showToast({ type: 'success', message: 'GitHub account analysis complete.' });
+    } catch (e) {
+      console.error(e);
+      showToast({ type: 'error', message: 'GitHub analyzer failed.' });
+    } finally {
+      setIsAnalyzingGithub(false);
+    }
+  };
+
+  useEffect(() => {
+    const loadBusinessData = async () => {
+      try {
+        const [templatesRes, creditsRes, teamRes] = await Promise.all([
+          api.get<ResumeTemplate[]>('/analysis/templates/list'),
+          api.get<CreditUsage>('/analysis/credits/usage'),
+          api.get<TeamAnalytics>('/analysis/team/overview'),
+        ]);
+
+        setTemplates(templatesRes.data);
+        setCreditUsage(creditsRes.data);
+        setTeamAnalytics(teamRes.data);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    loadBusinessData();
+  }, []);
 
   const handleExportRegeneratedPdf = () => {
     const draft = regeneratedResume?.regeneratedResume?.trim();
@@ -433,6 +574,57 @@ export default function DashboardPage() {
                 <WandSparkles className="h-4 w-4" />
                 {isRegenerating ? 'Regenerating Resume...' : 'Regenerate Resume For This Role'}
               </Button>
+
+              <div className="grid gap-2 sm:grid-cols-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-10 rounded-xl border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                  onClick={handleGenerateRoadmap}
+                  disabled={isGeneratingRoadmap}
+                >
+                  {isGeneratingRoadmap ? 'Generating...' : 'Build 30/60/90 Roadmap'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-10 rounded-xl border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                  onClick={handleGenerateInterviewQuestions}
+                  disabled={isGeneratingInterview}
+                >
+                  {isGeneratingInterview ? 'Generating...' : 'Generate Interview Qs'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-10 rounded-xl border-slate-200 bg-white text-slate-700 hover:bg-slate-50 sm:col-span-2"
+                  onClick={handleGenerateRecruiterView}
+                  disabled={isGeneratingRecruiterView}
+                >
+                  {isGeneratingRecruiterView ? 'Generating...' : 'Generate Recruiter 6-Second View'}
+                </Button>
+              </div>
+
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Portfolio/GitHub Analyzer</p>
+                <div className="grid gap-2">
+                  <Input
+                    placeholder="GitHub profile URL (e.g. https://github.com/username)"
+                    className="h-10 rounded-lg border-slate-200 bg-white"
+                    value={githubProfileUrl}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setGithubProfileUrl(e.target.value)}
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="mt-2 h-10 w-full rounded-xl border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
+                  onClick={handleAnalyzeGithubPortfolio}
+                  disabled={isAnalyzingGithub}
+                >
+                  {isAnalyzingGithub ? 'Analyzing GitHub...' : 'Analyze GitHub Portfolio'}
+                </Button>
+              </div>
             </CardContent>
           </Card>
 
@@ -462,6 +654,11 @@ export default function DashboardPage() {
                       <TabButton active={activeTab === 'overview'} onClick={() => setActiveTab('overview')}>Overview</TabButton>
                       <TabButton active={activeTab === 'keywords'} onClick={() => setActiveTab('keywords')}>Keywords</TabButton>
                       <TabButton active={activeTab === 'rewrites'} onClick={() => setActiveTab('rewrites')}>Rewrites</TabButton>
+                      <TabButton active={activeTab === 'roadmap'} onClick={() => setActiveTab('roadmap')}>Roadmap</TabButton>
+                      <TabButton active={activeTab === 'interview'} onClick={() => setActiveTab('interview')}>Interview</TabButton>
+                      <TabButton active={activeTab === 'recruiter'} onClick={() => setActiveTab('recruiter')}>Recruiter View</TabButton>
+                      <TabButton active={activeTab === 'portfolio'} onClick={() => setActiveTab('portfolio')}>Portfolio</TabButton>
+                      <TabButton active={activeTab === 'business'} onClick={() => setActiveTab('business')}>Business</TabButton>
                     </div>
                   </div>
 
@@ -627,6 +824,232 @@ export default function DashboardPage() {
                           ))}
                         </ul>
                       </AccordionSection>
+                    </div>
+                  )}
+
+                  {activeTab === 'roadmap' && (
+                    <div className="space-y-4">
+                      {!skillGapRoadmap ? (
+                        <p className="text-sm text-slate-500">Generate roadmap to view a 30/60/90-day upskilling plan.</p>
+                      ) : (
+                        <>
+                          <div>
+                            <p className="mb-2 text-sm font-semibold text-slate-700">Missing Skills</p>
+                            <div className="flex flex-wrap gap-2">
+                              {skillGapRoadmap.missingSkills.map((skill, idx) => (
+                                <Badge key={idx} className="border-rose-200 bg-rose-50 text-rose-800 hover:bg-rose-100">{skill}</Badge>
+                              ))}
+                            </div>
+                          </div>
+                          {skillGapRoadmap.phases.map((phase, idx) => (
+                            <div key={idx} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                              <p className="text-sm font-semibold uppercase tracking-wide text-slate-600">{phase.timeframe.replace('_', '/')}</p>
+                              <div className="mt-2 grid gap-4 md:grid-cols-3">
+                                <div>
+                                  <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Goals</p>
+                                  <ul className="list-disc ml-5 text-sm text-slate-700">
+                                    {phase.goals.map((item, i) => <li key={i}>{item}</li>)}
+                                  </ul>
+                                </div>
+                                <div>
+                                  <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Learning Resources</p>
+                                  <ul className="list-disc ml-5 text-sm text-slate-700">
+                                    {phase.learningResources.map((item, i) => <li key={i}>{item}</li>)}
+                                  </ul>
+                                </div>
+                                <div>
+                                  <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Mini Projects</p>
+                                  <ul className="list-disc ml-5 text-sm text-slate-700">
+                                    {phase.miniProjects.map((item, i) => <li key={i}>{item}</li>)}
+                                  </ul>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {activeTab === 'interview' && (
+                    <div className="space-y-4">
+                      {!interviewQuestionSet ? (
+                        <p className="text-sm text-slate-500">Generate interview questions to view likely technical and behavioral rounds.</p>
+                      ) : (
+                        <>
+                          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                            <p className="mb-2 text-sm font-semibold text-slate-700">Technical Questions</p>
+                            <div className="space-y-3">
+                              {interviewQuestionSet.technical.map((item, idx) => (
+                                <div key={idx} className="rounded-lg border border-slate-200 bg-white p-3 text-sm">
+                                  <p className="font-semibold text-slate-900">{item.question}</p>
+                                  <p className="mt-1 text-slate-600"><span className="font-medium">Why asked:</span> {item.whyAsked}</p>
+                                  <p className="mt-1 text-slate-600"><span className="font-medium">Sample answer:</span> {item.sampleAnswer}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                            <p className="mb-2 text-sm font-semibold text-slate-700">Behavioral Questions</p>
+                            <div className="space-y-3">
+                              {interviewQuestionSet.behavioral.map((item, idx) => (
+                                <div key={idx} className="rounded-lg border border-slate-200 bg-white p-3 text-sm">
+                                  <p className="font-semibold text-slate-900">{item.question}</p>
+                                  <p className="mt-1 text-slate-600"><span className="font-medium">Why asked:</span> {item.whyAsked}</p>
+                                  <p className="mt-1 text-slate-600"><span className="font-medium">Sample answer:</span> {item.sampleAnswer}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                            <p className="mb-2 text-sm font-semibold text-slate-700">STAR Answer Drafts</p>
+                            <div className="space-y-3">
+                              {interviewQuestionSet.starAnswers.map((item, idx) => (
+                                <div key={idx} className="rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-700">
+                                  <p><span className="font-semibold text-slate-900">Situation:</span> {item.situation}</p>
+                                  <p><span className="font-semibold text-slate-900">Task:</span> {item.task}</p>
+                                  <p><span className="font-semibold text-slate-900">Action:</span> {item.action}</p>
+                                  <p><span className="font-semibold text-slate-900">Result:</span> {item.result}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {activeTab === 'recruiter' && (
+                    <div className="space-y-4">
+                      {!recruiterView ? (
+                        <p className="text-sm text-slate-500">Generate recruiter preview to see six-second scan highlights.</p>
+                      ) : (
+                        <>
+                          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                            <p className="text-sm text-slate-500">First Impression Score</p>
+                            <p className="text-3xl font-bold text-slate-900">{Math.max(0, Math.min(100, recruiterView.firstImpressionScore))}%</p>
+                          </div>
+                          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                            <p className="mb-2 text-sm font-semibold text-slate-700">6-Second Highlights</p>
+                            <ul className="list-disc ml-5 text-sm text-slate-700">
+                              {recruiterView.sixSecondHighlights.map((item, idx) => <li key={idx}>{item}</li>)}
+                            </ul>
+                          </div>
+                          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                            <p className="mb-2 text-sm font-semibold text-slate-700">Attention Heatmap by Section</p>
+                            <div className="space-y-2">
+                              {recruiterView.attentionHeatmap.map((section, idx) => (
+                                <div key={idx} className="rounded-lg border border-slate-200 bg-white p-3">
+                                  <div className="mb-1 flex items-center justify-between text-sm font-medium text-slate-800">
+                                    <span>{section.section}</span>
+                                    <span>{Math.max(0, Math.min(100, section.attentionScore))}%</span>
+                                  </div>
+                                  <Progress value={Math.max(0, Math.min(100, section.attentionScore))} className="h-2" />
+                                  <p className="mt-2 text-xs text-slate-500">{section.rationale}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {activeTab === 'portfolio' && (
+                    <div className="space-y-4">
+                      {!githubAnalyzer ? (
+                        <p className="text-sm text-slate-500">Provide your GitHub profile URL and run analyzer to get stronger project bullets.</p>
+                      ) : (
+                        <>
+                          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                            <p className="text-sm text-slate-500">GitHub Account</p>
+                            <p className="text-lg font-semibold text-slate-900">{githubAnalyzer.profile}</p>
+                          </div>
+                          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                            <p className="mb-2 text-sm font-semibold text-slate-700">Detected Achievements</p>
+                            <ul className="list-disc ml-5 text-sm text-slate-700">
+                              {githubAnalyzer.achievements.map((item, idx) => <li key={idx}>{item}</li>)}
+                            </ul>
+                          </div>
+                          <div className="space-y-3">
+                            {githubAnalyzer.bulletSuggestions.map((suggestion, idx) => (
+                              <div key={idx} className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Bullet #{idx + 1}</p>
+                                <p className="mt-2 text-slate-600"><span className="font-medium">Original:</span> {suggestion.original}</p>
+                                <p className="mt-1 text-slate-800"><span className="font-medium">Improved:</span> {suggestion.improved}</p>
+                                <p className="mt-1 text-slate-600"><span className="font-medium">Quantified:</span> {suggestion.quantifiedContribution}</p>
+                                <p className="mt-1 text-slate-600"><span className="font-medium">Tech framing:</span> {suggestion.techStackFraming}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {activeTab === 'business' && (
+                    <div className="space-y-4">
+                      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                        <p className="mb-2 text-sm font-semibold text-slate-700">Credit-based AI Usage</p>
+                        {creditUsage ? (
+                          <>
+                            <p className="text-sm text-slate-600">Plan: <span className="font-semibold uppercase text-slate-900">{creditUsage.plan}</span></p>
+                            <p className="text-sm text-slate-600">Used: <span className="font-semibold text-slate-900">{creditUsage.usedCredits}</span> / {creditUsage.totalCredits}</p>
+                            <p className="text-sm text-slate-600">Remaining: <span className="font-semibold text-slate-900">{creditUsage.remainingCredits}</span></p>
+                            <Progress value={Math.min(100, (creditUsage.usedCredits / Math.max(1, creditUsage.totalCredits)) * 100)} className="mt-2 h-2" />
+                          </>
+                        ) : (
+                          <p className="text-sm text-slate-500">Usage data not available yet.</p>
+                        )}
+                      </div>
+
+                      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                        <p className="mb-2 text-sm font-semibold text-slate-700">Premium Templates + Formatting Engine</p>
+                        {templates.length === 0 ? (
+                          <p className="text-sm text-slate-500">No templates loaded.</p>
+                        ) : (
+                          <div className="grid gap-2">
+                            {templates.map((template) => (
+                              <div key={template.id} className="rounded-lg border border-slate-200 bg-white p-3 text-sm">
+                                <div className="flex items-center justify-between">
+                                  <p className="font-semibold text-slate-900">{template.name}</p>
+                                  <Badge className="border-sky-200 bg-sky-50 text-sky-700">{template.tone}</Badge>
+                                </div>
+                                <p className="mt-1 text-slate-600">{template.description}</p>
+                                <p className="mt-1 text-xs text-slate-500">ATS-safe: {template.atsSafe ? 'Yes' : 'No'}</p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                        <p className="mb-2 text-sm font-semibold text-slate-700">Team/University Mode</p>
+                        {teamAnalytics ? (
+                          <div className="grid gap-2 sm:grid-cols-2 text-sm text-slate-700">
+                            <div className="rounded-lg border border-slate-200 bg-white p-3">
+                              <p className="text-xs uppercase tracking-wide text-slate-500">Team</p>
+                              <p className="font-semibold text-slate-900">{teamAnalytics.teamName}</p>
+                            </div>
+                            <div className="rounded-lg border border-slate-200 bg-white p-3">
+                              <p className="text-xs uppercase tracking-wide text-slate-500">Members</p>
+                              <p className="font-semibold text-slate-900">{teamAnalytics.members}</p>
+                            </div>
+                            <div className="rounded-lg border border-slate-200 bg-white p-3">
+                              <p className="text-xs uppercase tracking-wide text-slate-500">Avg Match Score</p>
+                              <p className="font-semibold text-slate-900">{teamAnalytics.avgMatchScore}%</p>
+                            </div>
+                            <div className="rounded-lg border border-slate-200 bg-white p-3">
+                              <p className="text-xs uppercase tracking-wide text-slate-500">Avg ATS Score</p>
+                              <p className="font-semibold text-slate-900">{teamAnalytics.avgAtsScore}%</p>
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="text-sm text-slate-500">No team metrics yet.</p>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>

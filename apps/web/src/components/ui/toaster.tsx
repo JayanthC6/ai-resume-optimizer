@@ -12,10 +12,11 @@ import {
 
 export function Toaster() {
   const { toasts } = useToast()
+  type ToastItem = (typeof toasts)[number]
 
   return (
     <ToastProvider>
-      {toasts.map(function ({ id, title, description, action, ...props }: any) {
+      {toasts.map(function ({ id, title, description, action, ...props }: ToastItem) {
         return (
           <Toast key={id} {...props}>
             <div className="grid gap-1">

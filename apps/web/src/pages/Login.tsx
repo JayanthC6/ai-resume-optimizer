@@ -20,7 +20,7 @@ export default function LoginPage() {
       const { data } = await api.post('/auth/login', { email, password });
       setAuth(data.user, data.accessToken);
       navigate('/dashboard');
-    } catch (err) {
+    } catch {
       alert('Login failed. Please check credentials.');
     }
   };

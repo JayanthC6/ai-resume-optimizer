@@ -21,12 +21,13 @@ export default function RegisterPage() {
       const { data } = await api.post('/auth/register', { email, password, fullName });
       setAuth(data.user, data.accessToken);
       navigate('/dashboard');
-    } catch (err: any) {
-      if (!err.response) {
+    } catch (err: unknown) {
+      const apiError = err as { response?: { data?: { message?: string | string[] } } };
+      if (!apiError.response) {
         alert('Cannot connect to API. Ensure backend is running on http://localhost:8000 and restart web dev server.');
         return;
       }
-      const apiMessage = err.response?.data?.message;
+      const apiMessage = apiError.response?.data?.message;
       const message = Array.isArray(apiMessage)
         ? apiMessage.join(', ')
         : apiMessage || 'Registration failed. Please try again.';

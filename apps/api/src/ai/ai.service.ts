@@ -11,18 +11,20 @@ import {
 export class AiService {
   private readonly logger = new Logger(AiService.name);
 
-  constructor() { }
+  constructor() {}
 
   private getJsonModel() {
     const apiKey = process.env.GOOGLE_API_KEY || '';
     if (!apiKey) {
-      throw new Error('Missing GOOGLE_API_KEY. Please set it in your environment.');
+      throw new Error(
+        'Missing GOOGLE_API_KEY. Please set it in your environment.',
+      );
     }
 
     const modelName = process.env.GOOGLE_GEMINI_MODEL;
     if (!modelName) {
       throw new Error(
-        'Missing GOOGLE_GEMINI_MODEL. Set it to a valid Gemini model name returned by the ListModels API.'
+        'Missing GOOGLE_GEMINI_MODEL. Set it to a valid Gemini model name returned by the ListModels API.',
       );
     }
 
@@ -83,7 +85,11 @@ export class AiService {
     }
   }
 
-  async regenerateResume(rawText: string, jobTitle: string, jobDescription: string) {
+  async regenerateResume(
+    rawText: string,
+    jobTitle: string,
+    jobDescription: string,
+  ) {
     try {
       const prompt = `
 You are an expert resume writer and ATS optimization specialist.
@@ -121,7 +127,11 @@ ${rawText}
     }
   }
 
-  async generateSkillGapRoadmap(rawText: string, jobTitle: string, jobDescription: string): Promise<SkillGapRoadmap> {
+  async generateSkillGapRoadmap(
+    rawText: string,
+    jobTitle: string,
+    jobDescription: string,
+  ): Promise<SkillGapRoadmap> {
     try {
       const prompt = `
 You are a career coach and technical mentor.
@@ -152,7 +162,11 @@ Resume: ${rawText}
     }
   }
 
-  async generateInterviewQuestions(rawText: string, jobTitle: string, jobDescription: string): Promise<InterviewQuestionSet> {
+  async generateInterviewQuestions(
+    rawText: string,
+    jobTitle: string,
+    jobDescription: string,
+  ): Promise<InterviewQuestionSet> {
     try {
       const prompt = `
 You are a senior technical interviewer.
@@ -177,7 +191,11 @@ Resume: ${rawText}
     }
   }
 
-  async generateRecruiterView(rawText: string, jobTitle: string, jobDescription: string): Promise<RecruiterView> {
+  async generateRecruiterView(
+    rawText: string,
+    jobTitle: string,
+    jobDescription: string,
+  ): Promise<RecruiterView> {
     try {
       const prompt = `
 You are a recruiter doing a 6-second resume scan.
@@ -197,7 +215,10 @@ Resume: ${rawText}
 
       return await this.generateJson(prompt);
     } catch (error: any) {
-      this.logger.error('Recruiter view generation failed', error?.message || error);
+      this.logger.error(
+        'Recruiter view generation failed',
+        error?.message || error,
+      );
       throw new Error('AI recruiter view generation failed');
     }
   }
@@ -235,7 +256,10 @@ GitHub Account Context: ${githubContext}
 
       return await this.generateJson(prompt);
     } catch (error: any) {
-      this.logger.error('GitHub analyzer generation failed', error?.message || error);
+      this.logger.error(
+        'GitHub analyzer generation failed',
+        error?.message || error,
+      );
       throw new Error('AI github analyzer generation failed');
     }
   }

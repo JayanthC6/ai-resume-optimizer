@@ -11,11 +11,11 @@ import { AnalysisModule } from './analysis/analysis.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, envFilePath: '../../.env' }),
-    PrismaModule, 
-    AuthModule, 
-    ResumeModule, 
-    AiModule, 
-    AnalysisModule
+    PrismaModule,
+    AuthModule,
+    ResumeModule,
+    AiModule,
+    AnalysisModule,
   ],
   controllers: [AppController],
   providers: [AppService],

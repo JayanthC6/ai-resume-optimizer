@@ -3,15 +3,7 @@ import HomePage from '../pages/Home';
 import LoginPage from '../pages/Login';
 import RegisterPage from '../pages/Register';
 import DashboardPage from '../pages/Dashboard';
-import { useAuthStore } from '../store/authStore';
-
-import type { ReactNode } from 'react';
-
-const ProtectedRoute = ({ children }: { children: ReactNode }) => {
-  const token = useAuthStore((state) => state.token);
-  if (!token) return <Navigate to="/login" replace />;
-  return children;
-};
+import ProtectedRoute from './ProtectedRoute';
 
 export const router = createBrowserRouter([
   { path: '/', element: <HomePage /> },

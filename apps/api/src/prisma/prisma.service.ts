@@ -2,12 +2,17 @@ import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { PrismaClient } from '@repo/database';
 
 @Injectable()
-export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
+export class PrismaService
+  extends PrismaClient
+  implements OnModuleInit, OnModuleDestroy
+{
   constructor() {
     super({
       datasources: {
         db: {
-          url: process.env.DATABASE_URL || 'postgresql://postgres:password@localhost:15432/ai_resume_db?schema=public',
+          url:
+            process.env.DATABASE_URL ||
+            'postgresql://postgres:password@localhost:15432/ai_resume_db?schema=public',
         },
       },
     });

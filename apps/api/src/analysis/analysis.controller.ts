@@ -1,4 +1,13 @@
-import { Controller, Post, Get, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { AnalysisService } from './analysis.service';
 import { JwtAuthGuard } from '../auth/jwt.guard';
 import { OptimizationRequest, ResumeRegenerationRequest } from '@repo/types';
@@ -32,7 +41,10 @@ export class AnalysisController {
   }
 
   @Post('regenerate')
-  async regenerateResume(@Body() dto: RegenerateResumeDto, @Request() req: any) {
+  async regenerateResume(
+    @Body() dto: RegenerateResumeDto,
+    @Request() req: any,
+  ) {
     return this.analysisService.regenerateResume(req.user.id, dto);
   }
 
@@ -42,18 +54,28 @@ export class AnalysisController {
   }
 
   @Post('interview-questions')
-  async generateInterviewQuestions(@Body() dto: RunAnalysisDto, @Request() req: any) {
+  async generateInterviewQuestions(
+    @Body() dto: RunAnalysisDto,
+    @Request() req: any,
+  ) {
     return this.analysisService.generateInterviewQuestions(req.user.id, dto);
   }
 
   @Post('recruiter-view')
-  async generateRecruiterView(@Body() dto: RunAnalysisDto, @Request() req: any) {
+  async generateRecruiterView(
+    @Body() dto: RunAnalysisDto,
+    @Request() req: any,
+  ) {
     return this.analysisService.generateRecruiterView(req.user.id, dto);
   }
 
   @Post('github-analyzer')
   async analyzeGithub(@Body() dto: GithubAnalyzerDto, @Request() req: any) {
-    return this.analysisService.analyzeGithubPortfolio(req.user.id, dto, dto.githubProfileUrl);
+    return this.analysisService.analyzeGithubPortfolio(
+      req.user.id,
+      dto,
+      dto.githubProfileUrl,
+    );
   }
 
   @Get('templates/list')
@@ -62,7 +84,10 @@ export class AnalysisController {
   }
 
   @Get('team/overview')
-  async getTeamOverview(@Request() req: any, @Query('teamName') teamName?: string) {
+  async getTeamOverview(
+    @Request() req: any,
+    @Query('teamName') teamName?: string,
+  ) {
     return this.analysisService.getTeamAnalytics(req.user.id, teamName);
   }
 

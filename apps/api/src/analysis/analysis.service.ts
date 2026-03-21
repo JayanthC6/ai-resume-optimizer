@@ -1,4 +1,9 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from '../ai/ai.service';
 import { OptimizationRequest, ResumeRegenerationRequest } from '@repo/types';
@@ -12,11 +17,11 @@ export class AnalysisService {
 
   constructor(
     private prisma: PrismaService,
-    private aiService: AiService
-  ) { }
+    private aiService: AiService,
+  ) {}
 
   private mapAnalysisOutput(analysis: any) {
-    const rewrites = (analysis.rewrites ?? {}) as any;
+    const rewrites = analysis.rewrites ?? {};
     return {
       ...analysis,
       analysisId: analysis.id,
@@ -66,7 +71,9 @@ export class AnalysisService {
   private async assertCredits(userId: string, requiredCredits = 1) {
     const creditUsage = await this.getCreditUsage(userId);
     if (creditUsage.remainingCredits < requiredCredits) {
-      throw new ForbiddenException('No credits remaining. Upgrade plan or purchase credits.');
+      throw new ForbiddenException(
+        'No credits remaining. Upgrade plan or purchase credits.',
+      );
     }
   }
 
@@ -105,7 +112,9 @@ export class AnalysisService {
 
     const host = parsed.hostname.toLowerCase();
     if (host !== 'github.com' && host !== 'www.github.com') {
-      throw new BadRequestException('Only github.com profile URLs are supported');
+      throw new BadRequestException(
+        'Only github.com profile URLs are supported',
+      );
     }
 
     const segments = parsed.pathname.split('/').filter(Boolean);
@@ -122,7 +131,7 @@ export class AnalysisService {
 
     // 1. Fetch the raw resume
     const resume = await this.prisma.resume.findFirst({
-      where: { id: dto.resumeId, userId }
+      where: { id: dto.resumeId, userId },
     });
 
     if (!resume || !resume.rawText) {
@@ -136,8 +145,8 @@ export class AnalysisService {
         jobTitle: dto.jobTitle,
         companyName: dto.companyName,
         jobDescription: dto.jobDescription,
-        status: 'processing'
-      }
+        status: 'processing',
+      },
     });
 
     // 3. Process AI (in production this should be a BullMQ background job)
@@ -145,13 +154,30 @@ export class AnalysisService {
     try {
       const aiResult = await this.aiService.optimizeResume(
         resume.rawText,
-        dto.jobDescription
+        dto.jobDescription,
       );
 
-      const [skillGapRoadmap, interviewQuestionSet, recruiterView, creditUsage] = await Promise.all([
-        this.aiService.generateSkillGapRoadmap(resume.rawText, dto.jobTitle, dto.jobDescription),
-        this.aiService.generateInterviewQuestions(resume.rawText, dto.jobTitle, dto.jobDescription),
-        this.aiService.generateRecruiterView(resume.rawText, dto.jobTitle, dto.jobDescription),
+      const [
+        skillGapRoadmap,
+        interviewQuestionSet,
+        recruiterView,
+        creditUsage,
+      ] = await Promise.all([
+        this.aiService.generateSkillGapRoadmap(
+          resume.rawText,
+          dto.jobTitle,
+          dto.jobDescription,
+        ),
+        this.aiService.generateInterviewQuestions(
+          resume.rawText,
+          dto.jobTitle,
+          dto.jobDescription,
+        ),
+        this.aiService.generateRecruiterView(
+          resume.rawText,
+          dto.jobTitle,
+          dto.jobDescription,
+        ),
         this.getCreditUsage(userId),
       ]);
 
@@ -175,10 +201,12 @@ export class AnalysisService {
 
       return this.mapAnalysisOutput(updated);
     } catch (e) {
-      this.prisma.analysis.update({
-        where: { id: analysis.id },
-        data: { status: 'failed' }
-      }).catch(err => console.error(err));
+      this.prisma.analysis
+        .update({
+          where: { id: analysis.id },
+          data: { status: 'failed' },
+        })
+        .catch((err) => console.error(err));
 
       throw new Error('Analysis Engine Pipeline Failed');
     }
@@ -187,7 +215,7 @@ export class AnalysisService {
   async getAnalysis(userId: string, analysisId: string) {
     const analysis = await this.prisma.analysis.findUnique({
       where: { id: analysisId },
-      include: { resume: true }
+      include: { resume: true },
     });
 
     if (!analysis || analysis.resume.userId !== userId) {
@@ -204,19 +232,31 @@ export class AnalysisService {
   async generateSkillGapRoadmap(userId: string, dto: OptimizationRequest) {
     await this.assertCredits(userId, 1);
     const rawText = await this.getResumeRawText(userId, dto.resumeId);
-    return this.aiService.generateSkillGapRoadmap(rawText, dto.jobTitle, dto.jobDescription);
+    return this.aiService.generateSkillGapRoadmap(
+      rawText,
+      dto.jobTitle,
+      dto.jobDescription,
+    );
   }
 
   async generateInterviewQuestions(userId: string, dto: OptimizationRequest) {
     await this.assertCredits(userId, 1);
     const rawText = await this.getResumeRawText(userId, dto.resumeId);
-    return this.aiService.generateInterviewQuestions(rawText, dto.jobTitle, dto.jobDescription);
+    return this.aiService.generateInterviewQuestions(
+      rawText,
+      dto.jobTitle,
+      dto.jobDescription,
+    );
   }
 
   async generateRecruiterView(userId: string, dto: OptimizationRequest) {
     await this.assertCredits(userId, 1);
     const rawText = await this.getResumeRawText(userId, dto.resumeId);
-    return this.aiService.generateRecruiterView(rawText, dto.jobTitle, dto.jobDescription);
+    return this.aiService.generateRecruiterView(
+      rawText,
+      dto.jobTitle,
+      dto.jobDescription,
+    );
   }
 
   async analyzeGithubPortfolio(
@@ -244,44 +284,60 @@ export class AnalysisService {
       throw new NotFoundException('Could not fetch GitHub repositories');
     }
 
-    const profileJson = await profileRes.json() as any;
-    const reposJson = await reposRes.json() as any[];
+    const profileJson = await profileRes.json();
+    const reposJson = (await reposRes.json()) as any[];
     const ownedRepos = Array.isArray(reposJson) ? reposJson : [];
 
     const topRepos = [...ownedRepos]
       .sort((a, b) => (b.stargazers_count ?? 0) - (a.stargazers_count ?? 0))
       .slice(0, 8);
 
-    const languageBreakdown = topRepos.reduce<Record<string, number>>((acc, repo: any) => {
-      const lang = repo?.language;
-      if (lang) {
-        acc[lang] = (acc[lang] ?? 0) + 1;
-      }
-      return acc;
-    }, {});
+    const languageBreakdown = topRepos.reduce<Record<string, number>>(
+      (acc, repo: any) => {
+        const lang = repo?.language;
+        if (lang) {
+          acc[lang] = (acc[lang] ?? 0) + 1;
+        }
+        return acc;
+      },
+      {},
+    );
 
-    const totalStars = topRepos.reduce((sum, repo: any) => sum + (repo?.stargazers_count ?? 0), 0);
-    const totalForks = topRepos.reduce((sum, repo: any) => sum + (repo?.forks_count ?? 0), 0);
+    const totalStars = topRepos.reduce(
+      (sum, repo: any) => sum + (repo?.stargazers_count ?? 0),
+      0,
+    );
+    const totalForks = topRepos.reduce(
+      (sum, repo: any) => sum + (repo?.forks_count ?? 0),
+      0,
+    );
 
     const commitResponses = await Promise.all(
       topRepos.slice(0, 4).map((repo: any) =>
-        fetch(`https://api.github.com/repos/${githubUsername}/${repo.name}/commits?per_page=3`, {
-          headers: githubHeaders,
-        }),
+        fetch(
+          `https://api.github.com/repos/${githubUsername}/${repo.name}/commits?per_page=3`,
+          {
+            headers: githubHeaders,
+          },
+        ),
       ),
     );
 
-    const commitHighlights: Array<{ repo: string; recentCommits: string[] }> = [];
+    const commitHighlights: Array<{ repo: string; recentCommits: string[] }> =
+      [];
     for (let i = 0; i < commitResponses.length; i += 1) {
       const response = commitResponses[i];
       const repo = topRepos[i];
       if (!response.ok || !repo?.name) {
         continue;
       }
-      const commits = await response.json() as any[];
+      const commits = (await response.json()) as any[];
       commitHighlights.push({
         repo: repo.name,
-        recentCommits: commits.slice(0, 3).map((c: any) => c?.commit?.message).filter(Boolean),
+        recentCommits: commits
+          .slice(0, 3)
+          .map((c: any) => c?.commit?.message)
+          .filter(Boolean),
       });
     }
 
@@ -316,7 +372,12 @@ export class AnalysisService {
       recentCommitHighlights: commitHighlights,
     });
 
-    return this.aiService.analyzeGithubPortfolio(rawText, dto.jobTitle, dto.jobDescription, githubContext);
+    return this.aiService.analyzeGithubPortfolio(
+      rawText,
+      dto.jobTitle,
+      dto.jobDescription,
+      githubContext,
+    );
   }
 
   getTemplates() {
@@ -324,21 +385,24 @@ export class AnalysisService {
       {
         id: 'classic-ats',
         name: 'Classic ATS',
-        description: 'Traditional ATS-safe format with clear hierarchy and concise sections.',
+        description:
+          'Traditional ATS-safe format with clear hierarchy and concise sections.',
         atsSafe: true,
         tone: 'classic',
       },
       {
         id: 'modern-tech',
         name: 'Modern Tech',
-        description: 'Balanced modern layout optimized for engineering and product resumes.',
+        description:
+          'Balanced modern layout optimized for engineering and product resumes.',
         atsSafe: true,
         tone: 'modern',
       },
       {
         id: 'compact-impact',
         name: 'Compact Impact',
-        description: 'High-density one-page format designed to maximize signal in short scans.',
+        description:
+          'High-density one-page format designed to maximize signal in short scans.',
         atsSafe: true,
         tone: 'compact',
       },
@@ -357,7 +421,8 @@ export class AnalysisService {
       },
     });
 
-    const avg = (values: number[]) => (values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0);
+    const avg = (values: number[]) =>
+      values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0;
     const matchScores = analyses.map((a) => Number(a.matchScore ?? 0));
     const atsScores = analyses.map((a) => Number(a.atsScore ?? 0));
 
@@ -366,7 +431,8 @@ export class AnalysisService {
       members: 1,
       avgMatchScore: Number(avg(matchScores).toFixed(2)),
       avgAtsScore: Number(avg(atsScores).toFixed(2)),
-      highPerformers: analyses.filter((a) => Number(a.matchScore ?? 0) >= 80).length,
+      highPerformers: analyses.filter((a) => Number(a.matchScore ?? 0) >= 80)
+        .length,
     };
   }
 

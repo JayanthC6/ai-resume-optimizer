@@ -7,7 +7,7 @@ import { PrismaService } from '../prisma/prisma.service';
 export class ResumeService {
   private readonly logger = new Logger(ResumeService.name);
 
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   async parseAndSave(userId: string, file: any) {
     try {
@@ -50,7 +50,12 @@ export class ResumeService {
 
       pdfParser.on('pdfParser_dataError', (errData: any) => {
         console.warn = originalWarn;
-        reject(errData.parserError);
+        const parserError = errData?.parserError;
+        reject(
+          parserError instanceof Error
+            ? parserError
+            : new Error(String(parserError ?? 'PDF parsing failed')),
+        );
       });
 
       pdfParser.on('pdfParser_dataReady', () => {

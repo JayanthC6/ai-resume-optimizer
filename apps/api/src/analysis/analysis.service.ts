@@ -206,7 +206,7 @@ export class AnalysisService {
           where: { id: analysis.id },
           data: { status: 'failed' },
         })
-        .catch((err) => console.error(err));
+        .catch((err: unknown) => console.error(err));
 
       throw new Error('Analysis Engine Pipeline Failed');
     }
@@ -410,6 +410,11 @@ export class AnalysisService {
   }
 
   async getTeamAnalytics(userId: string, teamName = 'Career Cohort') {
+    type AnalysisScoreRow = {
+      matchScore: number | null;
+      atsScore: number | null;
+    };
+
     const analyses = await this.prisma.analysis.findMany({
       where: {
         resume: { userId },
@@ -423,16 +428,18 @@ export class AnalysisService {
 
     const avg = (values: number[]) =>
       values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0;
-    const matchScores = analyses.map((a) => Number(a.matchScore ?? 0));
-    const atsScores = analyses.map((a) => Number(a.atsScore ?? 0));
+    const typedAnalyses = analyses as AnalysisScoreRow[];
+    const matchScores = typedAnalyses.map((a) => Number(a.matchScore ?? 0));
+    const atsScores = typedAnalyses.map((a) => Number(a.atsScore ?? 0));
 
     return {
       teamName,
       members: 1,
       avgMatchScore: Number(avg(matchScores).toFixed(2)),
       avgAtsScore: Number(avg(atsScores).toFixed(2)),
-      highPerformers: analyses.filter((a) => Number(a.matchScore ?? 0) >= 80)
-        .length,
+      highPerformers: typedAnalyses.filter(
+        (a) => Number(a.matchScore ?? 0) >= 80,
+      ).length,
     };
   }
 

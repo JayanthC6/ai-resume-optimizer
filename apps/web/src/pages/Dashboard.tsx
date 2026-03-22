@@ -14,14 +14,13 @@ import type {
   GithubAnalyzerResult,
   InterviewQuestionSet,
   OptimizationResponse,
-  RecruiterView,
   ResumeRegenerationResponse,
   ResumeTemplate,
   SkillGapRoadmap,
   TeamAnalytics,
 } from '@repo/types';
 
-type TabKey = 'overview' | 'keywords' | 'rewrites' | 'roadmap' | 'interview' | 'recruiter' | 'portfolio' | 'business';
+type TabKey = 'overview' | 'keywords' | 'rewrites' | 'roadmap' | 'interview' | 'portfolio' | 'business';
 
 type AccordionState = {
   summary: boolean;
@@ -152,14 +151,12 @@ export default function DashboardPage() {
   const [regeneratedResume, setRegeneratedResume] = useState<ResumeRegenerationResponse | null>(null);
   const [skillGapRoadmap, setSkillGapRoadmap] = useState<SkillGapRoadmap | null>(null);
   const [interviewQuestionSet, setInterviewQuestionSet] = useState<InterviewQuestionSet | null>(null);
-  const [recruiterView, setRecruiterView] = useState<RecruiterView | null>(null);
   const [githubAnalyzer, setGithubAnalyzer] = useState<GithubAnalyzerResult | null>(null);
   const [templates, setTemplates] = useState<ResumeTemplate[]>([]);
   const [teamAnalytics, setTeamAnalytics] = useState<TeamAnalytics | null>(null);
   const [githubProfileUrl, setGithubProfileUrl] = useState('');
   const [isGeneratingRoadmap, setIsGeneratingRoadmap] = useState(false);
   const [isGeneratingInterview, setIsGeneratingInterview] = useState(false);
-  const [isGeneratingRecruiterView, setIsGeneratingRecruiterView] = useState(false);
   const [isAnalyzingGithub, setIsAnalyzingGithub] = useState(false);
   const [toast, setToast] = useState<ToastState | null>(null);
   const resultsRef = useRef<HTMLDivElement | null>(null);
@@ -217,7 +214,6 @@ export default function DashboardPage() {
       setResult(analysisRes);
       setSkillGapRoadmap(analysisRes.skillGapRoadmap || null);
       setInterviewQuestionSet(analysisRes.interviewQuestionSet || null);
-      setRecruiterView(analysisRes.recruiterView || null);
       setGithubAnalyzer(null);
       setStatus('done');
       setActiveTab('overview');
@@ -342,26 +338,6 @@ export default function DashboardPage() {
       showToast({ type: 'error', message: 'Interview generation failed.' });
     } finally {
       setIsGeneratingInterview(false);
-    }
-  };
-
-  const handleGenerateRecruiterView = async () => {
-    if (!ensureCoreInputs()) return;
-    setIsGeneratingRecruiterView(true);
-    try {
-      const { data } = await api.post<RecruiterView>('/analysis/recruiter-view', {
-        resumeId,
-        jobTitle,
-        jobDescription,
-      });
-      setRecruiterView(data);
-      setActiveTab('recruiter');
-      showToast({ type: 'success', message: 'Recruiter scan preview generated.' });
-    } catch (e) {
-      console.error(e);
-      showToast({ type: 'error', message: 'Recruiter preview generation failed.' });
-    } finally {
-      setIsGeneratingRecruiterView(false);
     }
   };
 
@@ -589,15 +565,6 @@ export default function DashboardPage() {
                 >
                   {isGeneratingInterview ? 'Generating...' : 'Generate Interview Qs'}
                 </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="h-10 rounded-xl border-slate-200 bg-white text-slate-700 hover:bg-slate-50 sm:col-span-2"
-                  onClick={handleGenerateRecruiterView}
-                  disabled={isGeneratingRecruiterView}
-                >
-                  {isGeneratingRecruiterView ? 'Generating...' : 'Generate Recruiter 6-Second View'}
-                </Button>
               </div>
 
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
@@ -651,7 +618,6 @@ export default function DashboardPage() {
                       <TabButton active={activeTab === 'rewrites'} onClick={() => setActiveTab('rewrites')}>Rewrites</TabButton>
                       <TabButton active={activeTab === 'roadmap'} onClick={() => setActiveTab('roadmap')}>Roadmap</TabButton>
                       <TabButton active={activeTab === 'interview'} onClick={() => setActiveTab('interview')}>Interview</TabButton>
-                      <TabButton active={activeTab === 'recruiter'} onClick={() => setActiveTab('recruiter')}>Recruiter View</TabButton>
                       <TabButton active={activeTab === 'portfolio'} onClick={() => setActiveTab('portfolio')}>Portfolio</TabButton>
                       <TabButton active={activeTab === 'business'} onClick={() => setActiveTab('business')}>Business</TabButton>
                     </div>
@@ -907,42 +873,6 @@ export default function DashboardPage() {
                                   <p><span className="font-semibold text-slate-900">Task:</span> {item.task}</p>
                                   <p><span className="font-semibold text-slate-900">Action:</span> {item.action}</p>
                                   <p><span className="font-semibold text-slate-900">Result:</span> {item.result}</p>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  )}
-
-                  {activeTab === 'recruiter' && (
-                    <div className="space-y-4">
-                      {!recruiterView ? (
-                        <p className="text-sm text-slate-500">Generate recruiter preview to see six-second scan highlights.</p>
-                      ) : (
-                        <>
-                          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                            <p className="text-sm text-slate-500">First Impression Score</p>
-                            <p className="text-3xl font-bold text-slate-900">{Math.max(0, Math.min(100, recruiterView.firstImpressionScore))}%</p>
-                          </div>
-                          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                            <p className="mb-2 text-sm font-semibold text-slate-700">6-Second Highlights</p>
-                            <ul className="list-disc ml-5 text-sm text-slate-700">
-                              {recruiterView.sixSecondHighlights.map((item, idx) => <li key={idx}>{item}</li>)}
-                            </ul>
-                          </div>
-                          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                            <p className="mb-2 text-sm font-semibold text-slate-700">Attention Heatmap by Section</p>
-                            <div className="space-y-2">
-                              {recruiterView.attentionHeatmap.map((section, idx) => (
-                                <div key={idx} className="rounded-lg border border-slate-200 bg-white p-3">
-                                  <div className="mb-1 flex items-center justify-between text-sm font-medium text-slate-800">
-                                    <span>{section.section}</span>
-                                    <span>{Math.max(0, Math.min(100, section.attentionScore))}%</span>
-                                  </div>
-                                  <Progress value={Math.max(0, Math.min(100, section.attentionScore))} className="h-2" />
-                                  <p className="mt-2 text-xs text-slate-500">{section.rationale}</p>
                                 </div>
                               ))}
                             </div>

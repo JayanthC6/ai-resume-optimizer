@@ -29,7 +29,6 @@ export class AnalysisService {
       },
       skillGapRoadmap: rewrites.skillGapRoadmap,
       interviewQuestionSet: rewrites.interviewQuestionSet,
-      recruiterView: rewrites.recruiterView,
     };
   }
 
@@ -111,19 +110,13 @@ export class AnalysisService {
         dto.jobDescription,
       );
 
-      const [skillGapRoadmap, interviewQuestionSet, recruiterView] =
-        await Promise.all([
+      const [skillGapRoadmap, interviewQuestionSet] = await Promise.all([
         this.aiService.generateSkillGapRoadmap(
           resume.rawText,
           dto.jobTitle,
           dto.jobDescription,
         ),
         this.aiService.generateInterviewQuestions(
-          resume.rawText,
-          dto.jobTitle,
-          dto.jobDescription,
-        ),
-        this.aiService.generateRecruiterView(
           resume.rawText,
           dto.jobTitle,
           dto.jobDescription,
@@ -142,7 +135,6 @@ export class AnalysisService {
             ...aiResult.rewrites,
             skillGapRoadmap,
             interviewQuestionSet,
-            recruiterView,
           },
         },
       });
@@ -185,15 +177,6 @@ export class AnalysisService {
   async generateInterviewQuestions(userId: string, dto: OptimizationRequest) {
     const rawText = await this.getResumeRawText(userId, dto.resumeId);
     return this.aiService.generateInterviewQuestions(
-      rawText,
-      dto.jobTitle,
-      dto.jobDescription,
-    );
-  }
-
-  async generateRecruiterView(userId: string, dto: OptimizationRequest) {
-    const rawText = await this.getResumeRawText(userId, dto.resumeId);
-    return this.aiService.generateRecruiterView(
       rawText,
       dto.jobTitle,
       dto.jobDescription,

@@ -85,18 +85,6 @@ export interface InterviewQuestionSet {
   }[];
 }
 
-export interface RecruiterHeatmapSection {
-  section: string;
-  attentionScore: number;
-  rationale: string;
-}
-
-export interface RecruiterView {
-  sixSecondHighlights: string[];
-  firstImpressionScore: number;
-  attentionHeatmap: RecruiterHeatmapSection[];
-}
-
 export interface GithubBulletSuggestion {
   original: string;
   improved: string;
@@ -137,7 +125,6 @@ export interface OptimizationResponse {
   rewrites?: RewriteSuggestions;
   skillGapRoadmap?: SkillGapRoadmap;
   interviewQuestionSet?: InterviewQuestionSet;
-  recruiterView?: RecruiterView;
   githubAnalyzer?: GithubAnalyzerResult;
   status: 'pending' | 'processing' | 'completed' | 'failed';
 }

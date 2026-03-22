@@ -8,7 +8,6 @@ It lets users upload a PDF resume, compare it against a target job description, 
 - Resume rewrites and regeneration
 - Skill-gap roadmap (30/60/90 days)
 - Interview question sets with STAR guidance
-- Recruiter 6-second scan preview
 - GitHub portfolio-to-resume bullet suggestions
 
 ## Monorepo Architecture
@@ -189,8 +188,6 @@ Base URL (local):
 - POST /analysis/roadmap
   - body: resumeId, jobTitle, companyName?, jobDescription
 - POST /analysis/interview-questions
-  - body: resumeId, jobTitle, companyName?, jobDescription
-- POST /analysis/recruiter-view
   - body: resumeId, jobTitle, companyName?, jobDescription
 - POST /analysis/github-analyzer
   - body: resumeId, jobTitle, companyName?, jobDescription, githubProfileUrl

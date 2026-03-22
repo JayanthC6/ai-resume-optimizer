@@ -3,7 +3,6 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import {
   GithubAnalyzerResult,
   InterviewQuestionSet,
-  RecruiterView,
   SkillGapRoadmap,
 } from '@repo/types';
 
@@ -188,38 +187,6 @@ Resume: ${rawText}
     } catch (error: any) {
       this.logger.error('Interview generation failed', error?.message || error);
       throw new Error('AI interview generation failed');
-    }
-  }
-
-  async generateRecruiterView(
-    rawText: string,
-    jobTitle: string,
-    jobDescription: string,
-  ): Promise<RecruiterView> {
-    try {
-      const prompt = `
-You are a recruiter doing a 6-second resume scan.
-Assess this resume for first impression and section-level attention.
-
-Output MUST be valid JSON using this schema exactly:
-{
-  "sixSecondHighlights": string[],
-  "firstImpressionScore": number,
-  "attentionHeatmap": [{ "section": string, "attentionScore": number, "rationale": string }]
-}
-
-Role: ${jobTitle}
-Job Description: ${jobDescription}
-Resume: ${rawText}
-`;
-
-      return await this.generateJson(prompt);
-    } catch (error: any) {
-      this.logger.error(
-        'Recruiter view generation failed',
-        error?.message || error,
-      );
-      throw new Error('AI recruiter view generation failed');
     }
   }
 

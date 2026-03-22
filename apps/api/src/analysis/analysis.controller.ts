@@ -61,14 +61,6 @@ export class AnalysisController {
     return this.analysisService.generateInterviewQuestions(req.user.id, dto);
   }
 
-  @Post('recruiter-view')
-  async generateRecruiterView(
-    @Body() dto: RunAnalysisDto,
-    @Request() req: any,
-  ) {
-    return this.analysisService.generateRecruiterView(req.user.id, dto);
-  }
-
   @Post('github-analyzer')
   async analyzeGithub(@Body() dto: GithubAnalyzerDto, @Request() req: any) {
     return this.analysisService.analyzeGithubPortfolio(

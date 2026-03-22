@@ -196,7 +196,6 @@ Base URL (local):
   - body: resumeId, jobTitle, companyName?, jobDescription, githubProfileUrl
 - GET /analysis/templates/list
 - GET /analysis/team/overview?teamName=Career%20Cohort
-- GET /analysis/credits/usage
 - GET /analysis/:id
 
 ## Data Model (Prisma)

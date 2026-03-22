@@ -126,13 +126,6 @@ export interface TeamAnalytics {
   highPerformers: number;
 }
 
-export interface CreditUsage {
-  plan: 'free' | 'pro';
-  totalCredits: number;
-  usedCredits: number;
-  remainingCredits: number;
-}
-
 export interface OptimizationResponse {
   analysisId: string;
   id?: string;
@@ -146,6 +139,5 @@ export interface OptimizationResponse {
   interviewQuestionSet?: InterviewQuestionSet;
   recruiterView?: RecruiterView;
   githubAnalyzer?: GithubAnalyzerResult;
-  creditUsage?: CreditUsage;
   status: 'pending' | 'processing' | 'completed' | 'failed';
 }

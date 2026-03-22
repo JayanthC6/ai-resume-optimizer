@@ -1,6 +1,5 @@
 import {
   BadRequestException,
-  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -10,11 +9,6 @@ import { OptimizationRequest, ResumeRegenerationRequest } from '@repo/types';
 
 @Injectable()
 export class AnalysisService {
-  private readonly creditConfig = {
-    free: 25,
-    pro: 250,
-  } as const;
-
   constructor(
     private prisma: PrismaService,
     private aiService: AiService,
@@ -36,45 +30,7 @@ export class AnalysisService {
       skillGapRoadmap: rewrites.skillGapRoadmap,
       interviewQuestionSet: rewrites.interviewQuestionSet,
       recruiterView: rewrites.recruiterView,
-      creditUsage: rewrites.creditUsage,
     };
-  }
-
-  private async getUserById(userId: string) {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-    return user;
-  }
-
-  private async getCreditUsage(userId: string) {
-    const user = await this.getUserById(userId);
-    const plan = user.subscription === 'pro' ? 'pro' : 'free';
-    const totalCredits = this.creditConfig[plan];
-
-    const usedCredits = await this.prisma.analysis.count({
-      where: {
-        resume: { userId },
-        status: 'completed',
-      },
-    });
-
-    return {
-      plan,
-      totalCredits,
-      usedCredits,
-      remainingCredits: Math.max(totalCredits - usedCredits, 0),
-    };
-  }
-
-  private async assertCredits(userId: string, requiredCredits = 1) {
-    const creditUsage = await this.getCreditUsage(userId);
-    if (creditUsage.remainingCredits < requiredCredits) {
-      throw new ForbiddenException(
-        'No credits remaining. Upgrade plan or purchase credits.',
-      );
-    }
   }
 
   private async getResumeRawText(userId: string, resumeId: string) {
@@ -127,8 +83,6 @@ export class AnalysisService {
   }
 
   async runAnalysis(userId: string, dto: OptimizationRequest) {
-    await this.assertCredits(userId, 1);
-
     // 1. Fetch the raw resume
     const resume = await this.prisma.resume.findFirst({
       where: { id: dto.resumeId, userId },
@@ -157,12 +111,8 @@ export class AnalysisService {
         dto.jobDescription,
       );
 
-      const [
-        skillGapRoadmap,
-        interviewQuestionSet,
-        recruiterView,
-        creditUsage,
-      ] = await Promise.all([
+      const [skillGapRoadmap, interviewQuestionSet, recruiterView] =
+        await Promise.all([
         this.aiService.generateSkillGapRoadmap(
           resume.rawText,
           dto.jobTitle,
@@ -178,7 +128,6 @@ export class AnalysisService {
           dto.jobTitle,
           dto.jobDescription,
         ),
-        this.getCreditUsage(userId),
       ]);
 
       const updated = await this.prisma.analysis.update({
@@ -194,7 +143,6 @@ export class AnalysisService {
             skillGapRoadmap,
             interviewQuestionSet,
             recruiterView,
-            creditUsage,
           },
         },
       });
@@ -225,12 +173,7 @@ export class AnalysisService {
     return this.mapAnalysisOutput(analysis);
   }
 
-  async getCreditSnapshot(userId: string) {
-    return this.getCreditUsage(userId);
-  }
-
   async generateSkillGapRoadmap(userId: string, dto: OptimizationRequest) {
-    await this.assertCredits(userId, 1);
     const rawText = await this.getResumeRawText(userId, dto.resumeId);
     return this.aiService.generateSkillGapRoadmap(
       rawText,
@@ -240,7 +183,6 @@ export class AnalysisService {
   }
 
   async generateInterviewQuestions(userId: string, dto: OptimizationRequest) {
-    await this.assertCredits(userId, 1);
     const rawText = await this.getResumeRawText(userId, dto.resumeId);
     return this.aiService.generateInterviewQuestions(
       rawText,
@@ -250,7 +192,6 @@ export class AnalysisService {
   }
 
   async generateRecruiterView(userId: string, dto: OptimizationRequest) {
-    await this.assertCredits(userId, 1);
     const rawText = await this.getResumeRawText(userId, dto.resumeId);
     return this.aiService.generateRecruiterView(
       rawText,
@@ -264,7 +205,6 @@ export class AnalysisService {
     dto: OptimizationRequest,
     githubProfileUrl: string,
   ) {
-    await this.assertCredits(userId, 1);
     const rawText = await this.getResumeRawText(userId, dto.resumeId);
     const githubUsername = this.parseGithubUsername(githubProfileUrl);
     const githubHeaders = { 'User-Agent': 'ai-resume-optimizer' };
@@ -444,8 +384,6 @@ export class AnalysisService {
   }
 
   async regenerateResume(userId: string, dto: ResumeRegenerationRequest) {
-    await this.assertCredits(userId, 1);
-
     const resume = await this.prisma.resume.findFirst({
       where: { id: dto.resumeId, userId },
     });

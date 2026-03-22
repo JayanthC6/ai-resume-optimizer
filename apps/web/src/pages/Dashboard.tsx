@@ -11,7 +11,6 @@ import { Badge } from '@/components/ui/badge';
 import { Download, FileText, LogOut, Sparkles, Target, UploadCloud, WandSparkles } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import type {
-  CreditUsage,
   GithubAnalyzerResult,
   InterviewQuestionSet,
   OptimizationResponse,
@@ -155,7 +154,6 @@ export default function DashboardPage() {
   const [interviewQuestionSet, setInterviewQuestionSet] = useState<InterviewQuestionSet | null>(null);
   const [recruiterView, setRecruiterView] = useState<RecruiterView | null>(null);
   const [githubAnalyzer, setGithubAnalyzer] = useState<GithubAnalyzerResult | null>(null);
-  const [creditUsage, setCreditUsage] = useState<CreditUsage | null>(null);
   const [templates, setTemplates] = useState<ResumeTemplate[]>([]);
   const [teamAnalytics, setTeamAnalytics] = useState<TeamAnalytics | null>(null);
   const [githubProfileUrl, setGithubProfileUrl] = useState('');
@@ -220,7 +218,6 @@ export default function DashboardPage() {
       setSkillGapRoadmap(analysisRes.skillGapRoadmap || null);
       setInterviewQuestionSet(analysisRes.interviewQuestionSet || null);
       setRecruiterView(analysisRes.recruiterView || null);
-      setCreditUsage(analysisRes.creditUsage || null);
       setGithubAnalyzer(null);
       setStatus('done');
       setActiveTab('overview');
@@ -397,14 +394,12 @@ export default function DashboardPage() {
   useEffect(() => {
     const loadBusinessData = async () => {
       try {
-        const [templatesRes, creditsRes, teamRes] = await Promise.all([
+        const [templatesRes, teamRes] = await Promise.all([
           api.get<ResumeTemplate[]>('/analysis/templates/list'),
-          api.get<CreditUsage>('/analysis/credits/usage'),
           api.get<TeamAnalytics>('/analysis/team/overview'),
         ]);
 
         setTemplates(templatesRes.data);
-        setCreditUsage(creditsRes.data);
         setTeamAnalytics(teamRes.data);
       } catch (error) {
         console.error(error);
@@ -991,20 +986,6 @@ export default function DashboardPage() {
 
                   {activeTab === 'business' && (
                     <div className="space-y-4">
-                      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                        <p className="mb-2 text-sm font-semibold text-slate-700">Credit-based AI Usage</p>
-                        {creditUsage ? (
-                          <>
-                            <p className="text-sm text-slate-600">Plan: <span className="font-semibold uppercase text-slate-900">{creditUsage.plan}</span></p>
-                            <p className="text-sm text-slate-600">Used: <span className="font-semibold text-slate-900">{creditUsage.usedCredits}</span> / {creditUsage.totalCredits}</p>
-                            <p className="text-sm text-slate-600">Remaining: <span className="font-semibold text-slate-900">{creditUsage.remainingCredits}</span></p>
-                            <Progress value={Math.min(100, (creditUsage.usedCredits / Math.max(1, creditUsage.totalCredits)) * 100)} className="mt-2 h-2" />
-                          </>
-                        ) : (
-                          <p className="text-sm text-slate-500">Usage data not available yet.</p>
-                        )}
-                      </div>
-
                       <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                         <p className="mb-2 text-sm font-semibold text-slate-700">Premium Templates + Formatting Engine</p>
                         {templates.length === 0 ? (

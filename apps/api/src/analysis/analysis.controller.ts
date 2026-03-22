@@ -91,11 +91,6 @@ export class AnalysisController {
     return this.analysisService.getTeamAnalytics(req.user.id, teamName);
   }
 
-  @Get('credits/usage')
-  async getCreditUsage(@Request() req: any) {
-    return this.analysisService.getCreditSnapshot(req.user.id);
-  }
-
   @Get(':id')
   async getAnalysis(@Param('id') id: string, @Request() req: any) {
     return this.analysisService.getAnalysis(req.user.id, id);

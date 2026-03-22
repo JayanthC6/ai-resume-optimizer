@@ -45,6 +45,13 @@ const defaultAccordion: AccordionState = {
   adjectives: false,
 };
 
+function formatTimeframeLabel(value: string) {
+  if (value === '30_days') return 'First 30 Days';
+  if (value === '60_days') return 'Days 31-60';
+  if (value === '90_days') return 'Days 61-90';
+  return value.replace('_', ' / ');
+}
+
 function ScoreRing({ label, value }: { label: string; value?: number }) {
   const safeValue = Math.max(0, Math.min(100, value ?? 0));
   const ringColor = safeValue >= 75 ? '#0ea5e9' : safeValue >= 50 ? '#22c55e' : '#f97316';
@@ -794,8 +801,8 @@ export default function DashboardPage() {
                         <p className="text-sm text-slate-500">Generate roadmap to view a 30/60/90-day upskilling plan.</p>
                       ) : (
                         <>
-                          <div>
-                            <p className="mb-2 text-sm font-semibold text-slate-700">Missing Skills</p>
+                          <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-4">
+                            <p className="mb-2 text-sm font-semibold text-slate-700">Focus Skills To Build</p>
                             <div className="flex flex-wrap gap-2">
                               {skillGapRoadmap.missingSkills.map((skill, idx) => (
                                 <Badge key={idx} className="border-rose-200 bg-rose-50 text-rose-800 hover:bg-rose-100">{skill}</Badge>
@@ -803,25 +810,30 @@ export default function DashboardPage() {
                             </div>
                           </div>
                           {skillGapRoadmap.phases.map((phase, idx) => (
-                            <div key={idx} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                              <p className="text-sm font-semibold uppercase tracking-wide text-slate-600">{phase.timeframe.replace('_', '/')}</p>
-                              <div className="mt-2 grid gap-4 md:grid-cols-3">
-                                <div>
-                                  <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Goals</p>
-                                  <ul className="list-disc ml-5 text-sm text-slate-700">
-                                    {phase.goals.map((item, i) => <li key={i}>{item}</li>)}
+                            <div key={idx} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                                <p className="text-sm font-semibold tracking-wide text-slate-800">{formatTimeframeLabel(phase.timeframe)}</p>
+                                <span className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700">
+                                  Phase {idx + 1}
+                                </span>
+                              </div>
+                              <div className="grid gap-3 md:grid-cols-3">
+                                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Goals</p>
+                                  <ul className="space-y-1.5 text-sm text-slate-700">
+                                    {phase.goals.map((item, i) => <li key={i} className="leading-relaxed">• {item}</li>)}
                                   </ul>
                                 </div>
-                                <div>
-                                  <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Learning Resources</p>
-                                  <ul className="list-disc ml-5 text-sm text-slate-700">
-                                    {phase.learningResources.map((item, i) => <li key={i}>{item}</li>)}
+                                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Learning Resources</p>
+                                  <ul className="space-y-1.5 text-sm text-slate-700">
+                                    {phase.learningResources.map((item, i) => <li key={i} className="leading-relaxed">• {item}</li>)}
                                   </ul>
                                 </div>
-                                <div>
-                                  <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Mini Projects</p>
-                                  <ul className="list-disc ml-5 text-sm text-slate-700">
-                                    {phase.miniProjects.map((item, i) => <li key={i}>{item}</li>)}
+                                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Mini Projects</p>
+                                  <ul className="space-y-1.5 text-sm text-slate-700">
+                                    {phase.miniProjects.map((item, i) => <li key={i} className="leading-relaxed">• {item}</li>)}
                                   </ul>
                                 </div>
                               </div>
@@ -838,41 +850,74 @@ export default function DashboardPage() {
                         <p className="text-sm text-slate-500">Generate interview questions to view likely technical and behavioral rounds.</p>
                       ) : (
                         <>
-                          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                            <p className="mb-2 text-sm font-semibold text-slate-700">Technical Questions</p>
+                          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                            <div className="mb-3 flex items-center justify-between">
+                              <p className="text-sm font-semibold text-slate-800">Technical Questions</p>
+                              <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600">
+                                {interviewQuestionSet.technical.length} questions
+                              </span>
+                            </div>
                             <div className="space-y-3">
                               {interviewQuestionSet.technical.map((item, idx) => (
-                                <div key={idx} className="rounded-lg border border-slate-200 bg-white p-3 text-sm">
-                                  <p className="font-semibold text-slate-900">{item.question}</p>
-                                  <p className="mt-1 text-slate-600"><span className="font-medium">Why asked:</span> {item.whyAsked}</p>
-                                  <p className="mt-1 text-slate-600"><span className="font-medium">Sample answer:</span> {item.sampleAnswer}</p>
-                                </div>
+                                <details key={idx} className="group rounded-xl border border-slate-200 bg-slate-50 p-3">
+                                  <summary className="cursor-pointer list-none">
+                                    <div className="flex items-start justify-between gap-3">
+                                      <p className="text-sm font-semibold leading-relaxed text-slate-900">Q{idx + 1}. {item.question}</p>
+                                      <span className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-semibold text-slate-500 group-open:hidden">Expand</span>
+                                    </div>
+                                  </summary>
+                                  <div className="mt-3 space-y-2 border-t border-slate-200 pt-3 text-sm">
+                                    <p className="text-slate-600"><span className="font-semibold text-slate-800">Why asked:</span> {item.whyAsked}</p>
+                                    <div className="rounded-lg border border-slate-200 bg-white p-3">
+                                      <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Sample Answer</p>
+                                      <p className="max-h-40 overflow-y-auto leading-relaxed text-slate-700">{item.sampleAnswer}</p>
+                                    </div>
+                                  </div>
+                                </details>
                               ))}
                             </div>
                           </div>
 
-                          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                            <p className="mb-2 text-sm font-semibold text-slate-700">Behavioral Questions</p>
+                          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                            <div className="mb-3 flex items-center justify-between">
+                              <p className="text-sm font-semibold text-slate-800">Behavioral Questions</p>
+                              <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600">
+                                {interviewQuestionSet.behavioral.length} questions
+                              </span>
+                            </div>
                             <div className="space-y-3">
                               {interviewQuestionSet.behavioral.map((item, idx) => (
-                                <div key={idx} className="rounded-lg border border-slate-200 bg-white p-3 text-sm">
-                                  <p className="font-semibold text-slate-900">{item.question}</p>
-                                  <p className="mt-1 text-slate-600"><span className="font-medium">Why asked:</span> {item.whyAsked}</p>
-                                  <p className="mt-1 text-slate-600"><span className="font-medium">Sample answer:</span> {item.sampleAnswer}</p>
-                                </div>
+                                <details key={idx} className="group rounded-xl border border-slate-200 bg-slate-50 p-3">
+                                  <summary className="cursor-pointer list-none">
+                                    <div className="flex items-start justify-between gap-3">
+                                      <p className="text-sm font-semibold leading-relaxed text-slate-900">Q{idx + 1}. {item.question}</p>
+                                      <span className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-semibold text-slate-500 group-open:hidden">Expand</span>
+                                    </div>
+                                  </summary>
+                                  <div className="mt-3 space-y-2 border-t border-slate-200 pt-3 text-sm">
+                                    <p className="text-slate-600"><span className="font-semibold text-slate-800">Why asked:</span> {item.whyAsked}</p>
+                                    <div className="rounded-lg border border-slate-200 bg-white p-3">
+                                      <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Sample Answer</p>
+                                      <p className="max-h-40 overflow-y-auto leading-relaxed text-slate-700">{item.sampleAnswer}</p>
+                                    </div>
+                                  </div>
+                                </details>
                               ))}
                             </div>
                           </div>
 
-                          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                            <p className="mb-2 text-sm font-semibold text-slate-700">STAR Answer Drafts</p>
+                          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                            <p className="mb-3 text-sm font-semibold text-slate-800">STAR Answer Drafts</p>
                             <div className="space-y-3">
                               {interviewQuestionSet.starAnswers.map((item, idx) => (
-                                <div key={idx} className="rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-700">
-                                  <p><span className="font-semibold text-slate-900">Situation:</span> {item.situation}</p>
-                                  <p><span className="font-semibold text-slate-900">Task:</span> {item.task}</p>
-                                  <p><span className="font-semibold text-slate-900">Action:</span> {item.action}</p>
-                                  <p><span className="font-semibold text-slate-900">Result:</span> {item.result}</p>
+                                <div key={idx} className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
+                                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Draft {idx + 1}</p>
+                                  <div className="grid gap-2">
+                                    <p className="leading-relaxed"><span className="font-semibold text-slate-900">Situation:</span> {item.situation}</p>
+                                    <p className="leading-relaxed"><span className="font-semibold text-slate-900">Task:</span> {item.task}</p>
+                                    <p className="leading-relaxed"><span className="font-semibold text-slate-900">Action:</span> {item.action}</p>
+                                    <p className="leading-relaxed"><span className="font-semibold text-slate-900">Result:</span> {item.result}</p>
+                                  </div>
                                 </div>
                               ))}
                             </div>

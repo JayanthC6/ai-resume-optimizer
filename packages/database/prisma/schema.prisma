@@ -12,6 +12,8 @@ model User {
   id              String   @id @default(uuid())
   email           String   @unique
   hashedPassword  String
+  resetPasswordTokenHash      String?
+  resetPasswordTokenExpiresAt DateTime?
   fullName        String?
   subscription    String   @default("free")
   isActive        Boolean  @default(true)

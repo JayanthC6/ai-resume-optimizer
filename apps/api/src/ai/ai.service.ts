@@ -88,38 +88,61 @@ export class AiService {
     rawText: string,
     jobTitle: string,
     jobDescription: string,
+    companyName?: string,
   ) {
     try {
       const prompt = `
 You are an expert resume writer and ATS optimization specialist.
-Rewrite the resume to match the target role and job description.
+You will EDIT the candidate's existing resume text.
+Return the same resume content, improved for the target role.
 
 Rules:
 - Preserve factual accuracy from original resume.
 - Do not invent employers, dates, degrees, or certifications.
-- Improve clarity, impact, and ATS keyword alignment.
+- Keep existing section flow and overall structure from the original resume.
+- Keep original achievements, and only rewrite wording to improve clarity/impact.
+- Improve ATS keyword alignment to the job description.
 - Use concise, strong bullet points and measurable outcomes where possible.
+- If some original text is weak, rewrite it instead of deleting major information.
 
 Output MUST be valid JSON using this schema exactly:
 {
-  "regeneratedResume": string,
-  "highlights": string[]
+  "updatedResume": string,
+  "highlights": string[],
+  "changeLog": [
+    {
+      "original": string,
+      "updated": string,
+      "reason": string
+    }
+  ]
 }
 
-The regeneratedResume should include clear sections:
-1) Professional Summary
-2) Skills
-3) Experience (rewritten bullets)
-4) Education
+The updatedResume must be a full resume text, not partial snippets.
+If a section exists in the original resume, keep it in the updated resume.
 
 Target Role: ${jobTitle}
+Company: ${companyName || 'Not specified'}
 Job Description: ${jobDescription}
 
 Original Resume:
 ${rawText}
 `;
 
-      return await this.generateJson(prompt);
+      const aiResult = await this.generateJson(prompt);
+      const updatedResume =
+        typeof aiResult?.updatedResume === 'string'
+          ? aiResult.updatedResume
+          : typeof aiResult?.regeneratedResume === 'string'
+            ? aiResult.regeneratedResume
+            : '';
+
+      return {
+        regeneratedResume: updatedResume,
+        updatedResume,
+        highlights: Array.isArray(aiResult?.highlights) ? aiResult.highlights : [],
+        changeLog: Array.isArray(aiResult?.changeLog) ? aiResult.changeLog : [],
+      };
     } catch (error: any) {
       this.logger.error('Resume regeneration failed', error?.message || error);
       throw new Error('AI resume regeneration failed');

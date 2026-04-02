@@ -2,6 +2,7 @@ import { ArrowRight, CheckCircle2, Sparkles, Target } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { Button } from '@/components/ui/button';
+import { ThemeSwitcher } from '@/components/theme/ThemeSwitcher';
 
 export default function HomePage() {
   const token = useAuthStore((state) => state.token);
@@ -12,10 +13,11 @@ export default function HomePage() {
       <div className="pointer-events-none absolute -right-24 bottom-0 h-80 w-80 rounded-full bg-blue-400/30 blur-3xl" />
 
       <header className="relative z-10 mx-auto flex w-full max-w-7xl items-center justify-between rounded-2xl border border-white/70 bg-white/80 px-5 py-4 shadow-lg shadow-slate-200/50 backdrop-blur-md sm:px-7">
-        <Link to="/" className="h-11 w-40 sm:h-14 sm:w-52">
-          <img src="/logo.png" alt="HiredLens" className="h-full w-full object-contain" />
+        <Link to="/" className="h-16 w-64 sm:h-20 sm:w-80 lg:h-24 lg:w-[26rem]">
+          <img src="/logo.png" alt="HiredLens" className="h-full w-full object-contain object-left" />
         </Link>
         <div className="flex items-center gap-3">
+          <ThemeSwitcher />
           <Link to="/login">
             <Button variant="outline" className="rounded-full border-slate-300 bg-white/90">Login</Button>
           </Link>

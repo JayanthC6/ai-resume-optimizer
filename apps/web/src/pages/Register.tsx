@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useAuthStore } from '../store/authStore';
 import api from '../lib/api';
 import { useNavigate, Link } from 'react-router-dom';
@@ -6,32 +6,42 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Eye, EyeOff } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { registerSchema, type RegisterFormValues } from '@/lib/validation';
 
 export default function RegisterPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [fullName, setFullName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const setAuth = useAuthStore((state) => state.setAuth);
   const navigate = useNavigate();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<RegisterFormValues>({
+    resolver: zodResolver(registerSchema),
+    mode: 'onTouched',
+    defaultValues: { fullName: '', email: '', password: '' },
+  });
 
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleRegister = async (values: RegisterFormValues) => {
+    setSubmitError(null);
     try {
-      const { data } = await api.post('/auth/register', { email, password, fullName });
+      const { data } = await api.post('/auth/register', values);
       setAuth(data.user, data.accessToken);
       navigate('/dashboard');
     } catch (err: unknown) {
       const apiError = err as { response?: { data?: { message?: string | string[] } } };
       if (!apiError.response) {
-        alert('Cannot connect to API. Ensure backend is running on http://localhost:8000 and restart web dev server.');
+        setSubmitError('Cannot connect to API. Ensure backend is running on http://localhost:8000 and restart web dev server.');
         return;
       }
       const apiMessage = apiError.response?.data?.message;
       const message = Array.isArray(apiMessage)
         ? apiMessage.join(', ')
         : apiMessage || 'Registration failed. Please try again.';
-      alert(message);
+      setSubmitError(message);
     }
   };
 
@@ -81,17 +91,17 @@ export default function RegisterPage() {
             </p>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleRegister} className="space-y-5">
+            <form onSubmit={handleSubmit(handleRegister)} className="space-y-5" noValidate>
               <div>
                 <label className="mb-1 block text-sm font-medium text-slate-600">Full Name</label>
                 <Input
                   type="text"
                   placeholder="John Doe"
                   className="h-11 rounded-xl border-slate-200 bg-white/90 shadow-sm focus-visible:ring-cyan-500"
-                  value={fullName}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFullName(e.target.value)}
-                  required
+                  {...register('fullName')}
+                  aria-invalid={Boolean(errors.fullName)}
                 />
+                {errors.fullName ? <p className="mt-1 text-xs text-rose-600">{errors.fullName.message}</p> : null}
               </div>
 
               <div>
@@ -100,10 +110,10 @@ export default function RegisterPage() {
                   type="email"
                   placeholder="you@example.com"
                   className="h-11 rounded-xl border-slate-200 bg-white/90 shadow-sm focus-visible:ring-cyan-500"
-                  value={email}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
-                  required
+                  {...register('email')}
+                  aria-invalid={Boolean(errors.email)}
                 />
+                {errors.email ? <p className="mt-1 text-xs text-rose-600">{errors.email.message}</p> : null}
               </div>
 
               <div>
@@ -113,10 +123,8 @@ export default function RegisterPage() {
                     type={showPassword ? 'text' : 'password'}
                     placeholder="Minimum 6 characters"
                     className="h-11 rounded-xl border-slate-200 bg-white/90 pr-11 shadow-sm focus-visible:ring-cyan-500"
-                    value={password}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
-                    required
-                    minLength={6}
+                    {...register('password')}
+                    aria-invalid={Boolean(errors.password)}
                   />
                   <button
                     type="button"
@@ -127,10 +135,17 @@ export default function RegisterPage() {
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
+                {errors.password ? <p className="mt-1 text-xs text-rose-600">{errors.password.message}</p> : null}
               </div>
 
-              <Button type="submit" className="h-11 w-full rounded-xl bg-cyan-600 text-md text-white shadow-lg shadow-cyan-200 transition hover:bg-cyan-700">
-                Create Account
+              {submitError ? (
+                <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700" role="alert" aria-live="assertive">
+                  {submitError}
+                </div>
+              ) : null}
+
+              <Button type="submit" disabled={isSubmitting} className="h-11 w-full rounded-xl bg-cyan-600 text-md text-white shadow-lg shadow-cyan-200 transition hover:bg-cyan-700">
+                {isSubmitting ? 'Creating Account...' : 'Create Account'}
               </Button>
 
               <div className="text-center text-sm text-slate-500">

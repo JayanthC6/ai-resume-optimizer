@@ -32,7 +32,13 @@ export interface ResumeRegenerationRequest {
 
 export interface ResumeRegenerationResponse {
   regeneratedResume: string;
+  updatedResume?: string;
   highlights?: string[];
+  changeLog?: {
+    original: string;
+    updated: string;
+    reason: string;
+  }[];
 }
 
 export interface KeywordAnalysis {

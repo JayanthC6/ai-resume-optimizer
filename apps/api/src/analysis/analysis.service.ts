@@ -379,6 +379,7 @@ export class AnalysisService {
       resume.rawText,
       dto.jobTitle,
       dto.jobDescription,
+      dto.companyName,
     );
   }
 }

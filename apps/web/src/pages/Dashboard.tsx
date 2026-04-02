@@ -1,15 +1,16 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useAuthStore } from '../store/authStore';
 import api from '../lib/api';
-import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { Download, FileText, LogOut, Sparkles, Target, UploadCloud, WandSparkles } from 'lucide-react';
+import { Download, FileText, Sparkles, Target, UploadCloud, WandSparkles } from 'lucide-react';
 import { jsPDF } from 'jspdf';
+import { AppShell } from '@/components/layout/AppShell';
+import { ResumeCard } from '@/components/resume/ResumeCard';
 import type {
   GithubAnalyzerResult,
   InterviewQuestionSet,
@@ -291,10 +292,10 @@ export default function DashboardPage() {
 
       setRegeneratedResume(data);
       setActiveTab('rewrites');
-      showToast({ type: 'success', message: 'Regenerated resume draft is ready.' });
+      showToast({ type: 'success', message: 'Edited resume draft is ready.' });
     } catch (e) {
       console.error(e);
-      showToast({ type: 'error', message: 'Resume regeneration failed.' });
+      showToast({ type: 'error', message: 'Resume editing failed.' });
     } finally {
       setIsRegenerating(false);
     }
@@ -393,9 +394,13 @@ export default function DashboardPage() {
   }, []);
 
   const handleExportRegeneratedPdf = () => {
-    const draft = regeneratedResume?.regeneratedResume?.trim();
+    const draft = (
+      regeneratedResume?.updatedResume ||
+      regeneratedResume?.regeneratedResume ||
+      ''
+    ).trim();
     if (!draft) {
-      showToast({ type: 'error', message: 'No regenerated draft to export.' });
+      showToast({ type: 'error', message: 'No edited draft to export.' });
       return;
     }
 
@@ -409,7 +414,7 @@ export default function DashboardPage() {
 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(16);
-    doc.text('Regenerated Resume Draft', marginX, marginY);
+    doc.text('Edited Resume Draft', marginX, marginY);
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
@@ -428,8 +433,8 @@ export default function DashboardPage() {
       y += 16;
     }
 
-    doc.save(`regenerated_resume_${fileSafeTitle}.pdf`);
-    showToast({ type: 'success', message: 'Regenerated resume exported as PDF.' });
+    doc.save(`edited_resume_${fileSafeTitle}.pdf`);
+    showToast({ type: 'success', message: 'Edited resume exported as PDF.' });
   };
 
   return (
@@ -438,31 +443,12 @@ export default function DashboardPage() {
       <div className="pointer-events-none absolute -right-20 bottom-0 h-96 w-96 rounded-full bg-sky-300/25 blur-3xl" />
 
       {toast && <Toast toast={toast} />}
-      <div className="relative z-10 mx-auto w-full max-w-7xl space-y-6">
-        <header className="rounded-2xl border border-white/70 bg-white/80 p-5 shadow-lg shadow-slate-200/50 backdrop-blur-md sm:p-6">
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex items-center gap-4">
-              <Link to="/" className="block h-14 w-52 sm:h-20 sm:w-72">
-                <img src="/logo.png" alt="HiredLens" className="h-full w-full object-contain drop-shadow-sm" />
-              </Link>
-              <div className="hidden border-l border-slate-300 pl-4 sm:block">
-                <h1 className="text-2xl font-bold tracking-tight text-slate-900">Optimization Workspace</h1>
-                <p className="text-sm text-slate-500">Upload, analyze, and tailor your resume for every role</p>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between gap-4 sm:justify-end">
-              <div className="rounded-full bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-600">
-                {user?.fullName || user?.email}
-              </div>
-              <Button variant="outline" size="sm" onClick={logout} className="rounded-full border-slate-300 bg-white/90">
-                <LogOut className="h-4 w-4" />
-                Logout
-              </Button>
-            </div>
-          </div>
-        </header>
-
+      <AppShell
+        title="Optimization Workspace"
+        subtitle="Upload, analyze, and tailor your resume for every role"
+        userLabel={user?.fullName || user?.email || undefined}
+        onLogout={logout}
+      >
         <div className="grid gap-6 lg:grid-cols-2">
           <Card className="border-white/70 bg-white/85 shadow-xl shadow-slate-200/60 backdrop-blur-md">
             <CardHeader>
@@ -550,7 +536,7 @@ export default function DashboardPage() {
                 disabled={isRegenerating || !resumeId || !jobTitle || !jobDescription}
               >
                 <WandSparkles className="h-4 w-4" />
-                {isRegenerating ? 'Regenerating Resume...' : 'Regenerate Resume For This Role'}
+                {isRegenerating ? 'Editing Resume...' : 'Edit My Uploaded Resume For This Role'}
               </Button>
 
               <div className="grid gap-2 sm:grid-cols-2">
@@ -632,6 +618,15 @@ export default function DashboardPage() {
 
                   {activeTab === 'overview' && (
                     <div className="space-y-6">
+                      <ResumeCard
+                        candidateName={user?.fullName || 'Your Resume'}
+                        roleTitle={jobTitle || 'Target role pending'}
+                        matchScore={result?.matchScore}
+                        atsScore={result?.atsScore}
+                        status={status === 'done' ? ((result?.matchScore ?? 0) >= 75 ? 'ready' : 'needs-work') : 'in-progress'}
+                        updatedAtLabel={status === 'done' ? 'Updated just now' : 'Awaiting analysis'}
+                      />
+
                       <div className="grid md:grid-cols-2 gap-6">
                         <ScoreRing label="Match Score" value={result?.matchScore} />
                         <ScoreRing label="ATS Score" value={result?.atsScore} />
@@ -695,7 +690,7 @@ export default function DashboardPage() {
                   {activeTab === 'rewrites' && (
                     <div className="space-y-4">
                       <AccordionSection
-                        title="Regenerated Resume Draft"
+                        title="Edited Resume (Based On Your Uploaded File)"
                         isOpen={true}
                         onToggle={() => undefined}
                       >
@@ -704,20 +699,34 @@ export default function DashboardPage() {
                             <div className="mb-2 flex justify-end gap-3">
                               <button
                                 className="text-xs font-semibold text-sky-600 hover:underline"
-                                onClick={() => handleCopy(regeneratedResume.regeneratedResume)}
+                                onClick={() => handleCopy(regeneratedResume.updatedResume || regeneratedResume.regeneratedResume)}
                               >
-                                Copy Draft
+                                Copy Edited Resume
                               </button>
                               <button
                                 className="text-xs font-semibold text-sky-600 hover:underline"
                                 onClick={handleExportRegeneratedPdf}
                               >
-                                Export PDF
+                                Export Edited PDF
                               </button>
                             </div>
                             <div className="whitespace-pre-wrap rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm">
-                              {regeneratedResume.regeneratedResume}
+                              {regeneratedResume.updatedResume || regeneratedResume.regeneratedResume}
                             </div>
+                            {regeneratedResume.changeLog && regeneratedResume.changeLog.length > 0 && (
+                              <div className="mt-3">
+                                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Edit Log</p>
+                                <ul className="list-disc ml-6 text-sm text-slate-700 space-y-2">
+                                  {regeneratedResume.changeLog.map((item, idx) => (
+                                    <li key={idx}>
+                                      <p><span className="font-semibold">Before:</span> {item.original}</p>
+                                      <p><span className="font-semibold">After:</span> {item.updated}</p>
+                                      <p><span className="font-semibold">Why:</span> {item.reason}</p>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
                             {regeneratedResume.highlights && regeneratedResume.highlights.length > 0 && (
                               <div className="mt-3">
                                 <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Highlights</p>
@@ -730,7 +739,7 @@ export default function DashboardPage() {
                             )}
                           </div>
                         ) : (
-                          <p className="text-sm text-slate-500">Click "Regenerate Resume For This Role" to generate a full tailored draft.</p>
+                          <p className="text-sm text-slate-500">Click "Edit My Uploaded Resume For This Role" to get an updated version of the same resume.</p>
                         )}
                       </AccordionSection>
 
@@ -1013,7 +1022,7 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         </div>
-      </div>
+      </AppShell>
     </div>
   );
 }

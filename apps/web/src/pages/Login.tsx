@@ -1,27 +1,138 @@
-import React, { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAuthStore } from '../store/authStore';
 import api from '../lib/api';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Eye, EyeOff } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { loginSchema, type LoginFormValues } from '@/lib/validation';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [googleError, setGoogleError] = useState<string | null>(null);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const googleButtonRef = useRef<HTMLDivElement | null>(null);
+  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
   const setAuth = useAuthStore((state) => state.setAuth);
   const navigate = useNavigate();
+  const location = useLocation();
+  const resetSuccessMessage = (location.state as { resetSuccess?: string } | null)
+    ?.resetSuccess;
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    mode: 'onTouched',
+    defaultValues: { email: '', password: '' },
+  });
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  useEffect(() => {
+    if (!googleClientId) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const handleGoogleCredential = async (credential: string) => {
+      setGoogleError(null);
+      setGoogleLoading(true);
+      try {
+        const { data } = await api.post('/auth/google-login', { idToken: credential });
+        setAuth(data.user, data.accessToken);
+        navigate('/dashboard');
+      } catch (err: unknown) {
+        const apiError = err as { response?: { data?: { message?: string | string[] } } };
+        const apiMessage = apiError.response?.data?.message;
+        const message = Array.isArray(apiMessage)
+          ? apiMessage.join(', ')
+          : apiMessage ||
+            'Google sign-in failed. Use your password login if your account does not support Google.';
+        setGoogleError(message);
+      } finally {
+        setGoogleLoading(false);
+      }
+    };
+
+    const initGoogle = () => {
+      if (cancelled || !window.google || !googleButtonRef.current) {
+        return;
+      }
+
+      googleButtonRef.current.innerHTML = '';
+      window.google.accounts.id.initialize({
+        client_id: googleClientId,
+        callback: (response) => {
+          if (!response.credential) {
+            setGoogleError('No Google credential received. Please try again.');
+            return;
+          }
+          void handleGoogleCredential(response.credential);
+        },
+      });
+
+      window.google.accounts.id.renderButton(googleButtonRef.current, {
+        theme: 'outline',
+        size: 'large',
+        text: 'continue_with',
+        width: '320',
+        shape: 'pill',
+      });
+    };
+
+    if (window.google) {
+      initGoogle();
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const existingScript = document.querySelector(
+      'script[src="https://accounts.google.com/gsi/client"]',
+    ) as HTMLScriptElement | null;
+
+    if (existingScript) {
+      existingScript.addEventListener('load', initGoogle, { once: true });
+      return () => {
+        cancelled = true;
+        existingScript.removeEventListener('load', initGoogle);
+      };
+    }
+
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    script.onload = initGoogle;
+    script.onerror = () => {
+      setGoogleError('Unable to load Google sign-in. Please try again later.');
+    };
+    document.head.appendChild(script);
+
+    return () => {
+      cancelled = true;
+      script.onload = null;
+    };
+  }, [googleClientId, navigate, setAuth]);
+
+  const handleLogin = async (values: LoginFormValues) => {
+    setSubmitError(null);
     try {
-      const { data } = await api.post('/auth/login', { email, password });
+      const { data } = await api.post('/auth/login', values);
       setAuth(data.user, data.accessToken);
       navigate('/dashboard');
-    } catch {
-      alert('Login failed. Please check credentials.');
+    } catch (err: unknown) {
+      const apiError = err as { response?: { data?: { message?: string | string[] } } };
+      const apiMessage = apiError.response?.data?.message;
+      const message = Array.isArray(apiMessage)
+        ? apiMessage.join(', ')
+        : apiMessage || 'Login failed. Please check credentials and try again.';
+      setSubmitError(message);
     }
   };
 
@@ -71,17 +182,23 @@ export default function LoginPage() {
             </p>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleLogin} className="space-y-5">
+            <form onSubmit={handleSubmit(handleLogin)} className="space-y-5" noValidate>
+              {resetSuccessMessage ? (
+                <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700" role="status" aria-live="polite">
+                  {resetSuccessMessage}
+                </div>
+              ) : null}
+
               <div>
                 <label className="mb-1 block text-sm font-medium text-slate-600">Email</label>
                 <Input
                   type="email"
                   placeholder="you@example.com"
                   className="h-11 rounded-xl border-slate-200 bg-white/90 shadow-sm focus-visible:ring-sky-500"
-                  value={email}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
-                  required
+                  {...register('email')}
+                  aria-invalid={Boolean(errors.email)}
                 />
+                {errors.email ? <p className="mt-1 text-xs text-rose-600">{errors.email.message}</p> : null}
               </div>
 
               <div>
@@ -91,9 +208,8 @@ export default function LoginPage() {
                     type={showPassword ? 'text' : 'password'}
                     placeholder="••••••••"
                     className="h-11 rounded-xl border-slate-200 bg-white/90 pr-11 shadow-sm focus-visible:ring-sky-500"
-                    value={password}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
-                    required
+                    {...register('password')}
+                    aria-invalid={Boolean(errors.password)}
                   />
                   <button
                     type="button"
@@ -104,11 +220,57 @@ export default function LoginPage() {
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
+                {errors.password ? <p className="mt-1 text-xs text-rose-600">{errors.password.message}</p> : null}
+                <div className="mt-2 text-right">
+                  <Link to="/forgot-password" className="text-xs font-medium text-sky-700 hover:text-sky-900">
+                    Forgot password?
+                  </Link>
+                </div>
               </div>
 
-              <Button type="submit" className="h-11 w-full rounded-xl bg-sky-600 text-md text-white shadow-lg shadow-sky-200 transition hover:bg-sky-700">
-                Sign In
+              {submitError ? (
+                <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700" role="alert" aria-live="assertive">
+                  {submitError}
+                </div>
+              ) : null}
+
+              <Button type="submit" disabled={isSubmitting} className="h-11 w-full rounded-xl bg-sky-600 text-md text-white shadow-lg shadow-sky-200 transition hover:bg-sky-700">
+                {isSubmitting ? 'Signing In...' : 'Sign In'}
               </Button>
+
+              <div className="relative py-1">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-slate-200" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase tracking-[0.12em] text-slate-400">
+                  <span className="bg-white px-2">or</span>
+                </div>
+              </div>
+
+              {googleClientId ? (
+                <div className="space-y-2">
+                  <div className="flex justify-center" ref={googleButtonRef} />
+                  <p className="text-center text-xs text-slate-500">
+                    Continue with Google is available only for accounts already registered in HiredLens.
+                  </p>
+                </div>
+              ) : (
+                <p className="text-center text-xs text-slate-500">
+                  Google sign-in is currently unavailable.
+                </p>
+              )}
+
+              {googleLoading ? (
+                <p className="text-center text-xs text-slate-500" aria-live="polite">
+                  Verifying Google account...
+                </p>
+              ) : null}
+
+              {googleError ? (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800" role="alert" aria-live="polite">
+                  {googleError}
+                </div>
+              ) : null}
 
               <div className="text-center text-sm text-slate-500">
                 Don’t have an account?{' '}

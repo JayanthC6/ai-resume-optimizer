@@ -107,19 +107,35 @@ Rules:
 
 Output MUST be valid JSON using this schema exactly:
 {
-  "updatedResume": string,
-  "highlights": string[],
+  "updatedResume": {
+    "personalInfo": {
+      "name": "string", "email": "string", "phone": "string", "location": "string", "linkedin": "string", "github": "string", "portfolio": "string"
+    },
+    "summary": "string",
+    "experience": [
+      { "company": "string", "title": "string", "location": "string", "startDate": "string", "endDate": "string", "bullets": ["string"] }
+    ],
+    "education": [
+      { "institution": "string", "degree": "string", "location": "string", "startDate": "string", "endDate": "string", "gpa": "string" }
+    ],
+    "skills": [
+      { "category": "string", "items": ["string"] }
+    ],
+    "projects": [
+      { "name": "string", "description": "string", "technologies": ["string"], "link": "string" }
+    ]
+  },
+  "highlights": ["string"],
   "changeLog": [
     {
-      "original": string,
-      "updated": string,
-      "reason": string
+      "original": "string",
+      "updated": "string",
+      "reason": "string"
     }
   ]
 }
 
-The updatedResume must be a full resume text, not partial snippets.
-If a section exists in the original resume, keep it in the updated resume.
+The updatedResume must contain the full, improved CV content structured into the categories above. Do not omit any sections from the original resume.
 
 Target Role: ${jobTitle}
 Company: ${companyName || 'Not specified'}
@@ -130,12 +146,7 @@ ${rawText}
 `;
 
       const aiResult = await this.generateJson(prompt);
-      const updatedResume =
-        typeof aiResult?.updatedResume === 'string'
-          ? aiResult.updatedResume
-          : typeof aiResult?.regeneratedResume === 'string'
-            ? aiResult.regeneratedResume
-            : '';
+      const updatedResume = aiResult?.updatedResume || aiResult?.regeneratedResume || '';
 
       return {
         regeneratedResume: updatedResume,

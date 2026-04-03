@@ -30,9 +30,48 @@ export interface ResumeRegenerationRequest {
   jobDescription: string;
 }
 
+export interface StructuredResume {
+  personalInfo: {
+    name: string;
+    email: string;
+    phone: string;
+    location: string;
+    linkedin?: string;
+    github?: string;
+    portfolio?: string;
+  };
+  summary: string;
+  experience: {
+    company: string;
+    title: string;
+    location: string;
+    startDate: string;
+    endDate: string;
+    bullets: string[];
+  }[];
+  education: {
+    institution: string;
+    degree: string;
+    location?: string;
+    startDate?: string;
+    endDate?: string;
+    gpa?: string;
+  }[];
+  skills: {
+    category: string;
+    items: string[];
+  }[];
+  projects?: {
+    name: string;
+    description: string;
+    technologies: string[];
+    link?: string;
+  }[];
+}
+
 export interface ResumeRegenerationResponse {
-  regeneratedResume: string;
-  updatedResume?: string;
+  regeneratedResume: StructuredResume | string;
+  updatedResume?: StructuredResume | string;
   highlights?: string[];
   changeLog?: {
     original: string;

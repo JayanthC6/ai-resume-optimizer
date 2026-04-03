@@ -193,10 +193,17 @@ export default function DashboardPage() {
   };
 
   const handleExportRegeneratedPdf = () => {
-    const draft = (regeneratedResume?.updatedResume || regeneratedResume?.regeneratedResume || '').trim();
+    const draft = regeneratedResume?.updatedResume || regeneratedResume?.regeneratedResume || '';
     if (!draft) {
       showToast({ type: 'error', message: 'No edited draft to export.' });
       return;
+    }
+
+    let textToExport = '';
+    if (typeof draft === 'object') {
+      textToExport = JSON.stringify(draft, null, 2);
+    } else {
+      textToExport = draft.trim();
     }
 
     const doc = new jsPDF({ unit: 'pt', format: 'a4' });
@@ -214,7 +221,7 @@ export default function DashboardPage() {
     doc.setFontSize(10);
     doc.text(`Target Role: ${jobTitle || 'N/A'}`, marginX, marginY + 18);
     doc.setFontSize(11);
-    const lines = doc.splitTextToSize(draft, maxLineWidth) as string[];
+    const lines = doc.splitTextToSize(textToExport, maxLineWidth) as string[];
     let y = marginY + 42;
     for (const line of lines) {
       if (y > pageHeight - marginY) {

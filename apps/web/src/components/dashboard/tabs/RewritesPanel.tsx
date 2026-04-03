@@ -1,6 +1,9 @@
+import { useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { WandSparkles } from 'lucide-react';
-import type { OptimizationResponse, ResumeRegenerationResponse } from '@repo/types';
+import { useReactToPrint } from 'react-to-print';
+import { StructuredResumeTemplate } from '../resume/StructuredResumeTemplate';
+import type { OptimizationResponse, ResumeRegenerationResponse, StructuredResume } from '@repo/types';
 
 type Props = {
   result: OptimizationResponse;
@@ -27,6 +30,13 @@ function AccordionSection({ title, children, defaultOpen = false }: { title: str
 
 export function RewritesPanel({ result, regeneratedResume, isRegenerating, onRegenerate, onCopy, onExportPdf }: Props) {
   const draft = regeneratedResume?.updatedResume || regeneratedResume?.regeneratedResume;
+  const isStructured = typeof draft === 'object' && draft !== null;
+  const printRef = useRef<HTMLDivElement>(null);
+
+  const handlePrint = useReactToPrint({
+    contentRef: printRef,
+    documentTitle: 'Optimized_Resume',
+  });
 
   return (
     <div className="space-y-5">
@@ -54,19 +64,33 @@ export function RewritesPanel({ result, regeneratedResume, isRegenerating, onReg
       {draft && (
         <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
           <div className="mb-3 flex items-center justify-between">
-            <h3 className="font-semibold text-slate-800 dark:text-slate-200">Edited Resume Draft</h3>
+            <h3 className="font-semibold text-slate-800 dark:text-slate-200">
+              {isStructured ? 'Formatted Resume Preview' : 'Edited Resume Draft'}
+            </h3>
             <div className="flex gap-3">
-              <button className="text-xs font-semibold text-sky-600 hover:underline dark:text-sky-400" onClick={() => onCopy(draft)}>
-                Copy
-              </button>
-              <button className="text-xs font-semibold text-sky-600 hover:underline dark:text-sky-400" onClick={onExportPdf}>
-                Export PDF
+              {!isStructured && (
+                <button className="text-xs font-semibold text-sky-600 hover:underline dark:text-sky-400" onClick={() => onCopy(draft as string)}>
+                  Copy Text
+                </button>
+              )}
+              <button 
+                className="text-xs font-semibold text-sky-600 hover:underline dark:text-sky-400" 
+                onClick={isStructured ? () => handlePrint() : onExportPdf}
+              >
+                {isStructured ? 'Download PDF Document' : 'Export PDF'}
               </button>
             </div>
           </div>
-          <div className="whitespace-pre-wrap rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm leading-relaxed dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-300">
-            {draft}
-          </div>
+          
+          {isStructured ? (
+            <div className="rounded-xl border border-slate-200 bg-slate-100 p-4 dark:border-slate-700 dark:bg-slate-800 max-h-[70vh] overflow-auto">
+               <StructuredResumeTemplate data={draft as unknown as StructuredResume} ref={printRef} />
+            </div>
+          ) : (
+            <div className="whitespace-pre-wrap rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm leading-relaxed dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-300">
+              {draft as string}
+            </div>
+          )}
 
           {regeneratedResume?.changeLog && regeneratedResume.changeLog.length > 0 && (
             <div className="mt-4">

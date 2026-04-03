@@ -47,8 +47,8 @@ export default function RegisterPage() {
 
   return (
     <div className="relative min-h-screen overflow-hidden px-6 py-10 sm:px-10">
-      <div className="pointer-events-none absolute -left-24 bottom-10 h-72 w-72 rounded-full bg-sky-300/25 blur-3xl" />
-      <div className="pointer-events-none absolute -right-24 top-0 h-80 w-80 rounded-full bg-cyan-300/30 blur-3xl" />
+      <div className="pointer-events-none absolute -left-24 bottom-10 h-72 w-72 rounded-full bg-sky-300/25 blur-3xl dark:bg-sky-500/10" />
+      <div className="pointer-events-none absolute -right-24 top-0 h-80 w-80 rounded-full bg-cyan-300/30 blur-3xl dark:bg-cyan-500/10" />
 
       <div className="absolute left-6 top-6 z-10 sm:left-8 sm:top-8">
         <Link to="/" className="block h-14 w-52 sm:h-20 sm:w-72">
@@ -57,17 +57,17 @@ export default function RegisterPage() {
       </div>
 
       <div className="relative z-10 mx-auto grid w-full max-w-6xl items-center gap-10 pt-20 lg:grid-cols-2 lg:pt-10">
-        <div className="hidden rounded-3xl border border-white/70 bg-white/70 p-10 shadow-xl shadow-cyan-100/70 backdrop-blur-xl lg:block">
-          <p className="mb-4 inline-flex rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-cyan-700">
+        <div className="hidden rounded-3xl border border-white/70 bg-white/70 p-10 shadow-xl shadow-cyan-100/70 backdrop-blur-xl dark:border-slate-700/50 dark:bg-slate-900/60 dark:shadow-none lg:block">
+          <p className="mb-4 inline-flex rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-cyan-700 dark:border-cyan-800 dark:bg-cyan-950 dark:text-cyan-300">
             Your ATS Co-Pilot
           </p>
-          <h1 className="text-4xl font-bold leading-tight text-slate-900">
+          <h1 className="text-4xl font-bold leading-tight text-slate-900 dark:text-white">
             Build role-specific resumes in a single focused workspace
           </h1>
-          <p className="mt-4 text-base text-slate-600">
+          <p className="mt-4 text-base text-slate-600 dark:text-slate-400">
             Join and start optimizing with smart keyword insights, rewrite prompts, and instant scoring.
           </p>
-          <ul className="mt-7 space-y-4 text-sm text-slate-700">
+          <ul className="mt-7 space-y-4 text-sm text-slate-700 dark:text-slate-300">
             <li className="flex items-center gap-3">
               <span className="h-2.5 w-2.5 rounded-full bg-cyan-500" />
               Keyword matching plus ATS scoring
@@ -83,74 +83,74 @@ export default function RegisterPage() {
           </ul>
         </div>
 
-        <Card className="w-full border-white/80 bg-white/90 shadow-2xl shadow-slate-200/60 backdrop-blur-md lg:max-w-xl lg:justify-self-end">
+        <Card className="w-full border-white/80 bg-white/90 shadow-2xl shadow-slate-200/60 backdrop-blur-md dark:border-slate-700/50 dark:bg-slate-900/80 dark:shadow-slate-950/40 lg:max-w-xl lg:justify-self-end">
           <CardHeader className="space-y-2">
-            <CardTitle className="text-center text-3xl font-bold text-slate-900">Create account</CardTitle>
-            <p className="text-center text-sm text-slate-500">
+            <CardTitle className="text-center text-3xl font-bold text-slate-900 dark:text-white">Create account</CardTitle>
+            <p className="text-center text-sm text-slate-500 dark:text-slate-400">
               Start optimizing your resume today
             </p>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit(handleRegister)} className="space-y-5" noValidate>
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-600">Full Name</label>
+                <label className="mb-1 block text-sm font-medium text-slate-600 dark:text-slate-300">Full Name</label>
                 <Input
                   type="text"
                   placeholder="John Doe"
-                  className="h-11 rounded-xl border-slate-200 bg-white/90 shadow-sm focus-visible:ring-cyan-500"
+                  className="h-11 rounded-xl border-slate-200 bg-white/90 shadow-sm focus-visible:ring-cyan-500 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500"
                   {...register('fullName')}
                   aria-invalid={Boolean(errors.fullName)}
                 />
-                {errors.fullName ? <p className="mt-1 text-xs text-rose-600">{errors.fullName.message}</p> : null}
+                {errors.fullName ? <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">{errors.fullName.message}</p> : null}
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-600">Email</label>
+                <label className="mb-1 block text-sm font-medium text-slate-600 dark:text-slate-300">Email</label>
                 <Input
                   type="email"
                   placeholder="you@example.com"
-                  className="h-11 rounded-xl border-slate-200 bg-white/90 shadow-sm focus-visible:ring-cyan-500"
+                  className="h-11 rounded-xl border-slate-200 bg-white/90 shadow-sm focus-visible:ring-cyan-500 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500"
                   {...register('email')}
                   aria-invalid={Boolean(errors.email)}
                 />
-                {errors.email ? <p className="mt-1 text-xs text-rose-600">{errors.email.message}</p> : null}
+                {errors.email ? <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">{errors.email.message}</p> : null}
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-600">Password</label>
+                <label className="mb-1 block text-sm font-medium text-slate-600 dark:text-slate-300">Password</label>
                 <div className="relative">
                   <Input
                     type={showPassword ? 'text' : 'password'}
                     placeholder="Minimum 6 characters"
-                    className="h-11 rounded-xl border-slate-200 bg-white/90 pr-11 shadow-sm focus-visible:ring-cyan-500"
+                    className="h-11 rounded-xl border-slate-200 bg-white/90 pr-11 shadow-sm focus-visible:ring-cyan-500 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500"
                     {...register('password')}
                     aria-invalid={Boolean(errors.password)}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword((prev) => !prev)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 transition hover:text-slate-700"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 transition hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
                     aria-label={showPassword ? 'Hide password' : 'Show password'}
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
-                {errors.password ? <p className="mt-1 text-xs text-rose-600">{errors.password.message}</p> : null}
+                {errors.password ? <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">{errors.password.message}</p> : null}
               </div>
 
               {submitError ? (
-                <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700" role="alert" aria-live="assertive">
+                <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:border-rose-800 dark:bg-rose-950/50 dark:text-rose-300" role="alert" aria-live="assertive">
                   {submitError}
                 </div>
               ) : null}
 
-              <Button type="submit" disabled={isSubmitting} className="h-11 w-full rounded-xl bg-cyan-600 text-md text-white shadow-lg shadow-cyan-200 transition hover:bg-cyan-700">
+              <Button type="submit" disabled={isSubmitting} className="h-11 w-full rounded-xl bg-cyan-600 text-md font-semibold text-white shadow-lg shadow-cyan-200 transition hover:bg-cyan-700 dark:shadow-cyan-900/30">
                 {isSubmitting ? 'Creating Account...' : 'Create Account'}
               </Button>
 
-              <div className="text-center text-sm text-slate-500">
+              <div className="text-center text-sm text-slate-500 dark:text-slate-400">
                 Already have an account?{' '}
-                <Link to="/login" className="font-semibold text-cyan-700 hover:text-cyan-900">
+                <Link to="/login" className="font-semibold text-cyan-700 hover:text-cyan-900 dark:text-cyan-400 dark:hover:text-cyan-300">
                   Login
                 </Link>
               </div>

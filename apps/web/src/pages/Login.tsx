@@ -138,8 +138,8 @@ export default function LoginPage() {
 
   return (
     <div className="relative min-h-screen overflow-hidden px-6 py-10 sm:px-10">
-      <div className="pointer-events-none absolute -left-24 top-20 h-72 w-72 rounded-full bg-cyan-300/30 blur-3xl" />
-      <div className="pointer-events-none absolute -right-24 bottom-0 h-80 w-80 rounded-full bg-blue-400/30 blur-3xl" />
+      <div className="pointer-events-none absolute -left-24 top-20 h-72 w-72 rounded-full bg-cyan-300/30 blur-3xl dark:bg-cyan-500/10" />
+      <div className="pointer-events-none absolute -right-24 bottom-0 h-80 w-80 rounded-full bg-blue-400/30 blur-3xl dark:bg-blue-500/10" />
 
       <div className="absolute left-6 top-6 z-10 sm:left-8 sm:top-8">
         <Link to="/" className="block h-14 w-52 sm:h-20 sm:w-72">
@@ -148,17 +148,17 @@ export default function LoginPage() {
       </div>
 
       <div className="relative z-10 mx-auto grid w-full max-w-6xl items-center gap-10 pt-20 lg:grid-cols-2 lg:pt-10">
-        <div className="hidden rounded-3xl border border-white/70 bg-white/70 p-10 shadow-xl shadow-sky-100/70 backdrop-blur-xl lg:block">
-          <p className="mb-4 inline-flex rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-sky-700">
+        <div className="hidden rounded-3xl border border-white/70 bg-white/70 p-10 shadow-xl shadow-sky-100/70 backdrop-blur-xl dark:border-slate-700/50 dark:bg-slate-900/60 dark:shadow-none lg:block">
+          <p className="mb-4 inline-flex rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-sky-700 dark:border-sky-800 dark:bg-sky-950 dark:text-sky-300">
             Resume Intelligence
           </p>
-          <h1 className="text-4xl font-bold leading-tight text-slate-900">
+          <h1 className="text-4xl font-bold leading-tight text-slate-900 dark:text-white">
             Turn every job description into a clear interview edge
           </h1>
-          <p className="mt-4 text-base text-slate-600">
+          <p className="mt-4 text-base text-slate-600 dark:text-slate-400">
             Upload your resume, benchmark against the role, and ship targeted rewrites in one clean workflow.
           </p>
-          <ul className="mt-7 space-y-4 text-sm text-slate-700">
+          <ul className="mt-7 space-y-4 text-sm text-slate-700 dark:text-slate-300">
             <li className="flex items-center gap-3">
               <span className="h-2.5 w-2.5 rounded-full bg-sky-500" />
               ATS and match scoring in seconds
@@ -174,107 +174,107 @@ export default function LoginPage() {
           </ul>
         </div>
 
-        <Card className="w-full border-white/80 bg-white/90 shadow-2xl shadow-slate-200/60 backdrop-blur-md lg:max-w-xl lg:justify-self-end">
+        <Card className="w-full border-white/80 bg-white/90 shadow-2xl shadow-slate-200/60 backdrop-blur-md dark:border-slate-700/50 dark:bg-slate-900/80 dark:shadow-slate-950/40 lg:max-w-xl lg:justify-self-end">
           <CardHeader className="space-y-2">
-            <CardTitle className="text-center text-3xl font-bold text-slate-900">Welcome back</CardTitle>
-            <p className="text-center text-sm text-slate-500">
+            <CardTitle className="text-center text-3xl font-bold text-slate-900 dark:text-white">Welcome back</CardTitle>
+            <p className="text-center text-sm text-slate-500 dark:text-slate-400">
               Sign in to continue optimizing your resume
             </p>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit(handleLogin)} className="space-y-5" noValidate>
               {resetSuccessMessage ? (
-                <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700" role="status" aria-live="polite">
+                <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300" role="status" aria-live="polite">
                   {resetSuccessMessage}
                 </div>
               ) : null}
 
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-600">Email</label>
+                <label className="mb-1 block text-sm font-medium text-slate-600 dark:text-slate-300">Email</label>
                 <Input
                   type="email"
                   placeholder="you@example.com"
-                  className="h-11 rounded-xl border-slate-200 bg-white/90 shadow-sm focus-visible:ring-sky-500"
+                  className="h-11 rounded-xl border-slate-200 bg-white/90 shadow-sm focus-visible:ring-sky-500 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500"
                   {...register('email')}
                   aria-invalid={Boolean(errors.email)}
                 />
-                {errors.email ? <p className="mt-1 text-xs text-rose-600">{errors.email.message}</p> : null}
+                {errors.email ? <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">{errors.email.message}</p> : null}
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-600">Password</label>
+                <label className="mb-1 block text-sm font-medium text-slate-600 dark:text-slate-300">Password</label>
                 <div className="relative">
                   <Input
                     type={showPassword ? 'text' : 'password'}
                     placeholder="••••••••"
-                    className="h-11 rounded-xl border-slate-200 bg-white/90 pr-11 shadow-sm focus-visible:ring-sky-500"
+                    className="h-11 rounded-xl border-slate-200 bg-white/90 pr-11 shadow-sm focus-visible:ring-sky-500 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500"
                     {...register('password')}
                     aria-invalid={Boolean(errors.password)}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword((prev) => !prev)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 transition hover:text-slate-700"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 transition hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
                     aria-label={showPassword ? 'Hide password' : 'Show password'}
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
-                {errors.password ? <p className="mt-1 text-xs text-rose-600">{errors.password.message}</p> : null}
+                {errors.password ? <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">{errors.password.message}</p> : null}
                 <div className="mt-2 text-right">
-                  <Link to="/forgot-password" className="text-xs font-medium text-sky-700 hover:text-sky-900">
+                  <Link to="/forgot-password" className="text-xs font-medium text-sky-700 hover:text-sky-900 dark:text-sky-400 dark:hover:text-sky-300">
                     Forgot password?
                   </Link>
                 </div>
               </div>
 
               {submitError ? (
-                <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700" role="alert" aria-live="assertive">
+                <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:border-rose-800 dark:bg-rose-950/50 dark:text-rose-300" role="alert" aria-live="assertive">
                   {submitError}
                 </div>
               ) : null}
 
-              <Button type="submit" disabled={isSubmitting} className="h-11 w-full rounded-xl bg-sky-600 text-md text-white shadow-lg shadow-sky-200 transition hover:bg-sky-700">
+              <Button type="submit" disabled={isSubmitting} className="h-11 w-full rounded-xl bg-sky-600 text-md font-semibold text-white shadow-lg shadow-sky-200 transition hover:bg-sky-700 dark:shadow-sky-900/30">
                 {isSubmitting ? 'Signing In...' : 'Sign In'}
               </Button>
 
               <div className="relative py-1">
                 <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-slate-200" />
+                  <span className="w-full border-t border-slate-200 dark:border-slate-700" />
                 </div>
-                <div className="relative flex justify-center text-xs uppercase tracking-[0.12em] text-slate-400">
-                  <span className="bg-white px-2">or</span>
+                <div className="relative flex justify-center text-xs uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500">
+                  <span className="bg-white px-2 dark:bg-slate-900">or</span>
                 </div>
               </div>
 
               {googleClientId ? (
                 <div className="space-y-2">
                   <div className="flex justify-center" ref={googleButtonRef} />
-                  <p className="text-center text-xs text-slate-500">
+                  <p className="text-center text-xs text-slate-500 dark:text-slate-400">
                     Continue with Google is available only for accounts already registered in HiredLens.
                   </p>
                 </div>
               ) : (
-                <p className="text-center text-xs text-slate-500">
+                <p className="text-center text-xs text-slate-500 dark:text-slate-400">
                   Google sign-in is currently unavailable.
                 </p>
               )}
 
               {googleLoading ? (
-                <p className="text-center text-xs text-slate-500" aria-live="polite">
+                <p className="text-center text-xs text-slate-500 dark:text-slate-400" aria-live="polite">
                   Verifying Google account...
                 </p>
               ) : null}
 
               {googleError ? (
-                <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800" role="alert" aria-live="polite">
+                <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-300" role="alert" aria-live="polite">
                   {googleError}
                 </div>
               ) : null}
 
-              <div className="text-center text-sm text-slate-500">
-                Don’t have an account?{' '}
-                <Link to="/register" className="font-semibold text-sky-700 hover:text-sky-900">
+              <div className="text-center text-sm text-slate-500 dark:text-slate-400">
+                Don't have an account?{' '}
+                <Link to="/register" className="font-semibold text-sky-700 hover:text-sky-900 dark:text-sky-400 dark:hover:text-sky-300">
                   Create one
                 </Link>
               </div>

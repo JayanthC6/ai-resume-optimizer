@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { WandSparkles } from 'lucide-react';
 import { useReactToPrint } from 'react-to-print';
@@ -12,6 +12,7 @@ type Props = {
   onRegenerate: () => void;
   onCopy: (text?: string) => void;
   onExportPdf: () => void;
+  originalFile?: File | null;
 };
 
 function AccordionSection({ title, children, defaultOpen = false }: { title: string; children: React.ReactNode; defaultOpen?: boolean }) {
@@ -28,10 +29,24 @@ function AccordionSection({ title, children, defaultOpen = false }: { title: str
   );
 }
 
-export function RewritesPanel({ result, regeneratedResume, isRegenerating, onRegenerate, onCopy, onExportPdf }: Props) {
+export function RewritesPanel({ result, regeneratedResume, isRegenerating, onRegenerate, onCopy, onExportPdf, originalFile }: Props) {
   const draft = regeneratedResume?.updatedResume || regeneratedResume?.regeneratedResume;
   const isStructured = typeof draft === 'object' && draft !== null;
   const printRef = useRef<HTMLDivElement>(null);
+  
+  const [isCompareMode, setIsCompareMode] = useState(false);
+  const [originalFileUrl, setOriginalFileUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (originalFile) {
+      const url = URL.createObjectURL(originalFile);
+      setOriginalFileUrl(url);
+      return () => URL.revokeObjectURL(url);
+    } else {
+      setOriginalFileUrl(null);
+      setIsCompareMode(false);
+    }
+  }, [originalFile]);
 
   const handlePrint = useReactToPrint({
     contentRef: printRef,
@@ -65,9 +80,17 @@ export function RewritesPanel({ result, regeneratedResume, isRegenerating, onReg
         <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
           <div className="mb-3 flex items-center justify-between">
             <h3 className="font-semibold text-slate-800 dark:text-slate-200">
-              {isStructured ? 'Formatted Resume Preview' : 'Edited Resume Draft'}
+              {isStructured ? (isCompareMode ? 'Side-by-Side Comparison' : 'Formatted Resume Preview') : 'Edited Resume Draft'}
             </h3>
             <div className="flex gap-3">
+              {isStructured && originalFileUrl && (
+                <button 
+                  className="text-xs font-semibold text-emerald-600 hover:underline dark:text-emerald-400 mr-2" 
+                  onClick={() => setIsCompareMode(!isCompareMode)}
+                >
+                  {isCompareMode ? 'Exit Compare Mode' : 'Compare Side-by-Side'}
+                </button>
+              )}
               {!isStructured && (
                 <button className="text-xs font-semibold text-sky-600 hover:underline dark:text-sky-400" onClick={() => onCopy(draft as string)}>
                   Copy Text
@@ -83,9 +106,26 @@ export function RewritesPanel({ result, regeneratedResume, isRegenerating, onReg
           </div>
           
           {isStructured ? (
-            <div className="rounded-xl border border-slate-200 bg-slate-100 p-4 dark:border-slate-700 dark:bg-slate-800 max-h-[70vh] overflow-auto">
-               <StructuredResumeTemplate data={draft as unknown as StructuredResume} ref={printRef} />
-            </div>
+            isCompareMode && originalFileUrl ? (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-[75vh]">
+                 <div className="rounded-xl border border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-800 overflow-hidden h-full flex flex-col shadow-inner">
+                   <div className="bg-slate-200 dark:bg-slate-700/50 py-2.5 px-4 text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 border-b border-slate-300 dark:border-slate-700 flex justify-between items-center">
+                     Original PDF
+                   </div>
+                   <iframe src={originalFileUrl} className="w-full h-full flex-1 border-0" title="Original Resume" />
+                 </div>
+                 <div className="rounded-xl border border-sky-300 bg-slate-100 p-4 dark:border-sky-800 dark:bg-slate-800 h-full overflow-auto shadow-md">
+                   <div className="-mx-4 -mt-4 mb-4 bg-sky-100 dark:bg-sky-900/40 py-2.5 px-4 text-xs font-bold uppercase tracking-wider text-sky-700 dark:text-sky-300 border-b border-sky-200 dark:border-sky-800 flex justify-between items-center">
+                     AI Optimized Resume
+                   </div>
+                   <StructuredResumeTemplate data={draft as unknown as StructuredResume} ref={printRef} />
+                 </div>
+              </div>
+            ) : (
+              <div className="rounded-xl border border-slate-200 bg-slate-100 p-4 dark:border-slate-700 dark:bg-slate-800 max-h-[70vh] overflow-auto">
+                 <StructuredResumeTemplate data={draft as unknown as StructuredResume} ref={printRef} />
+              </div>
+            )
           ) : (
             <div className="whitespace-pre-wrap rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm leading-relaxed dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-300">
               {draft as string}

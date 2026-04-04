@@ -408,6 +408,7 @@ export default function DashboardPage() {
                   onRegenerate={handleRegenerateResume}
                   onCopy={handleCopy}
                   onExportPdf={handleExportRegeneratedPdf}
+                  originalFile={file}
                 />
               )}
 

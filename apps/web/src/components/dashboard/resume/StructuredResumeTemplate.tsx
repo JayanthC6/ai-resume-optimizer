@@ -19,8 +19,6 @@ export const StructuredResumeTemplate = forwardRef<HTMLDivElement, Props>(({ dat
         `}
       </style>
       <div ref={ref} className="p-[0.5in] print:p-[0.5in] w-full h-full text-slate-900 bg-white" style={{ fontFamily: '"Times New Roman", Times, serif', width: '8.5in' }}>
-        
-        {/* Header - Personal Info */}
         <header className="mb-4 text-center border-b-[1.5px] border-slate-800 pb-2">
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight capitalize mb-1">
             {personalInfo?.name || 'NAME NOT PROVIDED'}
@@ -72,7 +70,6 @@ export const StructuredResumeTemplate = forwardRef<HTMLDivElement, Props>(({ dat
           </div>
         </header>
 
-        {/* Professional Summary */}
         {summary && (
           <section className="mb-3 avoid-break">
             <h2 className="text-[11.5pt] font-bold text-slate-900 uppercase tracking-wider border-b-[1px] border-slate-800 mb-1.5 pb-0.5">
@@ -84,7 +81,6 @@ export const StructuredResumeTemplate = forwardRef<HTMLDivElement, Props>(({ dat
           </section>
         )}
 
-        {/* Experience */}
         {experience && experience.length > 0 && (
           <section className="mb-3">
             <h2 className="text-[11.5pt] font-bold text-slate-900 uppercase tracking-wider border-b-[1px] border-slate-800 mb-1.5 pb-0.5">
@@ -112,7 +108,6 @@ export const StructuredResumeTemplate = forwardRef<HTMLDivElement, Props>(({ dat
           </section>
         )}
 
-        {/* Projects */}
         {projects && projects.length > 0 && (
           <section className="mb-3">
             <h2 className="text-[11.5pt] font-bold text-slate-900 uppercase tracking-wider border-b-[1px] border-slate-800 mb-1.5 pb-0.5">
@@ -123,7 +118,7 @@ export const StructuredResumeTemplate = forwardRef<HTMLDivElement, Props>(({ dat
                 <div key={idx} className="avoid-break mt-1">
                   <div className="flex justify-between items-baseline mb-0.5">
                     <h3 className="text-[10.5pt] font-bold text-slate-900">
-                      {proj.name} 
+                      {proj.name}
                       {proj.link && (
                         <span className="text-[9pt] font-normal text-slate-500 ml-2">
                           | <a href={proj.link.startsWith('http') ? proj.link : `https://${proj.link}`} className="text-[#0366d6] hover:underline" target="_blank" rel="noopener noreferrer">{proj.link.replace(/^https?:\/\/(www\.)?/, '')}</a>
@@ -141,7 +136,6 @@ export const StructuredResumeTemplate = forwardRef<HTMLDivElement, Props>(({ dat
           </section>
         )}
 
-        {/* Education */}
         {education && education.length > 0 && (
           <section className="mb-3 avoid-break">
             <h2 className="text-[11.5pt] font-bold text-slate-900 uppercase tracking-wider border-b-[1px] border-slate-800 mb-1.5 pb-0.5">
@@ -164,7 +158,6 @@ export const StructuredResumeTemplate = forwardRef<HTMLDivElement, Props>(({ dat
           </section>
         )}
 
-        {/* Skills */}
         {skills && skills.length > 0 && (
           <section className="mb-3 avoid-break">
             <h2 className="text-[11.5pt] font-bold text-slate-900 uppercase tracking-wider border-b-[1px] border-slate-800 mb-1.5 pb-0.5">

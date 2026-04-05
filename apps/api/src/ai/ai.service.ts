@@ -96,20 +96,28 @@ You are an expert resume writer and ATS optimization specialist.
 You will EDIT the candidate's existing resume text.
 Return the same resume content, improved for the target role.
 
-Rules:
-- Preserve factual accuracy from original resume.
+CRITICAL RULES:
+- Preserve ALL factual information from the original resume. Do not drop any data.
+- Preserve EVERY link, profile URL, and website from the original resume. This includes LinkedIn, GitHub, LeetCode, HackerRank, portfolio, personal website, Kaggle, CodeChef, blog URLs, and any other profile links. If a link exists in the original resume, it MUST appear in personalInfo fields (linkedin, github, portfolio) or in the "additionalLinks" array.
 - Do not invent employers, dates, degrees, or certifications.
 - Keep existing section flow and overall structure from the original resume.
 - Keep original achievements, and only rewrite wording to improve clarity/impact.
 - Improve ATS keyword alignment to the job description.
 - Use concise, strong bullet points and measurable outcomes where possible.
 - If some original text is weak, rewrite it instead of deleting major information.
+- Keep the resume content CONCISE. Aim for a single-page resume:
+  - Professional summary should be 2-3 lines maximum.
+  - Each experience entry should have 2-3 bullet points maximum, not more.
+  - Each project description should be 1-2 sentences.
+  - Combine related skills into broader categories (max 4-5 skill categories).
+  - Keep bullet points short (1 line each, under 120 characters ideally).
 
 Output MUST be valid JSON using this schema exactly:
 {
   "updatedResume": {
     "personalInfo": {
-      "name": "string", "email": "string", "phone": "string", "location": "string", "linkedin": "string", "github": "string", "portfolio": "string"
+      "name": "string", "email": "string", "phone": "string", "location": "string", "linkedin": "string", "github": "string", "portfolio": "string",
+      "additionalLinks": [{ "label": "string (e.g. LeetCode, HackerRank, Kaggle)", "url": "string" }]
     },
     "summary": "string",
     "experience": [
@@ -135,7 +143,7 @@ Output MUST be valid JSON using this schema exactly:
   ]
 }
 
-The updatedResume must contain the full, improved CV content structured into the categories above. Do not omit any sections from the original resume.
+The updatedResume must contain the full, improved CV content structured into the categories above. Do not omit any sections, links, or profile URLs from the original resume. If there are links like LeetCode, HackerRank etc. that don't fit in linkedin/github/portfolio, put them in additionalLinks.
 
 Target Role: ${jobTitle}
 Company: ${companyName || 'Not specified'}

@@ -39,6 +39,7 @@ export interface StructuredResume {
     linkedin?: string;
     github?: string;
     portfolio?: string;
+    additionalLinks?: { label: string; url: string }[];
   };
   summary: string;
   experience: {

@@ -165,6 +165,28 @@ export class AnalysisService {
     return this.mapAnalysisOutput(analysis);
   }
 
+  async getUserHistory(userId: string) {
+    const analyses = await this.prisma.analysis.findMany({
+      where: { resume: { userId } },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        jobTitle: true,
+        companyName: true,
+        status: true,
+        matchScore: true,
+        atsScore: true,
+        createdAt: true,
+        resume: {
+          select: {
+            originalFilename: true,
+          }
+        }
+      }
+    });
+    return analyses;
+  }
+
   async generateSkillGapRoadmap(userId: string, dto: OptimizationRequest) {
     const rawText = await this.getResumeRawText(userId, dto.resumeId);
     return this.aiService.generateSkillGapRoadmap(

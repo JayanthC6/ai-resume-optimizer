@@ -9,10 +9,11 @@ import {
   Map,
   Menu,
   X,
+  Clock,
 } from 'lucide-react';
 import { useState } from 'react';
 
-export type TabKey = 'overview' | 'keywords' | 'rewrites' | 'roadmap' | 'interview' | 'portfolio';
+export type TabKey = 'overview' | 'keywords' | 'rewrites' | 'roadmap' | 'interview' | 'portfolio' | 'history';
 
 type SidebarItem = {
   key: TabKey;
@@ -21,6 +22,7 @@ type SidebarItem = {
 };
 
 const items: SidebarItem[] = [
+  { key: 'history', label: 'History', icon: <Clock className="h-4 w-4" /> },
   { key: 'overview', label: 'Overview', icon: <LayoutDashboard className="h-4 w-4" /> },
   { key: 'keywords', label: 'Keywords', icon: <KeyRound className="h-4 w-4" /> },
   { key: 'rewrites', label: 'Rewrites', icon: <FileEdit className="h-4 w-4" /> },

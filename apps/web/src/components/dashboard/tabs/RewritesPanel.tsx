@@ -13,6 +13,7 @@ type Props = {
   onCopy: (text?: string) => void;
   onExportPdf: () => void;
   originalFile?: File | null;
+  originalText?: string | null;
 };
 
 function AccordionSection({ title, children, defaultOpen = false }: { title: string; children: React.ReactNode; defaultOpen?: boolean }) {
@@ -29,7 +30,7 @@ function AccordionSection({ title, children, defaultOpen = false }: { title: str
   );
 }
 
-export function RewritesPanel({ result, regeneratedResume, isRegenerating, onRegenerate, onCopy, onExportPdf, originalFile }: Props) {
+export function RewritesPanel({ result, regeneratedResume, isRegenerating, onRegenerate, onCopy, onExportPdf, originalFile, originalText }: Props) {
   const draft = regeneratedResume?.updatedResume || regeneratedResume?.regeneratedResume;
   const isStructured = typeof draft === 'object' && draft !== null;
   const printRef = useRef<HTMLDivElement>(null);
@@ -44,9 +45,15 @@ export function RewritesPanel({ result, regeneratedResume, isRegenerating, onReg
       return () => URL.revokeObjectURL(url);
     } else {
       setOriginalFileUrl(null);
-      setIsCompareMode(false);
     }
   }, [originalFile]);
+
+  // If no original file but we have originalText (e.g. historical load), we can still do compare mode
+  useEffect(() => {
+    if (!originalFileUrl && !originalText) {
+      setIsCompareMode(false);
+    }
+  }, [originalFileUrl, originalText]);
 
   const handlePrint = useReactToPrint({
     contentRef: printRef,
@@ -83,7 +90,7 @@ export function RewritesPanel({ result, regeneratedResume, isRegenerating, onReg
               {isStructured ? (isCompareMode ? 'Side-by-Side Comparison' : 'Formatted Resume Preview') : 'Edited Resume Draft'}
             </h3>
             <div className="flex gap-3">
-              {isStructured && originalFileUrl && (
+              {isStructured && (originalFileUrl || originalText) && (
                 <button 
                   className="text-xs font-semibold text-emerald-600 hover:underline dark:text-emerald-400 mr-2" 
                   onClick={() => setIsCompareMode(!isCompareMode)}
@@ -106,13 +113,19 @@ export function RewritesPanel({ result, regeneratedResume, isRegenerating, onReg
           </div>
           
           {isStructured ? (
-            isCompareMode && originalFileUrl ? (
+            isCompareMode && (originalFileUrl || originalText) ? (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-[75vh]">
                  <div className="rounded-xl border border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-800 overflow-hidden h-full flex flex-col shadow-inner">
                    <div className="bg-slate-200 dark:bg-slate-700/50 py-2.5 px-4 text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 border-b border-slate-300 dark:border-slate-700 flex justify-between items-center">
-                     Original PDF
+                     {originalFileUrl ? 'Original PDF' : 'Original Extracted Text'}
                    </div>
-                   <iframe src={originalFileUrl} className="w-full h-full flex-1 border-0" title="Original Resume" />
+                   {originalFileUrl ? (
+                     <iframe src={originalFileUrl} className="w-full h-full flex-1 border-0" title="Original Resume" />
+                   ) : (
+                     <div className="w-full h-full flex-1 border-0 p-6 font-mono text-[11px] whitespace-pre-wrap overflow-y-auto text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-900/50 leading-relaxed shadow-inner">
+                       {originalText}
+                     </div>
+                   )}
                  </div>
                  <div className="rounded-xl border border-sky-300 bg-slate-100 p-4 dark:border-sky-800 dark:bg-slate-800 h-full overflow-auto shadow-md">
                    <div className="-mx-4 -mt-4 mb-4 bg-sky-100 dark:bg-sky-900/40 py-2.5 px-4 text-xs font-bold uppercase tracking-wider text-sky-700 dark:text-sky-300 border-b border-sky-200 dark:border-sky-800 flex justify-between items-center">

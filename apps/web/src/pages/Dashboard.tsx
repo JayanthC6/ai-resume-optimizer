@@ -20,6 +20,7 @@ import { RewritesPanel } from '@/components/dashboard/tabs/RewritesPanel';
 import { RoadmapPanel } from '@/components/dashboard/tabs/RoadmapPanel';
 import { InterviewPanel } from '@/components/dashboard/tabs/InterviewPanel';
 import { PortfolioPanel } from '@/components/dashboard/tabs/PortfolioPanel';
+import { HistoryPanel } from '@/components/dashboard/tabs/HistoryPanel';
 
 type ToastState = { type: 'success' | 'error'; message: string };
 
@@ -56,6 +57,7 @@ export default function DashboardPage() {
   const [jobDescription, setJobDescription] = useState(savedState?.jobDescription || '');
   const [status, setStatus] = useState<'idle' | 'uploading' | 'optimizing' | 'done'>(savedState?.status || 'idle');
   const [resumeId, setResumeId] = useState<string | null>(savedState?.resumeId || null);
+  const [originalText, setOriginalText] = useState<string | null>(savedState?.originalText || null);
 
   // Results state
   const [result, setResult] = useState<OptimizationResponse | null>(savedState?.result || null);
@@ -142,6 +144,8 @@ export default function DashboardPage() {
         jobTitle,
         jobDescription,
       });
+
+      setOriginalText(null); // Because we have the file for the iframe
 
       setResult(analysisRes);
       setSkillGapRoadmap(analysisRes.skillGapRoadmap || null);
@@ -320,6 +324,7 @@ export default function DashboardPage() {
     setInterviewQuestionSet(null);
     setGithubAnalyzer(null);
     setGithubProfileUrl('');
+    setOriginalText(null);
     setActiveTab('overview');
     setView('setup');
     setStatus('idle');
@@ -331,6 +336,33 @@ export default function DashboardPage() {
       setView('results');
     }
   }, []);
+
+  const handleSelectHistory = async (analysisId: string) => {
+    try {
+      showToast({ type: 'success', message: 'Loading past application...' });
+      const { data } = await api.get(`/analysis/${analysisId}`);
+      
+      setResumeId(data.resume.id);
+      setJobTitle(data.jobTitle);
+      setJobDescription(data.jobDescription);
+      
+      setResult(data);
+      setRegeneratedResume({ updatedResume: data.rewrites, regeneratedResume: '' });
+      setSkillGapRoadmap(data.skillGapRoadmap || null);
+      setInterviewQuestionSet(data.interviewQuestionSet || null);
+      setGithubAnalyzer(null);
+      
+      setFile(null); 
+      setOriginalText(data.resume.rawText || null);
+      setFileName(data.resume.originalFilename || 'historical_resume.pdf');
+      
+      setStatus('done');
+      setActiveTab('overview');
+      setView('results');
+    } catch (e) {
+      showToast({ type: 'error', message: 'Failed to load past application.' });
+    }
+  };
 
   // ─── RENDER ───────────────────────────────────────────────
 
@@ -380,14 +412,18 @@ export default function DashboardPage() {
 
         {/* Content */}
         <main className="mt-4 flex-1 overflow-y-auto rounded-2xl border border-white/70 bg-white/60 p-5 shadow-lg shadow-slate-200/30 backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/60 dark:shadow-none sm:p-6 lg:p-8">
-          {!result ? (
+          {!result && activeTab !== 'history' ? (
             <div className="flex h-full flex-col items-center justify-center text-slate-400 dark:text-slate-500">
               <Sparkles className="mb-3 h-8 w-8" />
               <p>No analysis results yet. Run an analysis to get started.</p>
             </div>
           ) : (
             <>
-              {activeTab === 'overview' && (
+              {activeTab === 'history' && (
+                <HistoryPanel onSelectHistory={handleSelectHistory} />
+              )}
+              
+              {activeTab === 'overview' && result && (
                 <OverviewPanel
                   result={result}
                   candidateName={user?.fullName || 'Your Resume'}
@@ -400,7 +436,7 @@ export default function DashboardPage() {
                 <KeywordsPanel keywordData={keywordData} />
               )}
 
-              {activeTab === 'rewrites' && (
+              {activeTab === 'rewrites' && result && (
                 <RewritesPanel
                   result={result}
                   regeneratedResume={regeneratedResume}
@@ -409,6 +445,7 @@ export default function DashboardPage() {
                   onCopy={handleCopy}
                   onExportPdf={handleExportRegeneratedPdf}
                   originalFile={file}
+                  originalText={originalText}
                 />
               )}
 

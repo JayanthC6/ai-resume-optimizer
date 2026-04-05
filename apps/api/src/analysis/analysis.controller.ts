@@ -83,6 +83,11 @@ export class AnalysisController {
     return this.analysisService.getTeamAnalytics(req.user.id, teamName);
   }
 
+  @Get('history')
+  async getHistory(@Request() req: any) {
+    return this.analysisService.getUserHistory(req.user.id);
+  }
+
   @Get(':id')
   async getAnalysis(@Param('id') id: string, @Request() req: any) {
     return this.analysisService.getAnalysis(req.user.id, id);

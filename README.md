@@ -92,6 +92,14 @@ GOOGLE_GEMINI_MODEL="models/gemini-2.5-flash"
 
 # Frontend Integration
 FRONTEND_URL="http://localhost:5173"
+
+# Email (SMTP)
+SMTP_HOST="smtp.example.com"
+SMTP_PORT="587"
+SMTP_SECURE="false"
+SMTP_USER="smtp_user"
+SMTP_PASS="smtp_password"
+SMTP_FROM="HiredLens <no-reply@yourdomain.com>"
 ~~~
 
 Important:

@@ -2,7 +2,7 @@ import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
 
 const defaultBaseUrl = import.meta.env.DEV
-  ? 'http://localhost:3000'
+  ? 'http://localhost:8000'
   : 'http://localhost:8000';
 
 const resolvedBaseUrl = (import.meta.env.VITE_API_URL || defaultBaseUrl).replace(/\/$/, '');

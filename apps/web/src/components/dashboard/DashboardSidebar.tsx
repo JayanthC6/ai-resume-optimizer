@@ -10,10 +10,11 @@ import {
   Menu,
   X,
   Clock,
+  Mic,
 } from 'lucide-react';
 import { useState } from 'react';
 
-export type TabKey = 'overview' | 'keywords' | 'rewrites' | 'roadmap' | 'interview' | 'portfolio' | 'history';
+export type TabKey = 'overview' | 'keywords' | 'rewrites' | 'roadmap' | 'interview' | 'portfolio' | 'history' | 'mock-interview';
 
 type SidebarItem = {
   key: TabKey;
@@ -27,7 +28,8 @@ const items: SidebarItem[] = [
   { key: 'keywords', label: 'Keywords', icon: <KeyRound className="h-4 w-4" /> },
   { key: 'rewrites', label: 'Rewrites', icon: <FileEdit className="h-4 w-4" /> },
   { key: 'roadmap', label: 'Roadmap', icon: <Map className="h-4 w-4" /> },
-  { key: 'interview', label: 'Interview', icon: <BookOpen className="h-4 w-4" /> },
+  { key: 'interview', label: 'Q&A Prep', icon: <BookOpen className="h-4 w-4" /> },
+  { key: 'mock-interview', label: 'Mock Interview', icon: <Mic className="h-4 w-4" /> },
   { key: 'portfolio', label: 'Portfolio', icon: <Github className="h-4 w-4" /> },
 ];
 

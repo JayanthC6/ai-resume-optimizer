@@ -174,3 +174,58 @@ export interface OptimizationResponse {
   githubAnalyzer?: GithubAnalyzerResult;
   status: 'pending' | 'processing' | 'completed' | 'failed';
 }
+
+export interface InterviewMessage {
+  id: string;
+  sessionId: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  createdAt: Date | string;
+}
+
+export interface InterviewEvaluation {
+  overall_score: number;
+  technical_score: number;
+  communication_score: number;
+  core_strengths: string[];
+  areas_for_improvement: string[];
+}
+
+export interface InterviewSession {
+  id: string;
+  userId: string;
+  resumeId: string;
+  jobTitle: string;
+  companyName?: string;
+  jobDescription: string;
+  mode: 'Behavioral' | 'Technical' | 'Mixed';
+  language?: string;
+  status: 'active' | 'completed' | 'failed';
+  overallScore?: number;
+  technicalScore?: number;
+  communicationScore?: number;
+  report?: InterviewEvaluation;
+  messages?: InterviewMessage[];
+  createdAt: Date | string;
+  updatedAt: Date | string;
+}
+
+export interface InterviewStartRequest {
+  resumeId: string;
+  jobTitle: string;
+  jobDescription: string;
+  mode: 'Behavioral' | 'Technical' | 'Mixed';
+  language?: string;
+}
+
+export interface InterviewChatRequest {
+  sessionId: string;
+  message: string;
+}
+
+export interface InterviewResponse {
+  sessionId: string;
+  message: InterviewMessage;
+  status: 'active' | 'completed';
+  evaluation?: InterviewEvaluation;
+}

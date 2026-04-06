@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useAuthStore } from '../store/authStore';
 import api from '../lib/api';
 import { jsPDF } from 'jspdf';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, AlertCircle } from 'lucide-react';
 import type {
   GithubAnalyzerResult,
   InterviewQuestionSet,
@@ -19,6 +19,7 @@ import { KeywordsPanel } from '@/components/dashboard/tabs/KeywordsPanel';
 import { RewritesPanel } from '@/components/dashboard/tabs/RewritesPanel';
 import { RoadmapPanel } from '@/components/dashboard/tabs/RoadmapPanel';
 import { InterviewPanel } from '@/components/dashboard/tabs/InterviewPanel';
+import { InterviewBotPanel } from '@/components/dashboard/tabs/interview/InterviewBotPanel';
 import { PortfolioPanel } from '@/components/dashboard/tabs/PortfolioPanel';
 import { HistoryPanel } from '@/components/dashboard/tabs/HistoryPanel';
 
@@ -463,6 +464,22 @@ export default function DashboardPage() {
                   isGenerating={isGeneratingInterview}
                   onGenerate={handleGenerateInterviewQuestions}
                 />
+              )}
+
+              {activeTab === 'mock-interview' && (
+                resumeId ? (
+                  <InterviewBotPanel
+                    resumeId={resumeId}
+                    jobTitle={jobTitle}
+                    jobDescription={jobDescription}
+                  />
+                ) : (
+                  <div className="flex h-full flex-col items-center justify-center text-slate-400 dark:text-slate-500">
+                    <AlertCircle className="mb-3 h-8 w-8 text-amber-500" />
+                    <p className="text-lg font-medium text-slate-200">Interview Setup Required</p>
+                    <p className="text-sm">Please upload your resume and enter the target job details in the Setup view first.</p>
+                  </div>
+                )
               )}
 
               {activeTab === 'portfolio' && (

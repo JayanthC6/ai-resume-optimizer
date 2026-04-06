@@ -7,6 +7,7 @@ import { AuthModule } from './auth/auth.module';
 import { ResumeModule } from './resume/resume.module';
 import { AiModule } from './ai/ai.module';
 import { AnalysisModule } from './analysis/analysis.module';
+import { InterviewModule } from './interview/interview.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { AnalysisModule } from './analysis/analysis.module';
     ResumeModule,
     AiModule,
     AnalysisModule,
+    InterviewModule,
   ],
   controllers: [AppController],
   providers: [AppService],

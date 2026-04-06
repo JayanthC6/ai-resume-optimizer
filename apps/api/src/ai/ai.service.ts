@@ -272,4 +272,80 @@ GitHub Account Context: ${githubContext}
       throw new Error('AI github analyzer generation failed');
     }
   }
+
+  async generateInterviewResponse(
+    history: { role: string; content: string }[],
+    resumeText: string,
+    jobDescription: string,
+    role: string,
+    mode: string,
+    language?: string,
+  ) {
+    try {
+      const systemPrompt = `
+You are a Senior Hiring Manager conducting a mock interview for the position of ${role}.
+Target Mode: ${mode}
+${language ? `Preferred Coding Language: ${language}` : ''}
+
+CONTEXT:
+JD: ${jobDescription}
+Resume: ${resumeText}
+
+INTERVIEW PROTOCOL:
+1. Start with behavioral questions, then move to technical.
+2. Ask exactly ONE question at a time.
+3. Scalability: Scale complexity based on previous answers.
+4. Adaptive Probing: If an answer is weak or wrong, ask a follow-up to probe their understanding instead of giving the answer.
+5. In Technical mode/Mixed mode: You MUST include at least one Multiple Choice Question (MCQ) and one coding-related query during the session.
+
+Output MUST be valid JSON:
+{
+  "question": "string (the actual question or follow-up)"
+}
+
+CHAT HISTORY:
+${JSON.stringify(history)}
+`;
+
+      const result = await this.generateJson(systemPrompt);
+      return result.question;
+    } catch (error: any) {
+      this.logger.error('Interview chat failed', error?.message || error);
+      throw new Error('AI interview response failed');
+    }
+  }
+
+  async evaluateInterview(
+    history: { role: string; content: string }[],
+    resumeText: string,
+    jobDescription: string,
+    role: string,
+  ) {
+    try {
+      const prompt = `
+You are a Senior Hiring Manager evaluating a completed mock interview.
+Analyze the following transcript against the JD and Resume.
+
+JD: ${jobDescription}
+Resume: ${resumeText}
+
+TRANSCRIPT:
+${JSON.stringify(history)}
+
+Output MUST be valid JSON matching this schema exactly:
+{
+  "overall_score": number (0-100),
+  "technical_score": number (0-100),
+  "communication_score": number (0-100),
+  "core_strengths": string[],
+  "areas_for_improvement": string[]
+}
+`;
+
+      return await this.generateJson(prompt);
+    } catch (error: any) {
+      this.logger.error('Interview evaluation failed', error?.message || error);
+      throw new Error('AI interview evaluation failed');
+    }
+  }
 }

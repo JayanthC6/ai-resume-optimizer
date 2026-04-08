@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { jsPDF } from 'jspdf';
 import { 
   CheckCircle2, 
   XCircle, 
@@ -9,18 +10,64 @@ import {
   Zap,
   Download
 } from 'lucide-react';
-import type { InterviewEvaluation } from '@repo/types';
+import type { InterviewEvaluation, InterviewSession } from '@repo/types';
 
 interface Props {
   evaluation: InterviewEvaluation;
+  session: InterviewSession;
   onRestart: () => void;
 }
 
-export function InterviewResults({ evaluation, onRestart }: Props) {
+export function InterviewResults({ evaluation, onRestart, session }: Props) {
   const getStrokeDashOffset = (score: number) => {
     const radius = 36;
     const circumference = 2 * Math.PI * radius;
     return circumference - (score / 100) * circumference;
+  };
+
+  const handleDownloadReport = () => {
+    const doc = new jsPDF();
+    let y = 16;
+
+    doc.setFontSize(16);
+    doc.text('HiredLens Mock Interview Report', 14, y);
+    y += 10;
+
+    doc.setFontSize(11);
+    doc.text(`Role: ${session.jobTitle}`, 14, y);
+    y += 7;
+    doc.text(`Mode: ${session.mode}`, 14, y);
+    y += 10;
+
+    doc.text(`Overall Score: ${evaluation.overall_score}/100`, 14, y);
+    y += 7;
+    doc.text(`Technical Score: ${evaluation.technical_score}/100`, 14, y);
+    y += 7;
+    doc.text(`Communication Score: ${evaluation.communication_score}/100`, 14, y);
+    y += 10;
+
+    doc.setFontSize(12);
+    doc.text('Core Strengths', 14, y);
+    y += 7;
+    doc.setFontSize(10);
+    evaluation.core_strengths.forEach((s) => {
+      const lines = doc.splitTextToSize(`- ${s}`, 180);
+      doc.text(lines, 14, y);
+      y += lines.length * 5;
+    });
+
+    y += 5;
+    doc.setFontSize(12);
+    doc.text('Areas For Improvement', 14, y);
+    y += 7;
+    doc.setFontSize(10);
+    evaluation.areas_for_improvement.forEach((s) => {
+      const lines = doc.splitTextToSize(`- ${s}`, 180);
+      doc.text(lines, 14, y);
+      y += lines.length * 5;
+    });
+
+    doc.save(`interview-report-${session.id}.pdf`);
   };
 
   return (
@@ -130,6 +177,7 @@ export function InterviewResults({ evaluation, onRestart }: Props) {
         </Button>
         <Button 
           size="lg"
+          onClick={handleDownloadReport}
           className="w-full sm:w-auto px-10 py-6 rounded-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold shadow-lg shadow-cyan-900/20 transition-all hover:scale-105 active:scale-95"
         >
           Download PDF Report <Download className="h-5 w-5 ml-2" />

@@ -12,18 +12,11 @@ export class AiService {
 
   constructor() {}
 
-  private getJsonModel() {
+  private getJsonModel(modelName: string) {
     const apiKey = process.env.GOOGLE_API_KEY || '';
     if (!apiKey) {
       throw new Error(
         'Missing GOOGLE_API_KEY. Please set it in your environment.',
-      );
-    }
-
-    const modelName = process.env.GOOGLE_GEMINI_MODEL;
-    if (!modelName) {
-      throw new Error(
-        'Missing GOOGLE_GEMINI_MODEL. Set it to a valid Gemini model name returned by the ListModels API.',
       );
     }
 
@@ -34,10 +27,114 @@ export class AiService {
     });
   }
 
+  private getModelCandidates() {
+    const primary = process.env.GOOGLE_GEMINI_MODEL;
+    if (!primary) {
+      throw new Error(
+        'Missing GOOGLE_GEMINI_MODEL. Set it to a valid Gemini model name returned by the ListModels API.',
+      );
+    }
+
+    const fallbackRaw =
+      process.env.GOOGLE_GEMINI_FALLBACK_MODELS ||
+      'models/gemini-2.0-flash,models/gemini-1.5-flash';
+    const fallbacks = fallbackRaw
+      .split(',')
+      .map((m) => m.trim())
+      .filter(Boolean);
+
+    return [primary, ...fallbacks].filter(
+      (model, idx, arr) => arr.indexOf(model) === idx,
+    );
+  }
+
   private async generateJson(prompt: string) {
-    const model = this.getJsonModel();
-    const result = await model.generateContent(prompt);
-    return JSON.parse(result.response.text());
+    const maxAttempts = 4;
+    const models = this.getModelCandidates();
+    let lastError: unknown;
+
+    for (const modelName of models) {
+      const model = this.getJsonModel(modelName);
+
+      for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+        try {
+          const result = await model.generateContent(prompt);
+          if (modelName !== models[0]) {
+            this.logger.warn(`AI call succeeded using fallback model: ${modelName}`);
+          }
+          return JSON.parse(result.response.text());
+        } catch (error: any) {
+          lastError = error;
+          const message = String(error?.message || error || 'Unknown AI error');
+
+          if (this.isPermanentQuotaExhaustion(message)) {
+            throw new Error(
+              'Gemini API quota exhausted for this key. Please use a different GOOGLE_API_KEY or wait for quota reset.',
+            );
+          }
+
+          const transient = this.isTransientAiError(message);
+          const isLastAttempt = attempt === maxAttempts;
+
+          if (!transient) {
+            throw error;
+          }
+
+          if (isLastAttempt) {
+            this.logger.warn(
+              `AI model ${modelName} exhausted retries (${maxAttempts}/${maxAttempts}).`,
+            );
+            break;
+          }
+
+          const computedDelayMs = 700 * attempt + Math.floor(Math.random() * 250);
+          const suggestedDelayMs = this.extractRetryDelayMs(message);
+          const delayMs = Math.min(20000, Math.max(computedDelayMs, suggestedDelayMs));
+          this.logger.warn(
+            `AI call transient failure on ${modelName} (attempt ${attempt}/${maxAttempts}): ${message}. Retrying in ${delayMs}ms`,
+          );
+          await new Promise((resolve) => setTimeout(resolve, delayMs));
+        }
+      }
+    }
+
+    throw lastError || new Error('AI request failed after retries and model fallbacks');
+  }
+
+  private isTransientAiError(message: string) {
+    const normalized = message.toLowerCase();
+    return (
+      normalized.includes('503') ||
+      normalized.includes('service unavailable') ||
+      normalized.includes('429') ||
+      normalized.includes('resource_exhausted') ||
+      normalized.includes('quota') ||
+      normalized.includes('timeout')
+    );
+  }
+
+  private isPermanentQuotaExhaustion(message: string) {
+    const normalized = message.toLowerCase();
+    return (
+      normalized.includes('quota exceeded') &&
+      (normalized.includes('perday') || normalized.includes('limit: 0'))
+    );
+  }
+
+  private extractRetryDelayMs(message: string) {
+    const lower = message.toLowerCase();
+
+    const retryInMatch = lower.match(/retry in\s+([0-9]+(?:\.[0-9]+)?)s/);
+    if (retryInMatch?.[1]) {
+      return Math.round(Number(retryInMatch[1]) * 1000);
+    }
+
+    const retryDelayMatch = lower.match(/"retrydelay"\s*:\s*"([0-9]+)s"/);
+    if (retryDelayMatch?.[1]) {
+      return Number(retryDelayMatch[1]) * 1000;
+    }
+
+    return 0;
   }
 
   async optimizeResume(rawText: string, jobDescription: string) {
@@ -79,8 +176,9 @@ export class AiService {
 
       return await this.generateJson(prompt);
     } catch (error: any) {
-      this.logger.error('Optimization failed', error?.message || error);
-      throw new Error('AI processing failed');
+      const message = String(error?.message || error || 'Unknown AI error');
+      this.logger.error('Optimization failed', message);
+      throw new Error(`AI processing failed: ${message}`);
     }
   }
 
@@ -346,6 +444,194 @@ Output MUST be valid JSON matching this schema exactly:
     } catch (error: any) {
       this.logger.error('Interview evaluation failed', error?.message || error);
       throw new Error('AI interview evaluation failed');
+    }
+  }
+
+  async recommendInterviewDuration(
+    resumeText: string,
+    jobDescription: string,
+    role: string,
+    mode: string,
+  ) {
+    try {
+      const prompt = `
+You are an interview prep coach.
+Recommend the ideal mock interview duration for this user so they can reach around 85-90% readiness for a real face-to-face interview.
+
+Inputs:
+- Role: ${role}
+- Interview mode: ${mode}
+- JD: ${jobDescription}
+- Resume: ${resumeText}
+
+Output MUST be valid JSON exactly:
+{
+  "recommended_minutes": number,
+  "rationale": string,
+  "confidence": "low" | "medium" | "high"
+}
+
+Constraints:
+- recommended_minutes must be between 15 and 90
+- rationale must be short and actionable (max 2 sentences)
+`;
+
+      const result = await this.generateJson(prompt);
+      const minutes = Math.max(
+        15,
+        Math.min(90, Number(result?.recommended_minutes) || 30),
+      );
+
+      return {
+        recommended_minutes: minutes,
+        rationale:
+          typeof result?.rationale === 'string'
+            ? result.rationale
+            : 'Based on your JD and resume depth, this duration balances coverage and realism.',
+        confidence:
+          result?.confidence === 'low' ||
+          result?.confidence === 'medium' ||
+          result?.confidence === 'high'
+            ? result.confidence
+            : 'medium',
+      };
+    } catch (error: any) {
+      this.logger.error(
+        'Interview duration recommendation failed',
+        error?.message || error,
+      );
+      return {
+        recommended_minutes: mode === 'Technical' ? 45 : mode === 'Mixed' ? 50 : 30,
+        rationale:
+          'This default duration gives enough time to cover behavioral and technical depth for interview readiness.',
+        confidence: 'medium',
+      };
+    }
+  }
+
+  async generateCodingPracticeQuestions(
+    resumeText: string,
+    jobDescription: string,
+    role: string,
+    language: string,
+  ) {
+    try {
+      const prompt = `
+You are a senior interviewer preparing coding practice for a candidate.
+Generate 3 coding questions likely to be asked for this role and JD.
+
+Role: ${role}
+Language: ${language}
+JD: ${jobDescription}
+Resume: ${resumeText}
+
+Output MUST be valid JSON exactly:
+{
+  "questions": [
+    {
+      "title": string,
+      "difficulty": "easy" | "medium" | "hard",
+      "prompt": string,
+      "expected_topics": string[]
+    }
+  ]
+}
+`;
+
+      const result = await this.generateJson(prompt);
+      const questions = Array.isArray(result?.questions) ? result.questions : [];
+
+      return {
+        questions: questions
+          .slice(0, 3)
+          .map((q: any, idx: number) => ({
+            title:
+              typeof q?.title === 'string' && q.title.trim().length > 0
+                ? q.title
+                : `Coding Challenge ${idx + 1}`,
+            difficulty:
+              q?.difficulty === 'easy' || q?.difficulty === 'medium' || q?.difficulty === 'hard'
+                ? q.difficulty
+                : idx === 0
+                  ? 'easy'
+                  : idx === 1
+                    ? 'medium'
+                    : 'hard',
+            prompt:
+              typeof q?.prompt === 'string' && q.prompt.trim().length > 0
+                ? q.prompt
+                : 'Implement a solution for a role-relevant problem and explain trade-offs.',
+            expected_topics: Array.isArray(q?.expected_topics)
+              ? q.expected_topics.filter((t: unknown) => typeof t === 'string')
+              : [],
+          })),
+      };
+    } catch (error: any) {
+      this.logger.error(
+        'Coding practice generation failed',
+        error?.message || error,
+      );
+      return {
+        questions: [
+          {
+            title: 'Array Transform Challenge',
+            difficulty: 'easy',
+            prompt:
+              'Given an array of transactions, return the top 3 users by total spend. Discuss time complexity.',
+            expected_topics: ['arrays', 'sorting', 'hash maps'],
+          },
+        ],
+      };
+    }
+  }
+
+  async evaluateCodingSubmission(
+    question: string,
+    code: string,
+    language: string,
+  ) {
+    try {
+      const prompt = `
+You are a coding interviewer. Evaluate the submitted solution.
+
+Question:
+${question}
+
+Language: ${language}
+
+Candidate code:
+${code}
+
+Output MUST be valid JSON exactly:
+{
+  "score": number,
+  "feedback": string,
+  "strengths": string[],
+  "improvements": string[]
+}
+
+Constraints:
+- score must be 0 to 100
+- feedback max 3 concise sentences
+`;
+
+      const result = await this.generateJson(prompt);
+      return {
+        score: Math.max(0, Math.min(100, Number(result?.score) || 0)),
+        feedback:
+          typeof result?.feedback === 'string'
+            ? result.feedback
+            : 'Your solution is partially correct. Improve edge case handling and complexity explanation.',
+        strengths: Array.isArray(result?.strengths)
+          ? result.strengths.filter((s: unknown) => typeof s === 'string')
+          : [],
+        improvements: Array.isArray(result?.improvements)
+          ? result.improvements.filter((s: unknown) => typeof s === 'string')
+          : [],
+      };
+    } catch (error: any) {
+      this.logger.error('Coding evaluation failed', error?.message || error);
+      throw new Error('AI coding evaluation failed');
     }
   }
 }

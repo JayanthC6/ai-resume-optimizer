@@ -5,6 +5,9 @@ import { InterviewResults } from './InterviewResults';
 import type { 
   InterviewSession, 
   InterviewMessage, 
+  InterviewDurationRecommendation,
+  CodingPracticeSet,
+  CodingEvaluation,
 } from '@repo/types';
 import api from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
@@ -24,9 +27,34 @@ export function InterviewBotPanel({ resumeId, jobTitle, jobDescription }: Props)
   const [messages, setMessages] = useState<InterviewMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
-  const [config, setConfig] = useState<{ mode: string; language: string; voiceEnabled: boolean } | null>(null);
+  const [config, setConfig] = useState<{ mode: string; language: string; voiceEnabled: boolean; durationMinutes: number } | null>(null);
+  const [recommendation, setRecommendation] = useState<InterviewDurationRecommendation | null>(null);
+  const [recommendationLoading, setRecommendationLoading] = useState(false);
 
-  const handleStart = async (setupConfig: { mode: string; language: string; voiceEnabled: boolean }) => {
+  const handleGetRecommendation = async (payload: { mode: string; language: string }) => {
+    setRecommendationLoading(true);
+    try {
+      const { data } = await api.post('/analysis/interview-bot/recommend-duration', {
+        resumeId,
+        jobTitle,
+        jobDescription,
+        mode: payload.mode,
+        language: payload.language,
+      });
+      setRecommendation(data);
+    } catch (err) {
+      console.error(err);
+      toast({
+        title: 'Recommendation unavailable',
+        description: 'Could not generate a duration recommendation right now.',
+        variant: 'destructive',
+      });
+    } finally {
+      setRecommendationLoading(false);
+    }
+  };
+
+  const handleStart = async (setupConfig: { mode: string; language: string; voiceEnabled: boolean; durationMinutes: number }) => {
     setLoading(true);
     setConfig(setupConfig);
     try {
@@ -36,6 +64,7 @@ export function InterviewBotPanel({ resumeId, jobTitle, jobDescription }: Props)
         jobDescription,
         mode: setupConfig.mode,
         language: setupConfig.language,
+        durationMinutes: setupConfig.durationMinutes,
       });
       setSession(data.session);
       setMessages([data.message]);
@@ -50,6 +79,24 @@ export function InterviewBotPanel({ resumeId, jobTitle, jobDescription }: Props)
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleGenerateCodingQuestions = async (): Promise<CodingPracticeSet> => {
+    if (!session) return { questions: [] };
+    const { data } = await api.post(`/analysis/interview-bot/coding/${session.id}/questions`);
+    return data;
+  };
+
+  const handleEvaluateCode = async (question: string, code: string): Promise<CodingEvaluation> => {
+    if (!session) {
+      throw new Error('Session not found');
+    }
+    const { data } = await api.post(`/analysis/interview-bot/coding/${session.id}/evaluate`, {
+      question,
+      code,
+      language: config?.language || 'JavaScript',
+    });
+    return data;
   };
 
   const handleSendMessage = async (content: string) => {
@@ -103,6 +150,9 @@ export function InterviewBotPanel({ resumeId, jobTitle, jobDescription }: Props)
       {view === 'setup' && (
         <InterviewSetupPanel 
           onStart={handleStart} 
+          onGetRecommendation={handleGetRecommendation}
+          recommendation={recommendation}
+          recommendationLoading={recommendationLoading}
           isLoading={loading} 
         />
       )}
@@ -120,6 +170,10 @@ export function InterviewBotPanel({ resumeId, jobTitle, jobDescription }: Props)
              jobDescription: session.jobDescription
            }}
            language={config.language}
+           durationMinutes={config.durationMinutes}
+           sessionId={session.id}
+           onGenerateCodingQuestions={handleGenerateCodingQuestions}
+           onEvaluateCode={handleEvaluateCode}
         />
       )}
 
@@ -140,6 +194,7 @@ export function InterviewBotPanel({ resumeId, jobTitle, jobDescription }: Props)
         ) : (
             session?.report && (
                 <InterviewResults 
+                  session={session}
                   evaluation={session.report as any} 
                   onRestart={() => setView('setup')}
                 />

@@ -158,7 +158,12 @@ export default function DashboardPage() {
       showToast({ type: 'success', message: 'Analysis completed successfully!' });
     } catch (e) {
       console.error(e);
-      showToast({ type: 'error', message: 'Optimization failed. Check logs.' });
+      const apiError = e as { response?: { data?: { message?: string | string[] } } };
+      const apiMessage = apiError.response?.data?.message;
+      const message = Array.isArray(apiMessage)
+        ? apiMessage.join(', ')
+        : apiMessage || 'Optimization failed. Please try again.';
+      showToast({ type: 'error', message });
       setStatus('idle');
     }
   };

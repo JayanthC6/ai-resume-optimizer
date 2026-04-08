@@ -89,6 +89,7 @@ AUTH_EXPIRATION="7d"
 # AI
 GOOGLE_API_KEY="your_google_api_key"
 GOOGLE_GEMINI_MODEL="models/gemini-2.5-flash"
+GOOGLE_GEMINI_FALLBACK_MODELS="models/gemini-2.0-flash,models/gemini-1.5-flash"
 
 # Frontend Integration
 FRONTEND_URL="http://localhost:5173"
@@ -270,6 +271,7 @@ npx prisma migrate dev --schema packages/database/prisma/schema.prisma
 
 - Check GOOGLE_API_KEY is valid.
 - Check GOOGLE_GEMINI_MODEL is set to a model available in your account.
+- Optionally set GOOGLE_GEMINI_FALLBACK_MODELS (comma-separated) so the app can fail over during temporary model overload.
 - Confirm outbound network access to Google API.
 
 ### JWT/auth issues
@@ -291,7 +293,8 @@ npx prisma migrate dev --schema packages/database/prisma/schema.prisma
 - Add centralized logging and monitoring.
 - Harden secret management and CI/CD deployment config.
 
-## License
+## License 
+#Docker run command(docker compose up --build -d  )
 
 No license file is currently defined in this repository.
 Add a LICENSE file before public distribution.

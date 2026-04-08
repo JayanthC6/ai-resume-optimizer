@@ -216,6 +216,7 @@ export interface InterviewStartRequest {
   jobDescription: string;
   mode: 'Behavioral' | 'Technical' | 'Mixed';
   language?: string;
+  durationMinutes?: number;
 }
 
 export interface InterviewChatRequest {
@@ -228,4 +229,28 @@ export interface InterviewResponse {
   message: InterviewMessage;
   status: 'active' | 'completed';
   evaluation?: InterviewEvaluation;
+}
+
+export interface InterviewDurationRecommendation {
+  recommended_minutes: number;
+  rationale: string;
+  confidence: 'low' | 'medium' | 'high';
+}
+
+export interface CodingPracticeQuestion {
+  title: string;
+  difficulty: 'easy' | 'medium' | 'hard';
+  prompt: string;
+  expected_topics: string[];
+}
+
+export interface CodingPracticeSet {
+  questions: CodingPracticeQuestion[];
+}
+
+export interface CodingEvaluation {
+  score: number;
+  feedback: string;
+  strengths: string[];
+  improvements: string[];
 }

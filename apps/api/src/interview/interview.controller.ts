@@ -27,6 +27,12 @@ class InterviewChatDto implements InterviewChatRequest {
   message!: string;
 }
 
+class CodingEvaluationDto {
+  question!: string;
+  code!: string;
+  language!: string;
+}
+
 @Controller('analysis/interview-bot')
 @UseGuards(JwtAuthGuard)
 export class InterviewController {
@@ -40,6 +46,31 @@ export class InterviewController {
   @Post('chat')
   chat(@Req() req: any, @Body() data: InterviewChatDto) {
     return this.interviewService.chat(req.user.id, data);
+  }
+
+  @Post('recommend-duration')
+  recommendDuration(@Req() req: any, @Body() data: InterviewStartDto) {
+    return this.interviewService.recommendDuration(req.user.id, data);
+  }
+
+  @Post('coding/:id/questions')
+  codingQuestions(@Req() req: any, @Param('id') id: string) {
+    return this.interviewService.generateCodingPractice(req.user.id, id);
+  }
+
+  @Post('coding/:id/evaluate')
+  evaluateCoding(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Body() data: CodingEvaluationDto,
+  ) {
+    return this.interviewService.evaluateCodingPractice(
+      req.user.id,
+      id,
+      data.question,
+      data.code,
+      data.language,
+    );
   }
 
   @Post('end/:id')

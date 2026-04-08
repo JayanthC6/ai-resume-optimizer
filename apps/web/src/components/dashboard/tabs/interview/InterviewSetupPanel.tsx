@@ -4,10 +4,14 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Mic, MessageSquare, Play, Code2, Briefcase } from 'lucide-react';
+import { Mic, MessageSquare, Play, Code2, Briefcase, Clock3, Sparkles } from 'lucide-react';
+import type { InterviewDurationRecommendation } from '@repo/types';
 
 interface Props {
-  onStart: (config: { mode: string; language: string; voiceEnabled: boolean }) => void;
+  onStart: (config: { mode: string; language: string; voiceEnabled: boolean; durationMinutes: number }) => void;
+  onGetRecommendation: (payload: { mode: string; language: string }) => Promise<void>;
+  recommendation: InterviewDurationRecommendation | null;
+  recommendationLoading?: boolean;
   isLoading?: boolean;
 }
 
@@ -21,10 +25,17 @@ const LANGUAGES = [
   'JavaScript', 'TypeScript', 'Python', 'Java', 'C++', 'Go', 'SQL'
 ];
 
-export function InterviewSetupPanel({ onStart, isLoading }: Props) {
+export function InterviewSetupPanel({
+  onStart,
+  isLoading,
+  onGetRecommendation,
+  recommendation,
+  recommendationLoading,
+}: Props) {
   const [mode, setMode] = useState('Mixed');
   const [language, setLanguage] = useState('JavaScript');
   const [voiceEnabled, setVoiceEnabled] = useState(false);
+  const [durationMinutes, setDurationMinutes] = useState(45);
 
   return (
     <div className="max-w-4xl mx-auto py-8 px-4 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -135,12 +146,74 @@ export function InterviewSetupPanel({ onStart, isLoading }: Props) {
             </Select>
           </CardContent>
         </Card>
+
+        <Card className="bg-slate-900/50 border-slate-800 shadow-xl backdrop-blur-sm md:col-span-2">
+          <CardHeader>
+            <CardTitle className="text-slate-100 flex items-center gap-2">
+              <Clock3 className="h-5 w-5 text-cyan-400" />
+              Interview Duration
+            </CardTitle>
+            <CardDescription className="text-slate-400">
+              Choose how long to practice. The AI can recommend a duration for about 85-90% readiness.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {[20, 30, 45, 60].map((mins) => (
+                <button
+                  type="button"
+                  key={mins}
+                  onClick={() => setDurationMinutes(mins)}
+                  className={`rounded-lg border px-3 py-2 text-sm font-semibold transition ${
+                    durationMinutes === mins
+                      ? 'border-cyan-500 bg-cyan-500/10 text-cyan-300'
+                      : 'border-slate-700 bg-slate-900 text-slate-300 hover:border-slate-500'
+                  }`}
+                >
+                  {mins} min
+                </button>
+              ))}
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onGetRecommendation({ mode, language })}
+                disabled={recommendationLoading}
+                className="border-slate-700 bg-slate-800/50 text-slate-200 hover:bg-slate-700"
+              >
+                <Sparkles className="h-4 w-4 mr-2" />
+                {recommendationLoading ? 'Getting recommendation...' : 'Recommend Duration'}
+              </Button>
+
+              {recommendation && (
+                <p className="text-xs text-slate-300">
+                  Recommended: <span className="font-semibold text-cyan-300">{recommendation.recommended_minutes} min</span>
+                  {' - '}
+                  {recommendation.rationale}
+                </p>
+              )}
+            </div>
+
+            {recommendation && (
+              <Button
+                type="button"
+                variant="ghost"
+                className="p-0 h-auto text-cyan-300 hover:text-cyan-200 hover:bg-transparent"
+                onClick={() => setDurationMinutes(recommendation.recommended_minutes)}
+              >
+                Use recommended duration
+              </Button>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       <div className="flex justify-center pt-8">
         <Button 
           size="lg" 
-          onClick={() => onStart({ mode, language, voiceEnabled })}
+          onClick={() => onStart({ mode, language, voiceEnabled, durationMinutes })}
           disabled={isLoading}
           className="px-12 py-6 text-lg bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold rounded-full shadow-[0_0_30px_rgba(6,182,212,0.3)] transition-all hover:scale-105 active:scale-95 group"
         >

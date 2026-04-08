@@ -2,6 +2,8 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
+  InternalServerErrorException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from '../ai/ai.service';
@@ -110,18 +112,28 @@ export class AnalysisService {
         dto.jobDescription,
       );
 
-      const [skillGapRoadmap, interviewQuestionSet] = await Promise.all([
-        this.aiService.generateSkillGapRoadmap(
-          resume.rawText,
-          dto.jobTitle,
-          dto.jobDescription,
-        ),
-        this.aiService.generateInterviewQuestions(
-          resume.rawText,
-          dto.jobTitle,
-          dto.jobDescription,
-        ),
-      ]);
+      const [skillGapRoadmapResult, interviewQuestionSetResult] =
+        await Promise.allSettled([
+          this.aiService.generateSkillGapRoadmap(
+            resume.rawText,
+            dto.jobTitle,
+            dto.jobDescription,
+          ),
+          this.aiService.generateInterviewQuestions(
+            resume.rawText,
+            dto.jobTitle,
+            dto.jobDescription,
+          ),
+        ]);
+
+      const skillGapRoadmap =
+        skillGapRoadmapResult.status === 'fulfilled'
+          ? skillGapRoadmapResult.value
+          : null;
+      const interviewQuestionSet =
+        interviewQuestionSetResult.status === 'fulfilled'
+          ? interviewQuestionSetResult.value
+          : null;
 
       const updated = await this.prisma.analysis.update({
         where: { id: analysis.id },
@@ -140,7 +152,7 @@ export class AnalysisService {
       });
 
       return this.mapAnalysisOutput(updated);
-    } catch (e) {
+    } catch (e: any) {
       this.prisma.analysis
         .update({
           where: { id: analysis.id },
@@ -148,7 +160,22 @@ export class AnalysisService {
         })
         .catch((err: unknown) => console.error(err));
 
-      throw new Error('Analysis Engine Pipeline Failed');
+      const message = String(e?.message || e || 'Analysis pipeline failed');
+      if (
+        message.toLowerCase().includes('503') ||
+        message.toLowerCase().includes('service unavailable') ||
+        message.toLowerCase().includes('429') ||
+        message.toLowerCase().includes('quota') ||
+        message.toLowerCase().includes('resource_exhausted')
+      ) {
+        throw new ServiceUnavailableException(
+          'AI service is currently busy. Please retry in 1-2 minutes.',
+        );
+      }
+
+      throw new InternalServerErrorException(
+        'Analysis failed. Please retry, and verify your resume/JD inputs.',
+      );
     }
   }
 

@@ -11,9 +11,12 @@ import {
   FileText, 
   Layout, 
   Code2, 
-  AlertCircle 
+  AlertCircle,
+  Timer,
+  Brain,
+  CheckCircle2,
 } from 'lucide-react';
-import type { InterviewMessage } from '@repo/types';
+import type { InterviewMessage, CodingPracticeQuestion, CodingPracticeSet, CodingEvaluation } from '@repo/types';
 import ReactMarkdown from 'react-markdown';
 
 interface Props {
@@ -24,6 +27,10 @@ interface Props {
   voiceEnabled: boolean;
   context: { jobTitle: string; resumeFilename: string; jobDescription: string };
   language: string;
+  durationMinutes: number;
+  sessionId: string;
+  onGenerateCodingQuestions: () => Promise<CodingPracticeSet>;
+  onEvaluateCode: (question: string, code: string) => Promise<CodingEvaluation>;
 }
 
 export function InterviewWorkspace({
@@ -34,9 +41,21 @@ export function InterviewWorkspace({
   voiceEnabled,
   context,
   language,
+  durationMinutes,
+  sessionId,
+  onGenerateCodingQuestions,
+  onEvaluateCode,
 }: Props) {
   const [input, setInput] = useState('');
+  const [remainingSeconds, setRemainingSeconds] = useState(durationMinutes * 60);
   const [isListening, setIsListening] = useState(false);
+  const [codingQuestions, setCodingQuestions] = useState<CodingPracticeQuestion[]>([]);
+  const [selectedQuestionIdx, setSelectedQuestionIdx] = useState(0);
+  const [codeDraft, setCodeDraft] = useState('');
+  const [codingLoading, setCodingLoading] = useState(false);
+  const [codingEvaluation, setCodingEvaluation] = useState<CodingEvaluation | null>(null);
+  const [codingError, setCodingError] = useState<string | null>(null);
+  const [timerCompleted, setTimerCompleted] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
 
@@ -46,6 +65,20 @@ export function InterviewWorkspace({
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setRemainingSeconds((prev) => Math.max(0, prev - 1));
+    }, 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    if (remainingSeconds === 0 && !timerCompleted) {
+      setTimerCompleted(true);
+      onEndSession();
+    }
+  }, [remainingSeconds, timerCompleted, onEndSession]);
 
   // Voice Recognition Setup
   useEffect(() => {
@@ -82,6 +115,39 @@ export function InterviewWorkspace({
     setInput('');
   };
 
+  const handleGenerateCoding = async () => {
+    setCodingLoading(true);
+    setCodingEvaluation(null);
+    setCodingError(null);
+    try {
+      const result = await onGenerateCodingQuestions();
+      setCodingQuestions(result.questions || []);
+      setSelectedQuestionIdx(0);
+    } catch {
+      setCodingError('Could not generate coding questions right now. Please try again.');
+    } finally {
+      setCodingLoading(false);
+    }
+  };
+
+  const handleEvaluateCode = async () => {
+    const question = codingQuestions[selectedQuestionIdx];
+    if (!question || !codeDraft.trim()) return;
+    setCodingLoading(true);
+    setCodingError(null);
+    try {
+      const result = await onEvaluateCode(question.prompt, codeDraft);
+      setCodingEvaluation(result);
+    } catch {
+      setCodingError('Could not evaluate your code right now. Please try again.');
+    } finally {
+      setCodingLoading(false);
+    }
+  };
+
+  const minutes = String(Math.floor(remainingSeconds / 60)).padStart(2, '0');
+  const seconds = String(remainingSeconds % 60).padStart(2, '0');
+
   return (
     <div className="flex flex-col lg:flex-row h-[calc(100vh-200px)] min-h-[600px] gap-4 animate-in fade-in duration-500">
       {/* Left Pane: Chat */}
@@ -91,6 +157,10 @@ export function InterviewWorkspace({
             <div className="flex items-center gap-3">
               <div className="h-3 w-3 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
               <CardTitle className="text-sm font-medium text-slate-300">Live Interview Session</CardTitle>
+              <div className="ml-2 inline-flex items-center gap-1 rounded-full border border-slate-700 px-2 py-1 text-[11px] text-cyan-300">
+                <Timer className="h-3 w-3" /> {minutes}:{seconds}
+              </div>
+              <div className="hidden xl:block text-[10px] text-slate-500">ID: {sessionId.slice(0, 8)}</div>
             </div>
             <Button 
                 variant="ghost" 
@@ -231,6 +301,86 @@ export function InterviewWorkspace({
              <AlertCircle className="h-3 w-3 text-slate-600" />
              <span className="text-[9px] text-slate-600 font-medium">Auto-syncs with your local browser session.</span>
           </div>
+        </Card>
+
+        <Card className="bg-slate-900 border-slate-800 shadow-xl rounded-2xl overflow-hidden">
+          <CardHeader className="py-3 px-4 border-b border-slate-800 bg-slate-800/20">
+            <CardTitle className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-bold flex items-center gap-2">
+              <Brain className="h-3.5 w-3.5 text-cyan-500" /> Coding Practice
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 space-y-3">
+            <Button
+              type="button"
+              size="sm"
+              onClick={handleGenerateCoding}
+              disabled={codingLoading}
+              className="w-full bg-cyan-700 hover:bg-cyan-600"
+            >
+              {codingLoading ? 'Generating...' : 'Generate JD-based Coding Questions'}
+            </Button>
+
+            {codingQuestions.length > 0 && (
+              <>
+                <div className="space-y-2">
+                  {codingQuestions.map((q, idx) => (
+                    <button
+                      key={`${q.title}-${idx}`}
+                      type="button"
+                      onClick={() => {
+                        setSelectedQuestionIdx(idx);
+                        setCodingEvaluation(null);
+                      }}
+                      className={`w-full text-left rounded-md border px-2 py-2 text-xs ${
+                        selectedQuestionIdx === idx
+                          ? 'border-cyan-500 bg-cyan-950/30 text-cyan-200'
+                          : 'border-slate-700 bg-slate-950 text-slate-300'
+                      }`}
+                    >
+                      <div className="font-semibold">{q.title}</div>
+                      <div className="text-[10px] uppercase text-slate-400">{q.difficulty}</div>
+                    </button>
+                  ))}
+                </div>
+
+                <div className="rounded-md border border-slate-700 bg-slate-950 p-3 text-xs text-slate-300">
+                  {codingQuestions[selectedQuestionIdx]?.prompt}
+                </div>
+
+                <textarea
+                  value={codeDraft}
+                  onChange={(e) => setCodeDraft(e.target.value)}
+                  className="w-full min-h-[140px] rounded-md border border-slate-700 bg-slate-950 p-3 text-xs font-mono text-slate-200 focus:outline-none"
+                  placeholder={`// Solve in ${language}. Submit for AI evaluation.`}
+                />
+
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={handleEvaluateCode}
+                  disabled={codingLoading || !codeDraft.trim()}
+                  className="w-full bg-emerald-700 hover:bg-emerald-600"
+                >
+                  {codingLoading ? 'Evaluating...' : 'Submit Code for AI Evaluation'}
+                </Button>
+
+                {codingEvaluation && (
+                  <div className="rounded-md border border-emerald-700/50 bg-emerald-950/20 p-3 text-xs text-slate-200 space-y-2">
+                    <div className="font-semibold flex items-center gap-2 text-emerald-300">
+                      <CheckCircle2 className="h-3.5 w-3.5" /> Score: {codingEvaluation.score}/100
+                    </div>
+                    <p>{codingEvaluation.feedback}</p>
+                  </div>
+                )}
+
+                {codingError && (
+                  <div className="rounded-md border border-rose-700/50 bg-rose-950/20 p-3 text-xs text-rose-200">
+                    {codingError}
+                  </div>
+                )}
+              </>
+            )}
+          </CardContent>
         </Card>
       </div>
     </div>

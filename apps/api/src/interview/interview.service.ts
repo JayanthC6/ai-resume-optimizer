@@ -53,6 +53,24 @@ export class InterviewService {
     return { session, message };
   }
 
+  async recommendDuration(userId: string, data: InterviewStartRequest) {
+    const resume = await this.prisma.resume.findUnique({ where: { id: data.resumeId } });
+    if (!resume) throw new NotFoundException('Resume not found');
+
+    const ownerCheck = await this.prisma.resume.findFirst({
+      where: { id: data.resumeId, userId },
+      select: { id: true },
+    });
+    if (!ownerCheck) throw new NotFoundException('Resume not found');
+
+    return this.aiService.recommendInterviewDuration(
+      resume.rawText || '',
+      data.jobDescription,
+      data.jobTitle,
+      data.mode,
+    );
+  }
+
   async chat(userId: string, data: InterviewChatRequest) {
     const session = await this.prisma.interviewSession.findUnique({
       where: { id: data.sessionId },
@@ -151,5 +169,36 @@ export class InterviewService {
     }
 
     return session;
+  }
+
+  async generateCodingPractice(userId: string, sessionId: string) {
+    const session = await this.prisma.interviewSession.findUnique({ where: { id: sessionId } });
+    if (!session || session.userId !== userId) {
+      throw new NotFoundException('Session not found');
+    }
+
+    const resume = await this.prisma.resume.findUnique({ where: { id: session.resumeId } });
+
+    return this.aiService.generateCodingPracticeQuestions(
+      resume?.rawText || '',
+      session.jobDescription,
+      session.jobTitle,
+      session.language || 'JavaScript',
+    );
+  }
+
+  async evaluateCodingPractice(
+    userId: string,
+    sessionId: string,
+    question: string,
+    code: string,
+    language: string,
+  ) {
+    const session = await this.prisma.interviewSession.findUnique({ where: { id: sessionId } });
+    if (!session || session.userId !== userId) {
+      throw new NotFoundException('Session not found');
+    }
+
+    return this.aiService.evaluateCodingSubmission(question, code, language);
   }
 }

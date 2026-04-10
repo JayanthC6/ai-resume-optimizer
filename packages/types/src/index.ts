@@ -253,4 +253,6 @@ export interface CodingEvaluation {
   feedback: string;
   strengths: string[];
   improvements: string[];
+  time_complexity: string;
+  space_complexity: string;
 }

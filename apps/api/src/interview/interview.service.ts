@@ -199,6 +199,16 @@ export class InterviewService {
       throw new NotFoundException('Session not found');
     }
 
-    return this.aiService.evaluateCodingSubmission(question, code, language);
+    const result = await this.aiService.evaluateCodingSubmission(question, code, language);
+
+    await this.prisma.interviewMessage.create({
+      data: {
+        sessionId: session.id,
+        role: 'user',
+        content: `[Coding Challenge Submitted]\nQuestion: ${question}\nLanguage: ${language}\nCode:\n\`\`\`${language}\n${code}\n\`\`\`\n\nAI Evaluation: Score ${result.score}/100. Time Complexity: ${result.time_complexity}. Space Complexity: ${result.space_complexity}. Feedback: ${result.feedback}`,
+      },
+    });
+
+    return result;
   }
 }

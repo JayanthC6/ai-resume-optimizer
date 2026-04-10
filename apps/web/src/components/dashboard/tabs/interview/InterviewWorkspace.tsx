@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import Editor from '@monaco-editor/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -347,12 +348,16 @@ export function InterviewWorkspace({
                   {codingQuestions[selectedQuestionIdx]?.prompt}
                 </div>
 
-                <textarea
-                  value={codeDraft}
-                  onChange={(e) => setCodeDraft(e.target.value)}
-                  className="w-full min-h-[140px] rounded-md border border-slate-700 bg-slate-950 p-3 text-xs font-mono text-slate-200 focus:outline-none"
-                  placeholder={`// Solve in ${language}. Submit for AI evaluation.`}
-                />
+                <div className="h-[250px] rounded-md overflow-hidden border border-slate-700">
+                  <Editor
+                    height="100%"
+                    language={language.toLowerCase()}
+                    theme="vs-dark"
+                    value={codeDraft}
+                    onChange={(val) => setCodeDraft(val || '')}
+                    options={{ minimap: { enabled: false }, fontSize: 12 }}
+                  />
+                </div>
 
                 <Button
                   type="button"
@@ -368,6 +373,10 @@ export function InterviewWorkspace({
                   <div className="rounded-md border border-emerald-700/50 bg-emerald-950/20 p-3 text-xs text-slate-200 space-y-2">
                     <div className="font-semibold flex items-center gap-2 text-emerald-300">
                       <CheckCircle2 className="h-3.5 w-3.5" /> Score: {codingEvaluation.score}/100
+                    </div>
+                    <div className="flex justify-between border-t border-emerald-800/30 pt-2 text-[10px] uppercase tracking-wider font-mono text-emerald-400">
+                       <span>Time: {codingEvaluation.time_complexity}</span>
+                       <span>Space: {codingEvaluation.space_complexity}</span>
                     </div>
                     <p>{codingEvaluation.feedback}</p>
                   </div>

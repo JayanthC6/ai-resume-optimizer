@@ -607,7 +607,9 @@ Output MUST be valid JSON exactly:
   "score": number,
   "feedback": string,
   "strengths": string[],
-  "improvements": string[]
+  "improvements": string[],
+  "time_complexity": string,
+  "space_complexity": string
 }
 
 Constraints:
@@ -628,6 +630,8 @@ Constraints:
         improvements: Array.isArray(result?.improvements)
           ? result.improvements.filter((s: unknown) => typeof s === 'string')
           : [],
+        time_complexity: typeof result?.time_complexity === 'string' ? result.time_complexity : 'O(N)',
+        space_complexity: typeof result?.space_complexity === 'string' ? result.space_complexity : 'O(N)',
       };
     } catch (error: any) {
       this.logger.error('Coding evaluation failed', error?.message || error);

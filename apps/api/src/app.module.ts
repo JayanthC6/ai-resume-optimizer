@@ -11,7 +11,7 @@ import { InterviewModule } from './interview/interview.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true, envFilePath: '../../.env' }),
+    ConfigModule.forRoot({ isGlobal: true, envFilePath: '../../../.env' }),
     PrismaModule,
     AuthModule,
     ResumeModule,

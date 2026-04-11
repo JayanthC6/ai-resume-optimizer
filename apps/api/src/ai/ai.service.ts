@@ -116,8 +116,10 @@ export class AiService {
   private isPermanentQuotaExhaustion(message: string) {
     const normalized = message.toLowerCase();
     return (
-      normalized.includes('quota exceeded') &&
-      (normalized.includes('perday') || normalized.includes('limit: 0'))
+      (normalized.includes('quota exceeded') &&
+        (normalized.includes('perday') || normalized.includes('limit: 0'))) ||
+      normalized.includes('resource_exhausted') ||
+      normalized.includes('429')
     );
   }
 

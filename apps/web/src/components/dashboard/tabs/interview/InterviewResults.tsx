@@ -20,7 +20,6 @@ function RadarHex({ scores }: { scores: number[] }) {
       const angle = (Math.PI * 2 * i) / n - Math.PI / 2;
       return [cx + radius * Math.cos(angle), cy + radius * Math.sin(angle)];
     });
-  const bgPts = points(r).map(p => p.join(',')).join(' ');
   const scorePts = points(r).map(([x, y], i) => {
     const p = Math.max(0.1, (scores[i] ?? 0.5) / 100);
     return [cx + (x - cx) * p, cy + (y - cy) * p];

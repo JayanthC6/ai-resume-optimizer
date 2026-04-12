@@ -258,8 +258,8 @@ export function OverviewPanel({ result, candidateName, roleTitle, onTabChange, o
           </button>
         </div>
         <div
-          className="rounded-2xl overflow-hidden divide-y"
-          style={{ background: '#161b27', border: '1px solid rgba(255,255,255,0.06)', divideColor: 'rgba(255,255,255,0.05)' }}
+          className="rounded-2xl overflow-hidden divide-y divide-white/5"
+          style={{ background: '#161b27', border: '1px solid rgba(255,255,255,0.06)' }}
         >
           {RECENT_ACTIVITY.map((item, i) => (
             <div key={i} className="flex items-center justify-between px-5 py-4">

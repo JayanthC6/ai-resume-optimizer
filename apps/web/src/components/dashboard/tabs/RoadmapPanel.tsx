@@ -23,7 +23,6 @@ const CARD_BG = '#161b27';
 const BORDER = 'rgba(255,255,255,0.06)';
 
 export function RoadmapPanel({ skillGapRoadmap, isGenerating, onGenerate }: Props) {
-  const [activePhase, setActivePhase] = useState(1);
 
   /* ── Empty / generate state ── */
   if (!skillGapRoadmap) {

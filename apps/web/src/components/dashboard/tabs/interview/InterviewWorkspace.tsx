@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Mic, MicOff, Send, Code2, Paperclip, FileText, Briefcase, Timer, X } from 'lucide-react';
+import { Mic, MicOff, Code2, Paperclip, FileText, Timer } from 'lucide-react';
 import type { InterviewMessage } from '@repo/types';
 import ReactMarkdown from 'react-markdown';
 

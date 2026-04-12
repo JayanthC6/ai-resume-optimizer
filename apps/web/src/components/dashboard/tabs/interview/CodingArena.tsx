@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
 import type { CodingPracticeQuestion, CodingPracticeSet, CodingEvaluation } from '@repo/types';
 import {
-  ArrowLeft, Brain, CheckCircle2, Code2, Loader2,
+  ArrowLeft, Brain, CheckCircle2, Loader2,
   RefreshCw, Sparkles, Timer, Zap, AlertTriangle,
   Plus, Settings, Maximize2, Bug, MessageSquare, Camera, LogOut,
 } from 'lucide-react';

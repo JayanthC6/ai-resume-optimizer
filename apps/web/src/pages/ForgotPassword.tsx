@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import api from '@/lib/api';
@@ -10,10 +9,15 @@ import {
   type ForgotPasswordFormValues,
 } from '@/lib/validation';
 import { useState } from 'react';
+import { Mail, ArrowLeft, Sparkles, CheckCircle2, AlertCircle } from 'lucide-react';
+
+const CARD_BG = '#161b27';
+const BORDER = 'rgba(255,255,255,0.06)';
 
 export default function ForgotPasswordPage() {
   const [serverMessage, setServerMessage] = useState<string | null>(null);
   const [devResetUrl, setDevResetUrl] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
 
   const {
     register,
@@ -28,9 +32,11 @@ export default function ForgotPasswordPage() {
   const onSubmit = async (values: ForgotPasswordFormValues) => {
     setServerMessage(null);
     setDevResetUrl(null);
+    setSuccess(false);
 
     try {
       const { data } = await api.post('/auth/forgot-password', values);
+      setSuccess(true);
       setServerMessage(
         data?.message ||
           'If the account exists, a password reset link will be sent shortly.',
@@ -49,70 +55,113 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-6xl items-center justify-center px-6 py-10 sm:px-10">
-      <Card className="w-full max-w-md border-white/80 bg-white/90 shadow-2xl shadow-slate-200/60 backdrop-blur-md dark:border-slate-700/50 dark:bg-slate-900/80 dark:shadow-slate-950/40">
-        <CardHeader className="space-y-2">
-          <CardTitle className="text-center text-2xl font-bold text-slate-900 dark:text-white">
-            Reset your password
-          </CardTitle>
-          <p className="text-center text-sm text-slate-500 dark:text-slate-400">
-            Enter your account email and we will send a reset link.
-          </p>
-        </CardHeader>
-        <CardContent>
+    <div className="min-h-screen w-full flex flex-col items-center justify-center p-6" style={{ background: '#0f1623' }}>
+      {/* Background Glow */}
+      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+        <div className="absolute -top-[10%] -left-[10%] h-[40%] w-[40%] rounded-full opacity-20 blur-[120px]" style={{ background: 'radial-gradient(circle, #2563eb, transparent)' }} />
+        <div className="absolute -bottom-[10%] -right-[10%] h-[40%] w-[40%] rounded-full opacity-10 blur-[120px]" style={{ background: 'radial-gradient(circle, #06b6d4, transparent)' }} />
+      </div>
+
+      <div className="relative w-full max-w-md">
+        {/* Logo Section */}
+        <div className="flex flex-col items-center mb-8">
+          <div className="h-12 w-12 rounded-2xl flex items-center justify-center mb-4 transition-transform hover:scale-110" style={{ background: 'linear-gradient(135deg,#2563eb,#06b6d4)', boxShadow: '0 0 30px rgba(37,99,235,0.3)' }}>
+            <Sparkles className="h-6 w-6 text-white" />
+          </div>
+          <h2 className="text-3xl font-black text-white tracking-tight">HiredLens</h2>
+          <p className="text-xs font-bold uppercase tracking-[0.3em] text-slate-500 mt-1">Intelligence Redefined</p>
+        </div>
+
+        {/* Card */}
+        <div 
+          className="rounded-3xl p-8 shadow-2xl backdrop-blur-xl transition-all duration-500"
+          style={{ 
+            background: CARD_BG, 
+            border: `1px solid ${BORDER}`,
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
+          }}
+        >
+          <div className="mb-6">
+            <h1 className="text-2xl font-extrabold text-white mb-2">Reset Password</h1>
+            <p className="text-sm text-slate-400">Enter your email address and we'll send you a secure link to reset your password.</p>
+          </div>
+
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-600 dark:text-slate-300">
-                Email
-              </label>
-              <Input
-                type="email"
-                placeholder="you@example.com"
-                className="h-11 rounded-xl border-slate-200 bg-white/90 shadow-sm focus-visible:ring-sky-500 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500"
-                {...register('email')}
-                aria-invalid={Boolean(errors.email)}
-              />
-              {errors.email ? (
-                <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">{errors.email.message}</p>
-              ) : null}
+              <div className="flex justify-between mb-1.5 px-1">
+                <label className="text-xs font-bold uppercase tracking-widest text-slate-500">Email Address</label>
+              </div>
+              <div className="relative group">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 transition-colors group-focus-within:text-blue-400 text-slate-500">
+                  <Mail className="h-4 w-4" />
+                </div>
+                <Input
+                  type="email"
+                  placeholder="name@company.com"
+                  className="h-12 pl-11 rounded-xl border-slate-800 bg-slate-900/50 text-white placeholder:text-slate-600 focus-visible:ring-blue-500/50 transition-all"
+                  style={{ border: `1px solid ${BORDER}` }}
+                  {...register('email')}
+                  aria-invalid={Boolean(errors.email)}
+                />
+              </div>
+              {errors.email && (
+                <p className="mt-1.5 text-xs font-medium text-rose-500 flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" /> {errors.email.message}
+                </p>
+              )}
             </div>
 
-            {serverMessage ? (
-              <div
-                className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-sky-800 dark:border-sky-800 dark:bg-sky-950/50 dark:text-sky-300"
+            {serverMessage && (
+              <div 
+                className={`rounded-xl px-4 py-3 flex items-start gap-3 text-sm transition-all animate-in fade-in slide-in-from-top-2 ${
+                  success ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-rose-500/10 border-rose-500/20 text-rose-400'
+                }`}
+                style={{ border: '1px solid' }}
                 role="status"
-                aria-live="polite"
               >
-                {serverMessage}
+                {success ? <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5" /> : <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />}
+                <span>{serverMessage}</span>
               </div>
-            ) : null}
+            )}
 
-            {devResetUrl ? (
-              <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-300">
-                Development reset link:{' '}
-                <a className="font-semibold underline" href={devResetUrl}>
-                  Open reset page
+            {devResetUrl && (
+              <div className="rounded-xl bg-amber-500/10 border border-amber-500/20 p-3 text-[10px] text-amber-300">
+                <p className="font-bold uppercase tracking-widest mb-1 opacity-60">Development Link</p>
+                <a className="font-mono underline break-all" href={devResetUrl}>
+                  {devResetUrl}
                 </a>
               </div>
-            ) : null}
+            )}
 
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="h-11 w-full rounded-xl bg-sky-600 font-semibold text-white shadow-lg shadow-sky-200 transition hover:bg-sky-700 dark:shadow-sky-900/30"
+              className="h-12 w-full rounded-xl font-bold text-white transition-all active:scale-[0.98] disabled:opacity-50"
+              style={{ background: 'linear-gradient(90deg,#2563eb,#1d4ed8)', boxShadow: '0 4px 20px rgba(37,99,235,0.25)' }}
             >
-              {isSubmitting ? 'Sending Link...' : 'Send Reset Link'}
+              {isSubmitting ? (
+                <span className="flex items-center gap-2">
+                  <div className="h-4 w-4 border-2 border-white/20 border-t-white rounded-full animate-spin" /> Sending Link...
+                </span>
+              ) : 'Send Reset Link'}
             </Button>
 
-            <div className="text-center text-sm text-slate-500 dark:text-slate-400">
-              Remembered your password?{' '}
-              <Link to="/login" className="font-semibold text-sky-700 hover:text-sky-900 dark:text-sky-400 dark:hover:text-sky-300">
-                Back to login
-              </Link>
-            </div>
+            <Link 
+              to="/login" 
+              className="group flex items-center justify-center gap-2 text-sm font-semibold text-slate-400 hover:text-white transition-colors py-2"
+            >
+              <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
+              Back to Sign In
+            </Link>
           </form>
-        </CardContent>
-      </Card>
+        </div>
+
+        {/* Footer */}
+        <p className="text-center text-xs text-slate-600 mt-8">
+          &copy; 2026 HiredLens AI. All rights reserved. <br/>
+          Secure password recovery protocol enabled.
+        </p>
+      </div>
     </div>
   );
 }

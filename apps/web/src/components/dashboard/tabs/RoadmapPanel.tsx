@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Map, CheckCircle2, Lock, ChevronRight, BookOpen, FileText, Sparkles, RefreshCw } from 'lucide-react';
 import type { SkillGapRoadmap } from '@repo/types';
 
@@ -118,13 +117,12 @@ export function RoadmapPanel({ skillGapRoadmap, isGenerating, onGenerate }: Prop
             return (
               <div key={i} className="relative z-10 mb-0" style={{ marginTop: i === 0 ? 0 : '180px' }}>
                 <div
-                  className="h-8 w-8 rounded-full flex items-center justify-center cursor-pointer transition hover:scale-110"
+                  className="h-8 w-8 rounded-full flex items-center justify-center transition hover:scale-110"
                   style={{
                     background: status === 'completed' ? '#2563eb' : status === 'in-progress' ? '#1e3a5f' : '#161b27',
                     border: status === 'completed' ? '2px solid #3b82f6' : status === 'in-progress' ? '2px solid #2563eb' : `2px solid ${BORDER}`,
                     boxShadow: status !== 'locked' ? '0 0 12px rgba(37,99,235,0.4)' : 'none',
                   }}
-                  onClick={() => setActivePhase(i)}
                 >
                   {status === 'completed' ? (
                     <CheckCircle2 className="h-4 w-4 text-white" />

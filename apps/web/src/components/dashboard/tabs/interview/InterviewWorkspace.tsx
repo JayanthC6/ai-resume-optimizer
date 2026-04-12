@@ -20,7 +20,7 @@ const BORDER = 'rgba(255,255,255,0.07)';
 
 export function InterviewWorkspace({
   messages, onSendMessage, onEndSession, onOpenCodingArena,
-  isSending, voiceEnabled, context, language, durationMinutes, sessionId,
+  isSending, voiceEnabled, durationMinutes, sessionId,
 }: Props) {
   const [input, setInput] = useState('');
   const [remainingSeconds, setRemainingSeconds] = useState(durationMinutes * 60);

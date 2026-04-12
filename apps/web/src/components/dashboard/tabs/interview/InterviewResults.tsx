@@ -1,5 +1,5 @@
 import { jsPDF } from 'jspdf';
-import { CheckCircle2, AlertTriangle, BookOpen, Code2, Video, Sparkles, Download, RefreshCw, TrendingUp } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, BookOpen, Code2, Video, Sparkles, Download, RefreshCw } from 'lucide-react';
 import type { InterviewEvaluation, InterviewSession } from '@repo/types';
 
 interface Props {

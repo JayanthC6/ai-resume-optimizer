@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import type { CodingPracticeQuestion, CodingPracticeSet, CodingEvaluation } from '@repo/types';
 import {
-  ArrowLeft, Brain, CheckCircle2, ChevronRight, Code2, Loader2,
-  RefreshCw, Sparkles, Timer, Zap, AlertTriangle, Tag, Trophy,
+  ArrowLeft, Brain, CheckCircle2, Code2, Loader2,
+  RefreshCw, Sparkles, Timer, Zap, AlertTriangle,
   Plus, Settings, Maximize2, Bug, MessageSquare, Camera, LogOut,
 } from 'lucide-react';
 

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Map, CheckCircle2, Clock, Lock, ChevronRight, BookOpen, FileText, Sparkles, RefreshCw } from 'lucide-react';
+import { Map, CheckCircle2, Lock, ChevronRight, BookOpen, FileText, Sparkles, RefreshCw } from 'lucide-react';
 import type { SkillGapRoadmap } from '@repo/types';
 
 type Props = {

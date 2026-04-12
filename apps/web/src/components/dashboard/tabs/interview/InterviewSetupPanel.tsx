@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Mic, MessageSquare, Play, Code2, Briefcase, ChevronDown, Lock, Shield, BarChart2, RefreshCw, X } from 'lucide-react';
+import { Mic, MessageSquare, Play, Code2, Briefcase, ChevronDown, Lock, BarChart2, RefreshCw } from 'lucide-react';
 import type { InterviewDurationRecommendation } from '@repo/types';
 
 interface Props {

@@ -1,10 +1,5 @@
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Mic, MessageSquare, Play, Code2, Briefcase, Clock3, Sparkles } from 'lucide-react';
+import { Mic, MessageSquare, Play, Code2, Briefcase, ChevronDown, Lock, Shield, BarChart2, RefreshCw, X } from 'lucide-react';
 import type { InterviewDurationRecommendation } from '@repo/types';
 
 interface Props {
@@ -16,218 +11,220 @@ interface Props {
 }
 
 const MODES = [
-  { id: 'Behavioral', title: 'Behavioral', icon: MessageSquare, desc: 'Focus on soft skills, past experiences, and STAR method.' },
-  { id: 'Technical', title: 'Technical', icon: Code2, desc: 'Deep dive into your tech stack, MCQs, and live coding.' },
-  { id: 'Mixed', title: 'Mixed', icon: Briefcase, desc: 'A balanced session covering both behavioral and technical traits.' },
+  { id: 'Behavioral', title: 'Behavioral', icon: MessageSquare, desc: 'Focus on leadership, soft skills, and cultural alignment principles.' },
+  { id: 'Technical', title: 'Technical', icon: Code2, desc: 'Deep dive into algorithms, system design, and live coding challenges.' },
+  { id: 'Mixed', title: 'Mixed', icon: Briefcase, desc: 'A balanced session covering behavioral and technical competencies.' },
 ];
 
-const LANGUAGES = [
-  'JavaScript', 'TypeScript', 'Python', 'Java', 'C++', 'Go', 'SQL'
-];
+const LANGUAGES = ['JavaScript', 'TypeScript', 'Python', 'Java', 'C++', 'Go', 'SQL', 'English (US)', 'English (UK)'];
 
-export function InterviewSetupPanel({
-  onStart,
-  isLoading,
-  onGetRecommendation,
-  recommendation,
-  recommendationLoading,
-}: Props) {
-  const [mode, setMode] = useState('Mixed');
-  const [language, setLanguage] = useState('JavaScript');
-  const [voiceEnabled, setVoiceEnabled] = useState(false);
-  const [durationMinutes, setDurationMinutes] = useState(45);
+const CARD_BG = '#161b27';
+const BORDER = 'rgba(255,255,255,0.07)';
+
+export function InterviewSetupPanel({ onStart, isLoading, onGetRecommendation, recommendation, recommendationLoading }: Props) {
+  const [mode, setMode] = useState('Behavioral');
+  const [language, setLanguage] = useState('English (US)');
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const [langOpen, setLangOpen] = useState(false);
 
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="text-center space-y-2">
-        <h2 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
-          AI Mock Interviewer
-        </h2>
-        <p className="text-slate-400 text-lg">
-          Practice your dream role with our Senior Hiring Manager bot.
-        </p>
+    <div className="space-y-8 pb-10">
+
+      {/* ── Page Title ── */}
+      <div>
+        <h1 className="text-2xl font-extrabold text-white">Mock Interview</h1>
+        <p className="text-xs font-bold uppercase tracking-widest text-slate-500 mt-1">Simulation Environment Setup</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Mode Selection */}
-        <Card className="bg-slate-900/50 border-slate-800 shadow-xl backdrop-blur-sm md:col-span-2">
-          <CardHeader>
-            <CardTitle className="text-slate-100 flex items-center gap-2">
-               Select Interview Mode
-            </CardTitle>
-            <CardDescription className="text-slate-400">
-              Choose the focus area for this session.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {MODES.map((m) => (
-                <div
-                  key={m.id}
-                  onClick={() => setMode(m.id)}
-                  className={`relative p-5 rounded-xl border-2 cursor-pointer transition-all hover:scale-[1.02] ${
-                    mode === m.id
-                      ? 'border-cyan-500 bg-cyan-500/10 shadow-[0_0_20px_rgba(6,182,212,0.15)]'
-                      : 'border-slate-800 bg-slate-900 hover:border-slate-700'
-                  }`}
-                >
-                  <m.icon className={`h-6 w-6 mb-3 ${mode === m.id ? 'text-cyan-400' : 'text-slate-500'}`} />
-                  <h3 className={`font-semibold mb-1 ${mode === m.id ? 'text-white' : 'text-slate-300'}`}>{m.title}</h3>
-                  <p className="text-xs text-slate-500 leading-relaxed">{m.desc}</p>
-                  {mode === m.id && (
-                    <div className="absolute top-3 right-3 h-2 w-2 rounded-full bg-cyan-500 animate-pulse" />
-                  )}
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+      {/* ── STEP 01: Configure Session ── */}
+      <div>
+        <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-500 mb-2">Step 01</p>
+        <h2 className="text-2xl font-extrabold text-white mb-6">Configure Your Session</h2>
 
-        {/* Voice Preference */}
-        <Card className="bg-slate-900/50 border-slate-800 shadow-xl backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle className="text-slate-100 flex items-center gap-2">
-               Communication Preference
-            </CardTitle>
-            <CardDescription className="text-slate-400">
-              How would you like to respond to questions?
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <RadioGroup 
-              value={voiceEnabled ? 'voice' : 'text'} 
-              onValueChange={(val: string) => setVoiceEnabled(val === 'voice')}
-              className="grid grid-cols-2 gap-4"
+        <div className="grid grid-cols-3 gap-4">
+          {/* Interview Mode */}
+          <div className="rounded-2xl p-5" style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}>
+            <div className="h-10 w-10 rounded-xl flex items-center justify-center mb-4" style={{ background: 'rgba(255,255,255,0.06)' }}>
+              <svg viewBox="0 0 24 24" className="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" strokeWidth={1.5}>
+                <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+                <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+              </svg>
+            </div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 mb-2">Interview Mode</p>
+            <div className="relative">
+              <button
+                onClick={() => {
+                  const idx = MODES.findIndex(m => m.id === mode);
+                  setMode(MODES[(idx + 1) % MODES.length].id);
+                }}
+                className="w-full flex items-center justify-between text-left"
+              >
+                <span className="text-lg font-bold text-white">{mode}</span>
+                <ChevronDown className="h-4 w-4 text-slate-500" />
+              </button>
+            </div>
+            <p className="text-xs text-slate-500 mt-2 leading-relaxed">
+              {MODES.find(m => m.id === mode)?.desc}
+            </p>
+          </div>
+
+          {/* Language */}
+          <div className="rounded-2xl p-5 relative" style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}>
+            <div className="h-10 w-10 rounded-xl flex items-center justify-center mb-4" style={{ background: 'rgba(255,255,255,0.06)' }}>
+              <svg viewBox="0 0 24 24" className="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" strokeWidth={1.5}>
+                <path d="M12 21C12 21 3 15 3 9a9 9 0 1118 0c0 6-9 12-9 12z"/><circle cx="12" cy="9" r="3"/>
+              </svg>
+            </div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 mb-2">Language</p>
+            <button
+              className="w-full flex items-center justify-between"
+              onClick={() => setLangOpen(!langOpen)}
             >
-              <Label
-                htmlFor="text-only"
-                className={`flex flex-col items-center justify-between rounded-md border-2 p-4 cursor-pointer hover:bg-slate-800/50 ${
-                  !voiceEnabled ? 'border-cyan-500 bg-slate-800' : 'border-slate-800'
-                }`}
-              >
-                <RadioGroupItem value="text" id="text-only" className="sr-only" />
-                <MessageSquare className={`h-6 w-6 mb-2 ${!voiceEnabled ? 'text-cyan-400' : 'text-slate-500'}`} />
-                <span className="text-sm font-medium">Text Based</span>
-              </Label>
-              <Label
-                htmlFor="voice-enabled"
-                className={`flex flex-col items-center justify-between rounded-md border-2 p-4 cursor-pointer hover:bg-slate-800/50 ${
-                  voiceEnabled ? 'border-cyan-500 bg-slate-800' : 'border-slate-800'
-                }`}
-              >
-                <RadioGroupItem value="voice" id="voice-enabled" className="sr-only" />
-                <Mic className={`h-6 w-6 mb-2 ${voiceEnabled ? 'text-cyan-400' : 'text-slate-500'}`} />
-                <span className="text-sm font-medium">Voice Enabled</span>
-              </Label>
-            </RadioGroup>
-          </CardContent>
-        </Card>
-
-        {/* Coding Language */}
-        <Card className="bg-slate-900/50 border-slate-800 shadow-xl backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle className="text-slate-100 flex items-center gap-2">
-               Coding Language
-            </CardTitle>
-            <CardDescription className="text-slate-400">
-              For technical queries and live coding.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Select value={language} onValueChange={setLanguage}>
-              <SelectTrigger className="bg-slate-800 border-slate-700 text-slate-200">
-                <SelectValue placeholder="Select Language" />
-              </SelectTrigger>
-              <SelectContent className="bg-slate-800 border-slate-700 text-slate-200">
-                {LANGUAGES.map(lang => (
-                  <SelectItem key={lang} value={lang}>{lang}</SelectItem>
+              <span className="text-lg font-bold text-white">{language}</span>
+              <ChevronDown className="h-4 w-4 text-slate-500" />
+            </button>
+            <p className="text-xs text-slate-500 mt-2">Natural NLP processing in your choice of professional dialect.</p>
+            {langOpen && (
+              <div className="absolute top-full left-0 right-0 z-20 mt-1 rounded-xl overflow-hidden shadow-xl" style={{ background: '#1a2035', border: `1px solid ${BORDER}` }}>
+                {LANGUAGES.map(l => (
+                  <button key={l} className="w-full px-4 py-2.5 text-left text-sm text-slate-300 hover:bg-white/5 transition" onClick={() => { setLanguage(l); setLangOpen(false); }}>
+                    {l}
+                  </button>
                 ))}
-              </SelectContent>
-            </Select>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-slate-900/50 border-slate-800 shadow-xl backdrop-blur-sm md:col-span-2">
-          <CardHeader>
-            <CardTitle className="text-slate-100 flex items-center gap-2">
-              <Clock3 className="h-5 w-5 text-cyan-400" />
-              Interview Duration
-            </CardTitle>
-            <CardDescription className="text-slate-400">
-              Choose how long to practice. The AI can recommend a duration for about 85-90% readiness.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {[20, 30, 45, 60].map((mins) => (
-                <button
-                  type="button"
-                  key={mins}
-                  onClick={() => setDurationMinutes(mins)}
-                  className={`rounded-lg border px-3 py-2 text-sm font-semibold transition ${
-                    durationMinutes === mins
-                      ? 'border-cyan-500 bg-cyan-500/10 text-cyan-300'
-                      : 'border-slate-700 bg-slate-900 text-slate-300 hover:border-slate-500'
-                  }`}
-                >
-                  {mins} min
-                </button>
-              ))}
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onGetRecommendation({ mode, language })}
-                disabled={recommendationLoading}
-                className="border-slate-700 bg-slate-800/50 text-slate-200 hover:bg-slate-700"
-              >
-                <Sparkles className="h-4 w-4 mr-2" />
-                {recommendationLoading ? 'Getting recommendation...' : 'Recommend Duration'}
-              </Button>
-
-              {recommendation && (
-                <p className="text-xs text-slate-300">
-                  Recommended: <span className="font-semibold text-cyan-300">{recommendation.recommended_minutes} min</span>
-                  {' - '}
-                  {recommendation.rationale}
-                </p>
-              )}
-            </div>
-
-            {recommendation && (
-              <Button
-                type="button"
-                variant="ghost"
-                className="p-0 h-auto text-cyan-300 hover:text-cyan-200 hover:bg-transparent"
-                onClick={() => setDurationMinutes(recommendation.recommended_minutes)}
-              >
-                Use recommended duration
-              </Button>
+              </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+
+          {/* Input Method */}
+          <div className="rounded-2xl p-5" style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}>
+            <div className="h-10 w-10 rounded-xl flex items-center justify-center mb-4" style={{ background: 'rgba(255,255,255,0.06)' }}>
+              <Mic className="h-5 w-5 text-slate-400" />
+            </div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 mb-3">Input Method</p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setVoiceEnabled(true)}
+                className="flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-bold transition"
+                style={{
+                  background: voiceEnabled ? 'linear-gradient(90deg,#2563eb,#1d4ed8)' : 'rgba(255,255,255,0.04)',
+                  color: voiceEnabled ? 'white' : '#64748b',
+                  border: voiceEnabled ? 'none' : `1px solid ${BORDER}`,
+                }}
+              >
+                <Mic className="h-3.5 w-3.5" /> Voice
+              </button>
+              <button
+                onClick={() => setVoiceEnabled(false)}
+                className="flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-bold transition"
+                style={{
+                  background: !voiceEnabled ? 'linear-gradient(90deg,#2563eb,#1d4ed8)' : 'rgba(255,255,255,0.04)',
+                  color: !voiceEnabled ? 'white' : '#64748b',
+                  border: !voiceEnabled ? 'none' : `1px solid ${BORDER}`,
+                }}
+              >
+                <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><rect x="3" y="5" width="18" height="14" rx="2"/></svg>
+                Text
+              </button>
+            </div>
+            <p className="text-xs text-slate-500 mt-2.5 leading-relaxed">Recommended for real-time stress testing and tone analysis.</p>
+          </div>
+        </div>
       </div>
 
-      <div className="flex justify-center pt-8">
-        <Button 
-          size="lg" 
-          onClick={() => onStart({ mode, language, voiceEnabled, durationMinutes })}
-          disabled={isLoading}
-          className="px-12 py-6 text-lg bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold rounded-full shadow-[0_0_30px_rgba(6,182,212,0.3)] transition-all hover:scale-105 active:scale-95 group"
-        >
-          {isLoading ? (
-            <span className="flex items-center gap-2">
-              <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              Preparing Room...
-            </span>
-          ) : (
-            <span className="flex items-center gap-2">
-              Start Interview <Play className="h-5 w-5 fill-current group-hover:translate-x-1 transition-transform" />
-            </span>
-          )}
-        </Button>
+      {/* ── STEP 02: AI Interviewer ── */}
+      <div>
+        <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-500 mb-2">Step 02</p>
+        <h2 className="text-2xl font-extrabold text-white mb-6">AI Interviewer Recommendation</h2>
+
+        <div className="grid grid-cols-2 gap-6">
+          {/* Left: rationale */}
+          <div className="flex flex-col justify-center">
+            <p className="text-sm text-slate-400 leading-relaxed mb-4">
+              Based on your target role:{' '}
+              <strong className="text-white">Senior Product Designer</strong>. We've synthesized a profile optimised to challenge your specific portfolio gaps.
+            </p>
+            {recommendation && (
+              <div className="flex items-center gap-2 rounded-xl px-4 py-3" style={{ background: 'rgba(37,99,235,0.08)', border: '1px solid rgba(37,99,235,0.2)' }}>
+                <span className="text-sm text-blue-300">Recommended: <strong>{recommendation.recommended_minutes} min</strong> — {recommendation.rationale}</span>
+              </div>
+            )}
+            <button
+              onClick={() => onGetRecommendation({ mode, language })}
+              disabled={recommendationLoading}
+              className="mt-4 flex items-center gap-2 w-fit text-xs font-semibold text-slate-400 hover:text-white transition"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${recommendationLoading ? 'animate-spin' : ''}`} />
+              {recommendationLoading ? 'Getting recommendation…' : 'Get Duration Recommendation'}
+            </button>
+          </div>
+
+          {/* Right: Persona card */}
+          <div className="rounded-2xl p-5" style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}>
+            <div className="flex items-start gap-4">
+              {/* Avatar */}
+              <div className="relative shrink-0">
+                <div className="h-20 w-20 rounded-xl overflow-hidden" style={{ background: '#0d1117', border: '1px solid rgba(255,255,255,0.1)' }}>
+                  <div className="h-full w-full flex items-center justify-center text-4xl">🤖</div>
+                </div>
+                <span className="absolute -bottom-1.5 -right-1.5 px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-widest" style={{ background: '#f59e0b', color: '#000' }}>EXPERT</span>
+              </div>
+
+              <div className="flex-1">
+                <div className="flex items-start justify-between mb-2">
+                  <div>
+                    <p className="text-xs text-slate-500 mb-0.5">Persona:</p>
+                    <h3 className="text-lg font-bold text-white">"Elena V."</h3>
+                  </div>
+                  <div className="flex gap-1">
+                    <span className="px-2 py-0.5 rounded text-[9px] font-bold uppercase" style={{ background: 'rgba(37,99,235,0.2)', color: '#60a5fa' }}>DESIGN</span>
+                    <span className="px-2 py-0.5 rounded text-[9px] font-bold uppercase" style={{ background: 'rgba(37,99,235,0.12)', color: '#60a5fa' }}>LEADER AI</span>
+                  </div>
+                </div>
+                <p className="text-xs text-slate-400 italic leading-relaxed mb-3">
+                  "Elena specialises in probing visual hierarchy logic and cross-functional collaboration strategies. Expect direct, high-stakes feedback."
+                </p>
+                <div className="flex flex-wrap gap-1.5 mb-3">
+                  {['PORTFOLIO DEEP DIVE', 'SYSTEM THINKING', 'CONFLICT RES'].map(t => (
+                    <span key={t} className="px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider" style={{ background: 'rgba(255,255,255,0.05)', color: '#94a3b8', border: `1px solid ${BORDER}` }}>{t}</span>
+                  ))}
+                </div>
+                <button className="flex items-center gap-1.5 text-xs font-semibold text-slate-300 hover:text-white transition">
+                  <RefreshCw className="h-3 w-3" /> Change Profile
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Ready to Begin ── */}
+      <div
+        className="rounded-2xl p-10 text-center relative overflow-hidden"
+        style={{ background: 'linear-gradient(135deg,#0d1420,#101828)', border: '1px solid rgba(37,99,235,0.2)' }}
+      >
+        <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse at center,rgba(37,99,235,0.07),transparent 70%)' }} />
+        <h2 className="text-4xl font-extrabold text-white mb-3">Ready to begin?</h2>
+        <p className="text-sm text-slate-400 max-w-md mx-auto mb-8">
+          The simulation will last approximately 20 minutes. Ensure your microphone is connected and you are in a quiet environment.
+        </p>
+        <div className="flex items-center justify-center gap-4">
+          <button
+            onClick={() => onStart({ mode, language, voiceEnabled, durationMinutes: recommendation?.recommended_minutes ?? 20 })}
+            disabled={isLoading}
+            className="flex items-center gap-3 rounded-xl px-8 py-4 text-base font-bold text-white transition hover:opacity-90 active:scale-95 disabled:opacity-50"
+            style={{ background: 'linear-gradient(90deg,#2563eb,#1d4ed8)', boxShadow: '0 0 40px rgba(37,99,235,0.35)' }}
+          >
+            {isLoading ? <><div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Preparing Room…</> : <>Enter Simulation <Play className="h-5 w-5 fill-current" /></>}
+          </button>
+          <button className="flex items-center gap-2 rounded-xl px-6 py-4 text-sm font-semibold text-slate-300 transition hover:bg-white/5" style={{ border: `1px solid ${BORDER}` }}>
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+            Test Hardware
+          </button>
+        </div>
+        <div className="flex items-center justify-center gap-6 mt-6 text-[10px] font-bold uppercase tracking-widest text-slate-600">
+          <span className="flex items-center gap-1.5"><Lock className="h-3 w-3" /> Private Session</span>
+          <span className="flex items-center gap-1.5"><BarChart2 className="h-3 w-3" /> Real-Time Insights</span>
+        </div>
       </div>
     </div>
   );

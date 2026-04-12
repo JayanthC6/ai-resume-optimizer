@@ -1,19 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import {
-  Mic,
-  MicOff,
-  Send,
-  XOctagon,
-  FileText,
-  Code2,
-  AlertCircle,
-  Timer,
-  Briefcase,
-  ArrowRight,
-} from 'lucide-react';
+import { Mic, MicOff, Send, Code2, Paperclip, FileText, Briefcase, Timer, X } from 'lucide-react';
 import type { InterviewMessage } from '@repo/types';
 import ReactMarkdown from 'react-markdown';
 
@@ -30,17 +16,11 @@ interface Props {
   sessionId: string;
 }
 
+const BORDER = 'rgba(255,255,255,0.07)';
+
 export function InterviewWorkspace({
-  messages,
-  onSendMessage,
-  onEndSession,
-  onOpenCodingArena,
-  isSending,
-  voiceEnabled,
-  context,
-  language,
-  durationMinutes,
-  sessionId,
+  messages, onSendMessage, onEndSession, onOpenCodingArena,
+  isSending, voiceEnabled, context, language, durationMinutes, sessionId,
 }: Props) {
   const [input, setInput] = useState('');
   const [remainingSeconds, setRemainingSeconds] = useState(durationMinutes * 60);
@@ -49,29 +29,19 @@ export function InterviewWorkspace({
   const scrollRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
 
-  // Auto-scroll to latest message
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
+    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages]);
 
-  // Countdown timer
   useEffect(() => {
-    const id = setInterval(() => {
-      setRemainingSeconds((prev) => Math.max(0, prev - 1));
-    }, 1000);
+    const id = setInterval(() => setRemainingSeconds((p) => Math.max(0, p - 1)), 1000);
     return () => clearInterval(id);
   }, []);
 
   useEffect(() => {
-    if (remainingSeconds === 0 && !timerCompleted) {
-      setTimerCompleted(true);
-      onEndSession();
-    }
+    if (remainingSeconds === 0 && !timerCompleted) { setTimerCompleted(true); onEndSession(); }
   }, [remainingSeconds, timerCompleted, onEndSession]);
 
-  // Voice recognition setup
   useEffect(() => {
     if (typeof window !== 'undefined' && 'webkitSpeechRecognition' in window) {
       const SR = (window as any).webkitSpeechRecognition;
@@ -79,9 +49,9 @@ export function InterviewWorkspace({
       recognitionRef.current.continuous = false;
       recognitionRef.current.interimResults = false;
       recognitionRef.current.lang = 'en-US';
-      recognitionRef.current.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        setInput((prev) => (prev ? prev + ' ' + transcript : transcript));
+      recognitionRef.current.onresult = (e: any) => {
+        const t = e.results[0][0].transcript;
+        setInput((p) => p ? p + ' ' + t : t);
         setIsListening(false);
       };
       recognitionRef.current.onerror = () => setIsListening(false);
@@ -90,12 +60,8 @@ export function InterviewWorkspace({
   }, []);
 
   const toggleListening = () => {
-    if (isListening) {
-      recognitionRef.current?.stop();
-    } else {
-      setIsListening(true);
-      recognitionRef.current?.start();
-    }
+    if (isListening) { recognitionRef.current?.stop(); }
+    else { setIsListening(true); recognitionRef.current?.start(); }
   };
 
   const handleSend = () => {
@@ -104,179 +70,233 @@ export function InterviewWorkspace({
     setInput('');
   };
 
-  const minutes = String(Math.floor(remainingSeconds / 60)).padStart(2, '0');
+  const mins = String(Math.floor(remainingSeconds / 60)).padStart(2, '0');
   const secs = String(remainingSeconds % 60).padStart(2, '0');
-  const timerUrgent = remainingSeconds < 300;
+  const urgent = remainingSeconds < 300;
+
+  /* Live analysis scores derived from message count */
+  const techScore = Math.min(95, 70 + messages.filter(m => m.role === 'user').length * 2);
+  const commScore = Math.min(98, 80 + messages.filter(m => m.role === 'user').length * 2);
 
   return (
-    <div className="flex flex-col h-[calc(100vh-80px)] bg-slate-950 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="flex h-[calc(100vh-56px)]" style={{ background: '#0a0f1a' }}>
 
-      {/* ── Top Bar ── */}
-      <div className="flex items-center justify-between px-5 py-3 border-b border-slate-800 bg-slate-900/70 backdrop-blur-sm shrink-0">
-        {/* Left: Session info */}
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2.5">
-            <div className="h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.7)] animate-pulse" />
-            <span className="text-sm font-semibold text-slate-200">Live Interview</span>
-          </div>
-          <div className="h-4 w-px bg-slate-700" />
-          <div className="flex items-center gap-1.5">
-            <Briefcase className="h-3.5 w-3.5 text-slate-500" />
-            <span className="text-xs text-slate-400 max-w-[200px] truncate">{context.jobTitle}</span>
-          </div>
-          <div className="hidden md:flex items-center gap-1.5">
-            <FileText className="h-3.5 w-3.5 text-slate-500" />
-            <span className="text-xs text-slate-500 font-mono max-w-[160px] truncate">{context.resumeFilename}</span>
-          </div>
-          <div className="hidden lg:flex items-center gap-1 px-2 py-0.5 rounded border border-slate-700 bg-slate-800/50 font-mono text-[11px] text-cyan-400">
-            {language}
+      {/* ── LEFT SIDEBAR (narrow) ── */}
+      <div className="w-48 flex flex-col shrink-0" style={{ background: '#0d1117', borderRight: `1px solid ${BORDER}` }}>
+        {/* Logo */}
+        <div className="px-4 pt-5 pb-4" style={{ borderBottom: `1px solid ${BORDER}` }}>
+          <div className="flex items-center gap-2">
+            <div className="h-7 w-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg,#2563eb,#06b6d4)' }}>
+              <svg className="h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            </div>
+            <div>
+              <p className="text-[11px] font-bold text-white leading-tight">HiredLens</p>
+            </div>
           </div>
         </div>
 
-        {/* Right: Timer + Code Arena button + End */}
-        <div className="flex items-center gap-3">
-          <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm font-mono font-bold transition-colors ${
-            timerUrgent
-              ? 'border-rose-500/50 bg-rose-950/30 text-rose-400'
-              : 'border-slate-700 bg-slate-800/50 text-cyan-400'
-          }`}>
-            <Timer className="h-3.5 w-3.5" />
-            {minutes}:{secs}
+        {/* Nav label */}
+        <div className="px-4 pt-4 pb-2">
+          <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-600">Current Session</p>
+        </div>
+
+        {/* Nav items */}
+        <nav className="px-2 space-y-0.5">
+          {[
+            { label: 'Overview', icon: <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>, active: false },
+            { label: 'Mock Interview', icon: <Mic className="h-4 w-4" />, active: true },
+            { label: 'Notes', icon: <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path d="M4 6h16M4 10h16M4 14h10"/></svg>, active: false },
+          ].map((item) => (
+            <button
+              key={item.label}
+              className="w-full flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-xs font-medium transition-all"
+              style={{
+                background: item.active ? '#2563eb' : 'transparent',
+                color: item.active ? 'white' : '#64748b',
+              }}
+            >
+              <span style={{ color: item.active ? 'white' : '#475569' }}>{item.icon}</span>
+              {item.label}
+            </button>
+          ))}
+        </nav>
+
+        {/* Bottom: timer + code arena */}
+        <div className="mt-auto px-3 pb-5 space-y-2" style={{ borderTop: `1px solid ${BORDER}`, paddingTop: '12px', marginTop: '8px' }}>
+          <div className="px-3 py-2 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)' }}>
+            <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-600 mb-1">Elapsed Time</p>
+            <div className="flex items-center gap-2">
+              <Timer className="h-4 w-4 text-blue-400" />
+              <span className={`font-mono font-bold text-sm ${urgent ? 'text-rose-400' : 'text-white'}`}>{mins}:{secs}</span>
+            </div>
           </div>
-
-          <Button
+          <button
             onClick={onOpenCodingArena}
-            size="sm"
-            className="gap-2 bg-cyan-600 hover:bg-cyan-500 text-white font-semibold shadow-lg shadow-cyan-900/30 transition-all active:scale-95"
+            className="w-full flex items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-bold text-white transition hover:opacity-90"
+            style={{ background: '#1e2a3a', border: `1px solid ${BORDER}` }}
           >
-            <Code2 className="h-4 w-4" />
+            <Code2 className="h-3.5 w-3.5" />
             Code Arena
-            <ArrowRight className="h-3.5 w-3.5" />
-          </Button>
-
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onEndSession}
-            className="text-slate-400 hover:text-rose-400 hover:bg-rose-400/10 gap-1.5 transition-colors"
-          >
-            <XOctagon className="h-4 w-4" />
-            <span className="hidden sm:inline">End Session</span>
-          </Button>
+          </button>
         </div>
       </div>
 
-      {/* ── Chat Messages ── */}
-      <ScrollArea className="flex-1 px-0" ref={scrollRef}>
-        <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
+      {/* ── CENTER: AI avatar + chat ── */}
+      <div className="flex-1 flex flex-col overflow-hidden">
 
-          {/* Session start info card */}
-          <div className="flex justify-center">
-            <div className="flex items-center gap-3 px-4 py-2.5 rounded-full border border-slate-800 bg-slate-900/60 text-xs text-slate-500">
-              <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              Session started · ID {sessionId.slice(0, 8).toUpperCase()}
-            </div>
+        {/* Top bar */}
+        <div className="flex items-center justify-between px-6 py-3 shrink-0" style={{ background: '#0d1117', borderBottom: `1px solid ${BORDER}` }}>
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Mock Interview</span>
+            <span className="text-slate-700">·</span>
+            <span className="text-xs text-slate-600 uppercase tracking-widest">Interview Intelligence</span>
           </div>
+          <button
+            onClick={onEndSession}
+            className="flex items-center gap-2 rounded-xl px-4 py-1.5 text-xs font-bold text-white transition hover:opacity-90"
+            style={{ background: '#dc2626' }}
+          >
+            End Session
+          </button>
+        </div>
+
+        {/* AI Avatar area */}
+        <div className="flex flex-col items-center py-6 shrink-0" style={{ background: 'linear-gradient(180deg,#0d1117,#0a0f1a)' }}>
+          <div className="h-24 w-24 rounded-full flex items-center justify-center text-5xl mb-3" style={{ background: '#161b27', border: '2px solid rgba(255,255,255,0.08)' }}>
+            🤖
+          </div>
+          {/* Voice bars */}
+          {isSending && (
+            <div className="flex items-end gap-1 h-6 mb-1">
+              {[3, 5, 7, 5, 4, 6, 8, 5, 3].map((h, i) => (
+                <div key={i} className="w-1 rounded-full bg-blue-400" style={{ height: `${h * 2}px`, animation: `pulse 0.8s ease-in-out ${i * 0.08}s infinite alternate` }} />
+              ))}
+            </div>
+          )}
+          <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-600">
+            {isSending ? 'AI Interviewer Listening' : 'AI Interviewer'}
+          </p>
+        </div>
+
+        {/* Chat messages */}
+        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6" ref={scrollRef}>
+          {messages.length === 0 && (
+            <div className="flex justify-center">
+              <div className="flex items-center gap-2 px-4 py-2 rounded-full text-xs text-slate-600" style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${BORDER}` }}>
+                <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                Session started · ID {sessionId.slice(0, 8).toUpperCase()}
+              </div>
+            </div>
+          )}
 
           {messages.map((msg, idx) => (
-            <div
-              key={msg.id || idx}
-              className={`flex gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300 ${
-                msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'
-              }`}
-            >
-              {/* Avatar */}
-              <div className={`shrink-0 h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold ${
-                msg.role === 'user'
-                  ? 'bg-cyan-600 text-white'
-                  : 'bg-slate-800 border border-slate-700 text-slate-400'
-              }`}>
-                {msg.role === 'user' ? 'You' : 'AI'}
-              </div>
-
-              {/* Bubble */}
-              <div className={`max-w-[75%] space-y-1 ${msg.role === 'user' ? 'items-end' : 'items-start'} flex flex-col`}>
-                <span className={`text-[10px] font-semibold uppercase tracking-widest ${
-                  msg.role === 'user' ? 'text-cyan-500 mr-1' : 'text-slate-500 ml-1'
-                }`}>
-                  {msg.role === 'user' ? 'You' : 'Interviewer'}
-                </span>
-                <div className={`rounded-2xl px-5 py-3.5 shadow-lg text-sm leading-relaxed ${
-                  msg.role === 'user'
-                    ? 'bg-cyan-600 text-white rounded-tr-sm'
-                    : 'bg-slate-800 text-slate-100 border border-slate-700/50 rounded-tl-sm'
-                }`}>
-                  <div className="prose prose-invert prose-sm prose-p:my-0.5 prose-code:text-cyan-300 prose-code:bg-slate-900/50 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-pre:bg-slate-900 prose-pre:border prose-pre:border-slate-700 max-w-none">
-                    <ReactMarkdown>{msg.content}</ReactMarkdown>
-                  </div>
+            <div key={msg.id || idx} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+              <p className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: msg.role === 'user' ? '#64748b' : '#475569' }}>
+                {msg.role === 'user' ? 'Candidate (You)' : 'HiredLens AI'}
+              </p>
+              <div
+                className="max-w-2xl rounded-2xl px-5 py-4 text-sm leading-relaxed"
+                style={{
+                  background: msg.role === 'user' ? 'rgba(37,99,235,0.12)' : '#161b27',
+                  border: `1px solid ${msg.role === 'user' ? 'rgba(37,99,235,0.25)' : BORDER}`,
+                  color: '#cbd5e1',
+                }}
+              >
+                <div className="prose prose-invert prose-sm max-w-none">
+                  <ReactMarkdown>{msg.content}</ReactMarkdown>
                 </div>
-                <span className="text-[10px] text-slate-600 px-1">
-                  {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </span>
               </div>
             </div>
           ))}
 
-          {/* AI Typing Indicator */}
           {isSending && (
-            <div className="flex gap-3">
-              <div className="shrink-0 h-8 w-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-xs text-slate-400 font-bold">
-                AI
-              </div>
-              <div className="rounded-2xl rounded-tl-sm bg-slate-800 border border-slate-700/50 px-5 py-4 flex items-center gap-1.5">
-                <div className="h-2 w-2 bg-cyan-500 rounded-full animate-bounce [animation-delay:-0.3s]" />
-                <div className="h-2 w-2 bg-cyan-500 rounded-full animate-bounce [animation-delay:-0.15s]" />
-                <div className="h-2 w-2 bg-cyan-500 rounded-full animate-bounce" />
+            <div className="flex flex-col items-start">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-600 mb-2">HiredLens AI</p>
+              <div className="rounded-2xl px-5 py-4 flex items-center gap-2" style={{ background: '#161b27', border: `1px solid ${BORDER}` }}>
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className="h-2 w-2 rounded-full bg-slate-500" style={{ animation: `bounce 0.8s ease-in-out ${i * 0.15}s infinite alternate` }} />
+                ))}
               </div>
             </div>
           )}
         </div>
-      </ScrollArea>
 
-      {/* ── Input Bar ── */}
-      <div className="shrink-0 border-t border-slate-800 bg-slate-900/80 backdrop-blur-sm">
-        <div className="max-w-3xl mx-auto px-4 py-4">
-          <div className="flex items-center gap-3">
-            {voiceEnabled && (
-              <Button
-                onClick={toggleListening}
-                variant={isListening ? 'destructive' : 'outline'}
-                size="icon"
-                className={`shrink-0 h-11 w-11 rounded-full transition-all shadow-lg ${
-                  isListening
-                    ? 'animate-pulse shadow-rose-900/40'
-                    : 'border-slate-700 bg-slate-800/60 hover:bg-slate-700 hover:border-slate-600'
-                }`}
-                title={isListening ? 'Stop recording' : 'Start voice input'}
-              >
-                {isListening ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
-              </Button>
-            )}
-
-            <div className="flex-1 relative">
-              <Input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
-                placeholder={isListening ? '🎙 Listening...' : 'Type your response...'}
-                className="h-11 pr-4 bg-slate-800/60 border-slate-700 text-slate-100 placeholder:text-slate-500 focus-visible:ring-cyan-500/50 focus-visible:border-cyan-500/50 rounded-xl"
-              />
-            </div>
-
-            <Button
-              onClick={handleSend}
-              disabled={!input.trim() || isSending}
-              size="icon"
-              className="shrink-0 h-11 w-11 rounded-full bg-cyan-600 hover:bg-cyan-500 shadow-lg shadow-cyan-900/30 transition-all active:scale-95 disabled:opacity-40"
+        {/* Input */}
+        <div className="shrink-0 px-6 py-4" style={{ background: '#0d1117', borderTop: `1px solid ${BORDER}` }}>
+          <div className="flex items-center gap-3 rounded-2xl px-4 py-3" style={{ background: '#161b27', border: `1px solid ${BORDER}` }}>
+            <input
+              className="flex-1 bg-transparent text-sm text-slate-200 placeholder:text-slate-600 outline-none"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+              placeholder={isListening ? '🎙 Listening…' : 'Type your response here…'}
+            />
+            <button className="text-slate-600 hover:text-slate-400 transition">
+              <Paperclip className="h-4 w-4" />
+            </button>
+            <button
+              onClick={voiceEnabled ? toggleListening : undefined}
+              className="h-10 w-10 rounded-xl flex items-center justify-center transition"
+              style={{ background: isListening ? '#dc2626' : 'linear-gradient(135deg,#2563eb,#1d4ed8)' }}
             >
-              <Send className="h-5 w-5" />
-            </Button>
+              {isListening ? <MicOff className="h-4 w-4 text-white" /> : <Mic className="h-4 w-4 text-white" />}
+            </button>
           </div>
+          <div className="flex items-center justify-between mt-2 px-1">
+            <p className="text-[10px] text-slate-700 flex items-center gap-1">
+              <span>📌</span> Press <kbd className="mx-1 px-1.5 py-0.5 rounded text-[9px] font-mono" style={{ background: '#1e2a3a', border: `1px solid ${BORDER}`, color: '#94a3b8' }}>Shift + Enter</kbd> to send
+            </p>
+            <p className="text-[10px] text-slate-700">
+              ⚡ Pro Tip: Mention scalability trade-offs
+            </p>
+          </div>
+        </div>
+      </div>
 
-          <p className="text-center text-[11px] text-slate-600 mt-2.5 flex items-center justify-center gap-1.5">
-            <AlertCircle className="h-3 w-3" />
-            Press <kbd className="mx-1 px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 font-mono text-[10px] text-slate-400">Enter</kbd> to send · For coding questions, open the <span className="text-cyan-500 font-medium">Code Arena</span>
-          </p>
+      {/* ── RIGHT PANEL: Live Analysis ── */}
+      <div className="w-56 flex flex-col shrink-0" style={{ background: '#0d1117', borderLeft: `1px solid ${BORDER}` }}>
+        {/* Live Analysis */}
+        <div className="p-4" style={{ borderBottom: `1px solid ${BORDER}` }}>
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 mb-4">Live Analysis</p>
+          <div className="space-y-4">
+            {[
+              { label: 'Technical Accuracy', value: techScore },
+              { label: 'Communication', value: commScore },
+            ].map((s) => (
+              <div key={s.label}>
+                <div className="flex justify-between text-xs mb-1.5">
+                  <span className="text-slate-400">{s.label}</span>
+                  <span className="font-bold" style={{ color: s.value >= 85 ? '#60a5fa' : '#f97316' }}>{s.value}%</span>
+                </div>
+                <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                  <div
+                    className="h-full rounded-full transition-all duration-700"
+                    style={{ width: `${s.value}%`, background: s.value >= 85 ? '#2563eb' : '#f97316' }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Resources */}
+        <div className="p-4">
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 mb-3">Resources</p>
+          <div className="space-y-2.5">
+            {[
+              { label: 'Whiteboard', icon: <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><rect x="3" y="3" width="18" height="14" rx="2"/><path d="M7 21h10"/></svg> },
+              { label: 'Resume Ref', icon: <FileText className="h-4 w-4" /> },
+            ].map((r) => (
+              <button
+                key={r.label}
+                className="w-full flex items-center justify-between rounded-xl px-3 py-2.5 text-xs font-medium text-slate-400 hover:text-white transition"
+                style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${BORDER}` }}
+              >
+                <span>{r.label}</span>
+                <span style={{ color: '#475569' }}>{r.icon}</span>
+              </button>
+            ))}
+          </div>
         </div>
       </div>
     </div>

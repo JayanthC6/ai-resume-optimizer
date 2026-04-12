@@ -1,6 +1,5 @@
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { BookOpen, CheckCircle2, Code2, Map, Rocket, Target, Trophy } from 'lucide-react';
+import { useState } from 'react';
+import { Map, CheckCircle2, Clock, Lock, ChevronRight, BookOpen, FileText, Sparkles, RefreshCw } from 'lucide-react';
 import type { SkillGapRoadmap } from '@repo/types';
 
 type Props = {
@@ -9,146 +8,281 @@ type Props = {
   onGenerate: () => void;
 };
 
-const phaseConfig = [
-  { gradient: 'from-sky-500 to-sky-600', bg: 'bg-sky-500', ring: 'ring-sky-200 dark:ring-sky-900', label: 'Foundation', icon: <Target className="h-4 w-4" />, accent: 'sky' },
-  { gradient: 'from-cyan-500 to-teal-500', bg: 'bg-cyan-500', ring: 'ring-cyan-200 dark:ring-cyan-900', label: 'Acceleration', icon: <Rocket className="h-4 w-4" />, accent: 'cyan' },
-  { gradient: 'from-indigo-500 to-purple-500', bg: 'bg-indigo-500', ring: 'ring-indigo-200 dark:ring-indigo-900', label: 'Mastery', icon: <Trophy className="h-4 w-4" />, accent: 'indigo' },
-];
-
-function formatTimeframe(value: string) {
-  if (value === '30_days') return 'Days 1–30';
-  if (value === '60_days') return 'Days 31–60';
-  if (value === '90_days') return 'Days 61–90';
-  return value.replace('_', '–');
+function formatTimeframe(v: string) {
+  if (v === '30_days') return 'Days 1–30';
+  if (v === '60_days') return 'Days 31–60';
+  if (v === '90_days') return 'Days 61–90';
+  return v;
 }
 
+const PHASE_HOURS = [8, 12, 10, 6];
+const PHASE_PROGRESS = [100, 35, 0, 0];
+const PHASE_STATUS: ('completed' | 'in-progress' | 'locked')[] = ['completed', 'in-progress', 'locked', 'locked'];
+
+const CARD_BG = '#161b27';
+const BORDER = 'rgba(255,255,255,0.06)';
+
 export function RoadmapPanel({ skillGapRoadmap, isGenerating, onGenerate }: Props) {
+  const [activePhase, setActivePhase] = useState(1);
+
+  /* ── Empty / generate state ── */
   if (!skillGapRoadmap) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50 py-16 dark:border-slate-700 dark:bg-slate-900/50">
-        <Map className="mb-3 h-8 w-8 text-slate-400 dark:text-slate-500" />
-        <h3 className="mb-1 text-base font-semibold text-slate-700 dark:text-slate-300">Build Your Skill Roadmap</h3>
-        <p className="mb-5 max-w-sm text-center text-sm text-slate-500 dark:text-slate-400">
-          Get a focused 30/60/90-day plan with bite-sized goals, resources, and projects.
-        </p>
-        <Button
-          onClick={onGenerate}
-          disabled={isGenerating}
-          className="rounded-xl bg-gradient-to-r from-sky-600 to-cyan-600 text-white shadow-md shadow-sky-200 hover:from-sky-700 hover:to-cyan-700 dark:shadow-sky-900/30"
+      <div className="flex flex-col gap-6">
+        {/* Header */}
+        <div>
+          <h1 className="text-2xl font-extrabold text-white">Skill Roadmap</h1>
+          <p className="text-xs uppercase tracking-widest text-slate-500 mt-1">Your personalised learning path</p>
+        </div>
+
+        <div
+          className="flex flex-col items-center justify-center rounded-2xl py-24 gap-6 text-center"
+          style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}
         >
-          {isGenerating ? 'Generating...' : 'Generate Roadmap'}
-        </Button>
+          <div className="h-16 w-16 rounded-2xl flex items-center justify-center" style={{ background: 'rgba(37,99,235,0.12)' }}>
+            <Map className="h-8 w-8 text-blue-400" />
+          </div>
+          <div className="max-w-sm">
+            <h3 className="text-xl font-bold text-white mb-2">Build Your Skill Roadmap</h3>
+            <p className="text-sm text-slate-400 leading-relaxed">
+              Get a focused 30/60/90-day plan with bite-sized goals, curated learning resources, and mini-projects.
+            </p>
+          </div>
+          <button
+            onClick={onGenerate}
+            disabled={isGenerating}
+            className="flex items-center gap-2 rounded-xl px-7 py-3 text-sm font-bold text-white transition hover:opacity-90 active:scale-95 disabled:opacity-50"
+            style={{ background: 'linear-gradient(90deg,#2563eb,#1d4ed8)', boxShadow: '0 0 30px rgba(37,99,235,0.3)' }}
+          >
+            {isGenerating ? <><RefreshCw className="h-4 w-4 animate-spin" /> Generating…</> : <><Sparkles className="h-4 w-4" /> Generate Roadmap</>}
+          </button>
+        </div>
       </div>
     );
   }
 
+  const phases = skillGapRoadmap.phases ?? [];
+  const missingSkills = skillGapRoadmap.missingSkills ?? [];
+  const totalHours = phases.length * 10;
+  const completedGoals = phases.filter((_, i) => PHASE_STATUS[i] === 'completed').length;
+
   return (
-    <div className="space-y-6">
-      {/* Skills to focus */}
-      <div className="rounded-2xl border border-slate-200 bg-gradient-to-r from-white via-rose-50/20 to-white p-5 dark:border-slate-800 dark:from-slate-900 dark:via-rose-950/10 dark:to-slate-900">
-        <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-slate-800 dark:text-slate-200">
-          <Target className="h-4 w-4 text-rose-500" />
-          Skills to Focus On
-        </h3>
-        <div className="flex flex-wrap gap-2">
-          {skillGapRoadmap.missingSkills.map((skill, idx) => (
-            <Badge key={idx} className="border-rose-200 bg-rose-50 px-3 py-1 text-rose-700 dark:border-rose-800 dark:bg-rose-950/50 dark:text-rose-300">
-              {skill}
-            </Badge>
+    <div className="flex flex-col gap-6">
+
+      {/* ── Header ── */}
+      <div>
+        <h1 className="text-2xl font-extrabold text-white">Skill Roadmap</h1>
+        <p className="text-xs uppercase tracking-widest text-slate-500 mt-1">AI Career Intelligence</p>
+      </div>
+
+      {/* ── Hero Banner ── */}
+      <div
+        className="relative rounded-2xl px-8 py-7 overflow-hidden"
+        style={{ background: 'linear-gradient(135deg,#0d1420,#162040)', border: '1px solid rgba(37,99,235,0.2)' }}
+      >
+        <div className="pointer-events-none absolute right-0 top-0 h-full w-64 opacity-10"
+          style={{ background: 'radial-gradient(circle at right center,#2563eb,transparent 70%)' }} />
+        <p className="text-3xl font-extrabold text-white mb-2">
+          Your Path to{' '}
+          <span style={{ color: '#60a5fa' }}>
+            {missingSkills.slice(0, 2).join(' & ') || 'Career Mastery'}
+          </span>
+        </p>
+        <p className="text-sm text-slate-400 max-w-lg mb-6">
+          Based on your recent analysis, we've identified <strong className="text-white">{missingSkills.length} critical skill gaps</strong>.
+          Master these to increase your hiring probability.
+        </p>
+        <div className="flex gap-4 flex-wrap">
+          {[
+            { label: 'Current Readiness', value: '72%', icon: '📈' },
+            { label: 'Est. Time to Mastery', value: `~${totalHours} Hours`, icon: '⏱' },
+            { label: 'Goals Completed', value: `${completedGoals} / ${phases.length}`, icon: '✓' },
+          ].map((s, i) => (
+            <div key={i} className="flex items-center gap-3 rounded-xl px-5 py-3" style={{ background: 'rgba(255,255,255,0.05)', border: `1px solid ${BORDER}` }}>
+              <span className="text-lg">{s.icon}</span>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{s.label}</p>
+                <p className="text-lg font-black text-white">{s.value}</p>
+              </div>
+            </div>
           ))}
         </div>
       </div>
 
-      {/* Timeline */}
-      <div className="relative">
-        {/* Vertical line */}
-        <div className="absolute left-6 top-0 hidden h-full w-0.5 bg-gradient-to-b from-sky-400 via-cyan-400 to-indigo-400 md:block" />
-
-        <div className="space-y-6">
-          {skillGapRoadmap.phases.map((phase, idx) => {
-            const config = phaseConfig[idx] || phaseConfig[0];
+      {/* ── Timeline ── */}
+      <div className="relative flex gap-6">
+        {/* Left timeline spine */}
+        <div className="relative flex flex-col items-center" style={{ width: '32px', flexShrink: 0 }}>
+          <div className="absolute top-0 bottom-0 w-0.5 left-1/2 -translate-x-1/2" style={{ background: 'linear-gradient(to bottom, #2563eb, #1e3a5f, #0f1623)' }} />
+          {phases.map((_, i) => {
+            const status = PHASE_STATUS[i] ?? 'locked';
             return (
-              <div key={idx} className="relative md:pl-16">
-                {/* Timeline dot */}
-                <div className={`absolute left-4 top-5 z-10 hidden h-5 w-5 items-center justify-center rounded-full ${config.bg} text-white ring-4 ${config.ring} md:flex`}>
-                  <span className="text-[10px] font-bold">{idx + 1}</span>
+              <div key={i} className="relative z-10 mb-0" style={{ marginTop: i === 0 ? 0 : '180px' }}>
+                <div
+                  className="h-8 w-8 rounded-full flex items-center justify-center cursor-pointer transition hover:scale-110"
+                  style={{
+                    background: status === 'completed' ? '#2563eb' : status === 'in-progress' ? '#1e3a5f' : '#161b27',
+                    border: status === 'completed' ? '2px solid #3b82f6' : status === 'in-progress' ? '2px solid #2563eb' : `2px solid ${BORDER}`,
+                    boxShadow: status !== 'locked' ? '0 0 12px rgba(37,99,235,0.4)' : 'none',
+                  }}
+                  onClick={() => setActivePhase(i)}
+                >
+                  {status === 'completed' ? (
+                    <CheckCircle2 className="h-4 w-4 text-white" />
+                  ) : status === 'in-progress' ? (
+                    <div className="h-2.5 w-2.5 rounded-full bg-blue-400 animate-pulse" />
+                  ) : (
+                    <div className="h-2.5 w-2.5 rounded-full bg-slate-600" />
+                  )}
                 </div>
+              </div>
+            );
+          })}
+        </div>
 
-                <div className="rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:shadow-md dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700">
-                  {/* Phase header */}
-                  <div className={`flex items-center justify-between rounded-t-2xl bg-gradient-to-r ${config.gradient} px-5 py-3`}>
-                    <div className="flex items-center gap-2 text-white">
-                      {config.icon}
-                      <span className="text-sm font-bold">{formatTimeframe(phase.timeframe)}</span>
-                      <span className="text-xs font-medium opacity-80">· {config.label}</span>
-                    </div>
-                    <span className="rounded-full bg-white/20 px-2.5 py-0.5 text-[11px] font-semibold text-white backdrop-blur-sm">
-                      Phase {idx + 1}
+        {/* Right: Phase cards */}
+        <div className="flex-1 space-y-4">
+          {phases.map((phase, i) => {
+            const status = PHASE_STATUS[i] ?? 'locked';
+            const hours = PHASE_HOURS[i] ?? 8;
+            const progress = PHASE_PROGRESS[i] ?? 0;
+            const isLocked = status === 'locked';
+            const isActive = status === 'in-progress';
+            const isDone = status === 'completed';
+
+            return (
+              <div
+                key={i}
+                className="rounded-2xl transition"
+                style={{
+                  background: CARD_BG,
+                  border: isActive ? '1px solid rgba(37,99,235,0.35)' : `1px solid ${BORDER}`,
+                  opacity: isLocked ? 0.7 : 1,
+                }}
+              >
+                {/* Card header */}
+                <div className="flex items-center justify-between px-6 py-4">
+                  <div className="flex items-center gap-3">
+                    <span
+                      className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest"
+                      style={{
+                        background: isDone ? 'rgba(16,185,129,0.12)' : isActive ? 'rgba(37,99,235,0.15)' : 'rgba(255,255,255,0.05)',
+                        color: isDone ? '#10b981' : isActive ? '#60a5fa' : '#64748b',
+                        border: isDone ? '1px solid rgba(16,185,129,0.25)' : isActive ? '1px solid rgba(37,99,235,0.3)' : `1px solid ${BORDER}`,
+                      }}
+                    >
+                      {isDone ? 'Completed' : isActive ? 'In Progress' : 'Locked'}
                     </span>
+                    {isActive && (
+                      <span className="text-xs font-semibold text-blue-400">Active Focus</span>
+                    )}
+                    {isDone && (
+                      <span className="text-xs text-slate-500">Last updated 2 days ago</span>
+                    )}
                   </div>
-
-                  {/* Phase content — compact 3-column grid */}
-                  <div className="grid gap-px bg-slate-100 dark:bg-slate-800 md:grid-cols-3">
-                    {/* Goals */}
-                    <div className="bg-white p-4 dark:bg-slate-900">
-                      <div className="mb-2 flex items-center gap-1.5">
-                        <CheckCircle2 className="h-3.5 w-3.5 text-sky-500" />
-                        <p className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Goals</p>
-                      </div>
-                      <ul className="space-y-1.5">
-                        {phase.goals.map((item, i) => (
-                          <li key={i} className="flex items-start gap-2 text-[13px] leading-snug text-slate-700 dark:text-slate-300">
-                            <span className="mt-1 h-1 w-1 shrink-0 rounded-full bg-sky-400" />
-                            <span className="line-clamp-2">{item}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    {/* Resources */}
-                    <div className="bg-white p-4 dark:bg-slate-900">
-                      <div className="mb-2 flex items-center gap-1.5">
-                        <BookOpen className="h-3.5 w-3.5 text-cyan-500" />
-                        <p className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Learn</p>
-                      </div>
-                      <ul className="space-y-1.5">
-                        {phase.learningResources.map((item, i) => (
-                          <li key={i} className="flex items-start gap-2 text-[13px] leading-snug text-slate-700 dark:text-slate-300">
-                            <span className="mt-1 h-1 w-1 shrink-0 rounded-full bg-cyan-400" />
-                            <span className="line-clamp-2">{item}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    {/* Projects */}
-                    <div className="bg-white p-4 md:rounded-br-2xl dark:bg-slate-900">
-                      <div className="mb-2 flex items-center gap-1.5">
-                        <Code2 className="h-3.5 w-3.5 text-indigo-500" />
-                        <p className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Build</p>
-                      </div>
-                      <ul className="space-y-1.5">
-                        {phase.miniProjects.map((item, i) => (
-                          <li key={i} className="flex items-start gap-2 text-[13px] leading-snug text-slate-700 dark:text-slate-300">
-                            <span className="mt-1 h-1 w-1 shrink-0 rounded-full bg-indigo-400" />
-                            <span className="line-clamp-2">{item}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="px-2.5 py-1 rounded-full text-[10px] font-bold"
+                      style={{
+                        background: i === 1 ? 'rgba(239,68,68,0.12)' : 'rgba(255,255,255,0.05)',
+                        color: i === 1 ? '#f87171' : '#94a3b8',
+                        border: i === 1 ? '1px solid rgba(239,68,68,0.25)' : `1px solid ${BORDER}`,
+                      }}
+                    >
+                      {i === 0 || i === 3 ? 'PRIORITY: HIGH' : i === 2 ? 'PRIORITY: MEDIUM' : 'PRIORITY: HIGH'}
+                    </span>
+                    <span className="text-xs text-slate-500 font-mono">{hours} HOURS</span>
+                    {isLocked && <Lock className="h-3.5 w-3.5 text-slate-600" />}
                   </div>
                 </div>
+
+                {/* Phase title */}
+                <div className="px-6 pb-2">
+                  <h3 className="text-lg font-bold text-white">{phase.goals?.[0] ?? `${formatTimeframe(phase.timeframe)} Goals`}</h3>
+                  {isActive && (
+                    <p className="text-sm text-slate-400 mt-2 leading-relaxed">
+                      {phase.goals?.[1] ?? 'Mastering key competencies essential for high-end engineering roles.'}
+                    </p>
+                  )}
+                </div>
+
+                {/* Progress bar */}
+                <div className="px-6 pb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all duration-700"
+                        style={{
+                          width: `${progress}%`,
+                          background: isDone ? '#10b981' : 'linear-gradient(90deg,#2563eb,#3b82f6)',
+                        }}
+                      />
+                    </div>
+                    <span className="text-xs font-bold text-white">{progress}%</span>
+                  </div>
+                </div>
+
+                {/* Expanded content for active phase */}
+                {isActive && (
+                  <div className="border-t flex flex-col gap-4 px-6 py-5" style={{ borderColor: BORDER }}>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">Recommended Resources</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      {phase.learningResources.slice(0, 2).map((res, ri) => (
+                        <div
+                          key={ri}
+                          className="flex items-start gap-3 rounded-xl p-3 cursor-pointer transition hover:opacity-80"
+                          style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${BORDER}` }}
+                        >
+                          <div className="h-8 w-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: ri === 0 ? 'rgba(37,99,235,0.15)' : 'rgba(255,255,255,0.05)' }}>
+                            {ri === 0 ? <BookOpen className="h-4 w-4 text-blue-400" /> : <FileText className="h-4 w-4 text-slate-400" />}
+                          </div>
+                          <div>
+                            <p className="text-xs font-semibold text-white leading-tight line-clamp-2">{res}</p>
+                            <p className="text-[10px] text-slate-500 mt-0.5">{ri === 0 ? 'Course' : 'Documentation'} • Official</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* View notes (completed) */}
+                {isDone && (
+                  <div className="px-6 pb-4">
+                    <button className="flex items-center gap-1.5 text-xs font-semibold text-blue-400 hover:text-blue-300 transition">
+                      <ChevronRight className="h-3.5 w-3.5" />
+                      View Notes
+                    </button>
+                  </div>
+                )}
               </div>
             );
           })}
         </div>
       </div>
 
-      {/* Bottom motivational note */}
-      <div className="rounded-xl border border-sky-200 bg-gradient-to-r from-sky-50 to-cyan-50 p-4 text-center dark:border-sky-900 dark:from-sky-950/30 dark:to-cyan-950/30">
-        <p className="text-sm font-medium text-sky-800 dark:text-sky-300">
-          🎯 Focus on <span className="font-bold">one phase at a time</span>. Consistency beats speed.
-        </p>
+      {/* ── AI Coach Tip ── */}
+      <div
+        className="flex items-start gap-4 rounded-2xl px-6 py-5"
+        style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}
+      >
+        <div className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg,#2563eb,#1d4ed8)' }}>
+          <Sparkles className="h-5 w-5 text-white" />
+        </div>
+        <div className="flex-1">
+          <p className="text-sm font-bold text-white mb-1">AI Coach Tip</p>
+          <p className="text-sm text-slate-400 leading-relaxed">
+            "Focusing on <strong className="text-white">{missingSkills[0] ?? 'your current goal'}</strong> first will make the upcoming{' '}
+            <strong className="text-white">{missingSkills[1] ?? 'next module'}</strong> significantly easier. You're making great progress!"
+          </p>
+        </div>
+        <button
+          onClick={onGenerate}
+          className="shrink-0 px-4 py-2 rounded-xl text-xs font-bold text-white transition hover:opacity-90"
+          style={{ background: '#1e2a3a', border: `1px solid ${BORDER}` }}
+        >
+          Re-scan Resume
+        </button>
       </div>
     </div>
   );

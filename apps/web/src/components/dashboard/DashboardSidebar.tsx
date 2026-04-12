@@ -1,61 +1,153 @@
 import { cn } from '@/lib/utils';
 import {
-  BarChart3,
-  BookOpen,
-  FileEdit,
-  Github,
-  KeyRound,
   LayoutDashboard,
+  KeyRound,
+  FileEdit,
   Map,
+  HelpCircle,
+  Mic,
+  FolderSearch,
+  Clock,
+  Settings,
+  LifeBuoy,
+  TrendingUp,
   Menu,
   X,
-  Clock,
-  Mic,
+  PlusCircle,
 } from 'lucide-react';
 import { useState } from 'react';
 
-export type TabKey = 'overview' | 'keywords' | 'rewrites' | 'roadmap' | 'interview' | 'portfolio' | 'history' | 'mock-interview';
+export type TabKey =
+  | 'overview'
+  | 'keywords'
+  | 'rewrites'
+  | 'roadmap'
+  | 'interview'
+  | 'portfolio'
+  | 'history'
+  | 'mock-interview';
 
 type SidebarItem = {
   key: TabKey;
   label: string;
-  icon: React.ReactNode;
+  icon: React.ElementType;
 };
 
-const items: SidebarItem[] = [
-  { key: 'history', label: 'History', icon: <Clock className="h-4 w-4" /> },
-  { key: 'overview', label: 'Overview', icon: <LayoutDashboard className="h-4 w-4" /> },
-  { key: 'keywords', label: 'Keywords', icon: <KeyRound className="h-4 w-4" /> },
-  { key: 'rewrites', label: 'Rewrites', icon: <FileEdit className="h-4 w-4" /> },
-  { key: 'roadmap', label: 'Roadmap', icon: <Map className="h-4 w-4" /> },
-  { key: 'interview', label: 'Q&A Prep', icon: <BookOpen className="h-4 w-4" /> },
-  { key: 'mock-interview', label: 'Mock Interview', icon: <Mic className="h-4 w-4" /> },
-  { key: 'portfolio', label: 'Portfolio', icon: <Github className="h-4 w-4" /> },
+const NAV_ITEMS: SidebarItem[] = [
+  { key: 'overview',       label: 'Overview',         icon: LayoutDashboard },
+  { key: 'keywords',       label: 'Keywords',         icon: KeyRound },
+  { key: 'rewrites',       label: 'Rewrites',         icon: FileEdit },
+  { key: 'roadmap',        label: 'Skill Roadmap',    icon: Map },
+  { key: 'interview',      label: 'Q&A Prep',         icon: HelpCircle },
+  { key: 'mock-interview', label: 'Mock Interview',   icon: Mic },
+  { key: 'portfolio',      label: 'Portfolio',        icon: FolderSearch },
+  { key: 'history',        label: 'History',          icon: Clock },
 ];
 
 type Props = {
   activeTab: TabKey;
   onTabChange: (tab: TabKey) => void;
+  onNewAnalysis?: () => void;
 };
 
-export function DashboardSidebar({ activeTab, onTabChange }: Props) {
+export function DashboardSidebar({ activeTab, onTabChange, onNewAnalysis }: Props) {
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const SidebarContent = () => (
+    <div className="flex h-full flex-col">
+      {/* ── Logo ── */}
+      <div className="px-5 pt-5 pb-6">
+        <div className="flex items-center gap-2.5">
+          <div
+            className="h-8 w-8 rounded-lg flex items-center justify-center shrink-0"
+            style={{ background: 'linear-gradient(135deg, #2563eb, #06b6d4)' }}
+          >
+            <TrendingUp className="h-4 w-4 text-white" />
+          </div>
+          <div>
+            <p className="text-sm font-bold text-white leading-tight">HiredLens</p>
+            <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-slate-400 mt-0.5">
+              AI Career Intelligence
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Nav ── */}
+      <nav className="flex-1 px-3 space-y-0.5 overflow-y-auto">
+        {NAV_ITEMS.map((item) => {
+          const Icon = item.icon;
+          const active = activeTab === item.key;
+          return (
+            <button
+              key={item.key}
+              onClick={() => {
+                onTabChange(item.key);
+                setMobileOpen(false);
+              }}
+              className={cn(
+                'w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-150 group',
+                active
+                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/30'
+                  : 'text-slate-400 hover:bg-slate-800 hover:text-white dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white',
+              )}
+            >
+              <Icon className={cn('h-4 w-4 shrink-0', active ? 'text-white' : 'text-slate-500 group-hover:text-white')} />
+              <span>{item.label}</span>
+            </button>
+          );
+        })}
+      </nav>
+
+      {/* ── Footer nav ── */}
+      <div className="px-3 pb-3 space-y-0.5 border-t border-slate-800 pt-3 mt-2">
+        <button className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-400 hover:bg-slate-800 hover:text-white transition-all group">
+          <Settings className="h-4 w-4 text-slate-500 group-hover:text-white" />
+          Settings
+        </button>
+        <button className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-400 hover:bg-slate-800 hover:text-white transition-all group">
+          <LifeBuoy className="h-4 w-4 text-slate-500 group-hover:text-white" />
+          Support
+        </button>
+      </div>
+
+      {/* ── New Analysis CTA ── */}
+      <div className="px-4 pb-5 pt-2">
+        <button
+          onClick={() => {
+            onNewAnalysis?.();
+            setMobileOpen(false);
+          }}
+          className="w-full flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-bold text-white transition-all hover:opacity-90 active:scale-[0.98]"
+          style={{ background: 'linear-gradient(90deg, #2563eb, #1d4ed8)' }}
+        >
+          <PlusCircle className="h-4 w-4" />
+          New Analysis
+        </button>
+      </div>
+    </div>
+  );
 
   return (
     <>
       {/* Mobile toggle */}
       <button
-        onClick={() => setMobileOpen((prev) => !prev)}
-        className="fixed left-4 top-4 z-50 rounded-xl border border-slate-200 bg-white/90 p-2.5 shadow-lg backdrop-blur-md dark:border-slate-700 dark:bg-slate-900/90 lg:hidden"
+        onClick={() => setMobileOpen((p) => !p)}
+        className="fixed left-4 top-4 z-50 rounded-xl p-2.5 shadow-lg lg:hidden"
+        style={{ background: '#161b27', border: '1px solid rgba(255,255,255,0.08)' }}
         aria-label="Toggle navigation"
       >
-        {mobileOpen ? <X className="h-5 w-5 text-slate-700 dark:text-slate-300" /> : <Menu className="h-5 w-5 text-slate-700 dark:text-slate-300" />}
+        {mobileOpen ? (
+          <X className="h-5 w-5 text-white" />
+        ) : (
+          <Menu className="h-5 w-5 text-white" />
+        )}
       </button>
 
-      {/* Overlay */}
+      {/* Mobile overlay */}
       {mobileOpen && (
         <div
-          className="fixed inset-0 z-30 bg-black/40 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm lg:hidden"
           onClick={() => setMobileOpen(false)}
         />
       )}
@@ -63,71 +155,15 @@ export function DashboardSidebar({ activeTab, onTabChange }: Props) {
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed top-0 left-0 z-40 flex h-full w-64 flex-col border-r border-slate-200/60 bg-white/95 pt-6 shadow-2xl shadow-slate-200/40 backdrop-blur-xl transition-transform duration-300 dark:border-slate-800 dark:bg-slate-950/95 dark:shadow-none lg:static lg:translate-x-0 lg:shadow-none lg:rounded-2xl lg:border lg:h-[calc(100vh-2rem)]',
+          'fixed top-0 left-0 z-40 h-full w-56 transition-transform duration-300 lg:static lg:translate-x-0 lg:h-screen',
           mobileOpen ? 'translate-x-0' : '-translate-x-full',
         )}
+        style={{
+          background: '#0f1623',
+          borderRight: '1px solid rgba(255,255,255,0.06)',
+        }}
       >
-        {/* Logo */}
-        <div className="mb-6 flex items-center gap-3 px-5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-cyan-500 shadow-md shadow-sky-200 dark:shadow-sky-900/30">
-            <BarChart3 className="h-5 w-5 text-white" />
-          </div>
-          <div>
-            <p className="text-sm font-bold text-slate-900 dark:text-white">HiredLens</p>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400">AI Workspace</p>
-          </div>
-        </div>
-
-        {/* Divider */}
-        <div className="mx-5 mb-4 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent dark:via-slate-800" />
-
-        {/* Navigation */}
-        <nav className="flex-1 space-y-1 px-3">
-          <p className="mb-2 px-2 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
-            Analysis
-          </p>
-          {items.map((item) => {
-            const active = activeTab === item.key;
-            return (
-              <button
-                key={item.key}
-                onClick={() => {
-                  onTabChange(item.key);
-                  setMobileOpen(false);
-                }}
-                className={cn(
-                  'group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200',
-                  active
-                    ? 'bg-gradient-to-r from-sky-500/10 to-cyan-500/10 text-sky-700 shadow-sm dark:from-sky-500/15 dark:to-cyan-500/15 dark:text-sky-300'
-                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-slate-200',
-                )}
-              >
-                <span
-                  className={cn(
-                    'flex h-8 w-8 items-center justify-center rounded-lg transition-all',
-                    active
-                      ? 'bg-sky-500 text-white shadow-md shadow-sky-200 dark:shadow-sky-900/30'
-                      : 'bg-slate-100 text-slate-500 group-hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:group-hover:bg-slate-700',
-                  )}
-                >
-                  {item.icon}
-                </span>
-                <span>{item.label}</span>
-                {active && (
-                  <span className="ml-auto h-1.5 w-1.5 rounded-full bg-sky-500" />
-                )}
-              </button>
-            );
-          })}
-        </nav>
-
-        {/* Footer */}
-        <div className="mx-5 mt-auto mb-5 rounded-xl border border-slate-200 bg-gradient-to-br from-sky-50 to-cyan-50 p-3 dark:border-slate-800 dark:from-sky-950/40 dark:to-cyan-950/40">
-          <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">Pro Tip</p>
-          <p className="mt-1 text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
-            Upload your resume once; re-run analysis for each new job posting.
-          </p>
-        </div>
+        <SidebarContent />
       </aside>
     </>
   );

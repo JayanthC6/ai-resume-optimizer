@@ -1,88 +1,91 @@
-import { Button } from '@/components/ui/button';
+import { Bell, LogOut, ChevronRight } from 'lucide-react';
 import { ThemeSwitcher } from '@/components/theme/ThemeSwitcher';
-import { Download, LogOut, PlusCircle, ShieldCheck, Sparkles, User } from 'lucide-react';
 
 type Props = {
   candidateName: string;
-  roleTitle: string;
-  matchScore?: number;
-  atsScore?: number;
+  activeTab: string;
+  onLogout: () => void;
   onExportReport: () => void;
   onNewAnalysis: () => void;
-  onLogout: () => void;
   hasResults: boolean;
+  matchScore?: number;
+  atsScore?: number;
+  roleTitle?: string;
+};
+
+const TAB_LABELS: Record<string, string> = {
+  overview: 'Overview',
+  keywords: 'Keywords',
+  rewrites: 'Rewrites',
+  roadmap: 'Skill Roadmap',
+  interview: 'Q&A Prep',
+  'mock-interview': 'Mock Interview',
+  portfolio: 'Portfolio',
+  history: 'History',
 };
 
 export function DashboardTopBar({
   candidateName,
-  roleTitle,
-  matchScore,
-  atsScore,
-  onExportReport,
-  onNewAnalysis,
+  activeTab,
   onLogout,
-  hasResults,
 }: Props) {
-  return (
-    <header className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-white/70 bg-white/85 px-5 py-4 shadow-lg shadow-slate-200/40 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/80 dark:shadow-none">
-      {/* Left: user info + scores */}
-      <div className="flex items-center gap-4">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-sky-500 to-cyan-500 text-white shadow-md shadow-sky-200 dark:shadow-sky-900/30">
-          <User className="h-5 w-5" />
-        </div>
-        <div>
-          <p className="text-sm font-bold text-slate-900 dark:text-white">{candidateName}</p>
-          <p className="text-xs text-slate-500 dark:text-slate-400">{roleTitle || 'No target role set'}</p>
-        </div>
+  const tabLabel = TAB_LABELS[activeTab] ?? 'Overview';
+  const initials = candidateName
+    ? candidateName.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
+    : 'U';
 
-        {hasResults && (
-          <div className="ml-4 hidden items-center gap-3 sm:flex">
-            <div className="flex items-center gap-1.5 rounded-full border border-sky-200 bg-sky-50 px-3 py-1 dark:border-sky-800 dark:bg-sky-950/60">
-              <Sparkles className="h-3.5 w-3.5 text-sky-600 dark:text-sky-400" />
-              <span className="text-xs font-semibold text-sky-700 dark:text-sky-300">{matchScore ?? 0}% Match</span>
-            </div>
-            <div className="flex items-center gap-1.5 rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 dark:border-cyan-800 dark:bg-cyan-950/60">
-              <ShieldCheck className="h-3.5 w-3.5 text-cyan-600 dark:text-cyan-400" />
-              <span className="text-xs font-semibold text-cyan-700 dark:text-cyan-300">{atsScore ?? 0}% ATS</span>
-            </div>
-          </div>
-        )}
+  return (
+    <header
+      className="flex items-center justify-between px-6 py-3.5 shrink-0"
+      style={{
+        background: 'var(--topbar-bg, rgba(15,22,35,0.95))',
+        borderBottom: '1px solid rgba(255,255,255,0.06)',
+        backdropFilter: 'blur(12px)',
+      }}
+    >
+      {/* ── Left: Breadcrumb ── */}
+      <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest">
+        <span className="text-slate-500 dark:text-slate-500">Dashboard</span>
+        <ChevronRight className="h-3 w-3 text-slate-600" />
+        <span className="text-slate-300 dark:text-slate-300">{tabLabel}</span>
       </div>
 
-      {/* Right: actions */}
-      <div className="flex items-center gap-2">
-        {hasResults && (
-          <>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onExportReport}
-              className="rounded-full border-slate-200 bg-white/90 dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-200"
-            >
-              <Download className="h-4 w-4" />
-              <span className="hidden sm:inline">Export</span>
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onNewAnalysis}
-              className="rounded-full border-sky-200 bg-white/90 text-sky-700 hover:bg-sky-50 dark:border-sky-800 dark:bg-slate-900/80 dark:text-sky-300 dark:hover:bg-sky-950/60"
-            >
-              <PlusCircle className="h-4 w-4" />
-              <span className="hidden sm:inline">New Analysis</span>
-            </Button>
-          </>
-        )}
+      {/* ── Right: Actions ── */}
+      <div className="flex items-center gap-3">
+        {/* Theme switcher */}
         <ThemeSwitcher />
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onLogout}
-          className="rounded-full border-slate-300 bg-white/90 dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-200"
+
+        {/* Bell */}
+        <button
+          className="relative rounded-xl p-2 text-slate-400 transition hover:text-white hover:bg-slate-800"
+          aria-label="Notifications"
         >
-          <LogOut className="h-4 w-4" />
+          <Bell className="h-4 w-4" />
+        </button>
+
+        {/* User chip */}
+        <div className="flex items-center gap-2.5 rounded-xl pl-1 pr-3 py-1.5 transition hover:bg-slate-800 cursor-pointer group">
+          {/* Avatar */}
+          <div
+            className="h-7 w-7 rounded-full flex items-center justify-center text-[11px] font-bold text-white shrink-0"
+            style={{ background: 'linear-gradient(135deg, #2563eb, #06b6d4)' }}
+          >
+            {initials}
+          </div>
+          <span className="text-sm font-semibold text-slate-300 dark:text-slate-300 hidden sm:block">
+            {candidateName}
+          </span>
+        </div>
+
+        {/* Logout */}
+        <button
+          onClick={onLogout}
+          className="flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-400 hover:text-rose-400 hover:bg-rose-400/10 transition-all"
+          title="Logout"
+        >
+          <LogOut className="h-3.5 w-3.5" />
           <span className="hidden sm:inline">Logout</span>
-        </Button>
+        </button>
       </div>
     </header>
   );

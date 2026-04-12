@@ -396,20 +396,21 @@ export default function DashboardPage() {
 
   // Results view (sidebar + top bar + content)
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-slate-950">
+    <div className="flex h-screen overflow-hidden" style={{ background: '#0d1117' }}>
       {toast && <Toast toast={toast} />}
 
       {/* Sidebar */}
-      <DashboardSidebar activeTab={activeTab} onTabChange={setActiveTab} />
+      <DashboardSidebar activeTab={activeTab} onTabChange={setActiveTab} onNewAnalysis={handleNewAnalysis} />
 
       {/* Main area */}
-      <div className="flex flex-1 flex-col overflow-hidden lg:p-4 lg:pl-0">
+      <div className="flex flex-1 flex-col overflow-hidden">
         {/* Top bar */}
         <DashboardTopBar
           candidateName={user?.fullName || 'Candidate'}
           roleTitle={jobTitle}
           matchScore={result?.matchScore}
           atsScore={result?.atsScore}
+          activeTab={activeTab}
           onExportReport={handleExportReport}
           onNewAnalysis={handleNewAnalysis}
           onLogout={logout}
@@ -417,11 +418,11 @@ export default function DashboardPage() {
         />
 
         {/* Content */}
-        <main className="mt-4 flex-1 overflow-y-auto rounded-2xl border border-white/70 bg-white/60 p-5 shadow-lg shadow-slate-200/30 backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/60 dark:shadow-none sm:p-6 lg:p-8">
+        <main className="flex-1 overflow-y-auto p-6 lg:p-8" style={{ background: '#0d1117' }}>
           {!result && activeTab !== 'history' ? (
-            <div className="flex h-full flex-col items-center justify-center text-slate-400 dark:text-slate-500">
-              <Sparkles className="mb-3 h-8 w-8" />
-              <p>No analysis results yet. Run an analysis to get started.</p>
+            <div className="flex h-full flex-col items-center justify-center gap-3" style={{ color: '#64748b' }}>
+              <Sparkles className="h-8 w-8" />
+              <p className="text-sm">No analysis results yet. Run an analysis to get started.</p>
             </div>
           ) : (
             <>
@@ -435,11 +436,18 @@ export default function DashboardPage() {
                   candidateName={user?.fullName || 'Your Resume'}
                   roleTitle={jobTitle}
                   onCopy={handleCopy}
+                  onTabChange={(tab) => setActiveTab(tab as any)}
+                  onNewAnalysis={handleNewAnalysis}
                 />
               )}
 
               {activeTab === 'keywords' && (
-                <KeywordsPanel keywordData={keywordData} />
+                <KeywordsPanel
+                  keywordData={keywordData}
+                  result={result}
+                  roleTitle={jobTitle}
+                  onApplyRewrites={() => setActiveTab('rewrites')}
+                />
               )}
 
               {activeTab === 'rewrites' && result && (

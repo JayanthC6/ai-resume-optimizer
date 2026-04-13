@@ -10,6 +10,8 @@ It lets users upload a PDF resume, compare it against a target job description, 
 - Interview question sets with STAR guidance
 - GitHub portfolio-to-resume bullet suggestions
 
+## Live Link: https://ai-resume-optimizer-1-z3xt.onrender.com
+
 ## Monorepo Architecture
 
 This repository uses npm workspaces + Turbo.

@@ -11,6 +11,8 @@ import {
 } from 'lucide-react';
 import { useReactToPrint } from 'react-to-print';
 import { StructuredResumeTemplate } from '../resume/StructuredResumeTemplate';
+import { LatexResumeTemplate } from '../resume/LatexResumeTemplate';
+import { downloadLatexFile } from '@/lib/latexExport';
 import type {
   OptimizationResponse,
   ResumeRegenerationResponse,
@@ -74,6 +76,7 @@ export function RewritesPanel({
   originalFile,
   originalText,
 }: Props) {
+  const [activeTemplate, setActiveTemplate] = useState<'standard' | 'latex'>('standard');
   const draft = regeneratedResume?.updatedResume ?? regeneratedResume?.regeneratedResume;
   const isStructured = typeof draft === 'object' && draft !== null;
   const printRef = useRef<HTMLDivElement>(null);
@@ -318,16 +321,43 @@ export function RewritesPanel({
             className="flex items-center justify-between px-5 py-3.5 shrink-0"
             style={{ borderBottom: '1px solid rgba(37,99,235,0.2)', background: 'rgba(37,99,235,0.05)' }}
           >
-            <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-blue-400">
-              <WandSparkles className="h-3.5 w-3.5" />
-              AI-Optimized Revision
+            <div className="flex items-center gap-4 text-[11px] font-bold uppercase tracking-[0.18em] text-blue-400">
+              <div className="flex items-center gap-2">
+                <WandSparkles className="h-3.5 w-3.5" />
+                AI-Optimized Revision
+              </div>
+              
+              <div className="flex bg-slate-900/50 p-1 rounded-lg border border-white/5 ml-2">
+                <button
+                  onClick={() => setActiveTemplate('standard')}
+                  className={`px-3 py-1 rounded-md transition-all ${activeTemplate === 'standard' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:text-slate-300'}`}
+                >
+                  Standard
+                </button>
+                <button
+                  onClick={() => setActiveTemplate('latex')}
+                  className={`px-3 py-1 rounded-md transition-all ${activeTemplate === 'latex' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:text-slate-300'}`}
+                >
+                  LaTeX
+                </button>
+              </div>
             </div>
-            <span
-              className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider"
-              style={{ background: 'rgba(37,99,235,0.2)', color: '#60a5fa' }}
-            >
-              ⚡ High Match
-            </span>
+            <div className="flex items-center gap-2">
+              {activeTemplate === 'latex' && isStructured && (
+                <button
+                  onClick={() => downloadLatexFile(draft as unknown as StructuredResume)}
+                  className="px-2 py-1 rounded-md border border-blue-500/30 text-blue-400 hover:bg-blue-500/10 transition-colors text-[10px] font-bold"
+                >
+                  DOWNLOAD .TEX
+                </button>
+              )}
+              <span
+                className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider"
+                style={{ background: 'rgba(37,99,235,0.2)', color: '#60a5fa' }}
+              >
+                ⚡ High Match
+              </span>
+            </div>
           </div>
 
           {/* Document content */}
@@ -335,7 +365,11 @@ export function RewritesPanel({
             {isStructured ? (
               /* Structured resume template */
               <div className="bg-white rounded-xl p-6 shadow-xl">
-                <StructuredResumeTemplate data={draft as unknown as StructuredResume} />
+                {activeTemplate === 'standard' ? (
+                  <StructuredResumeTemplate data={draft as unknown as StructuredResume} />
+                ) : (
+                  <LatexResumeTemplate data={draft as unknown as StructuredResume} />
+                )}
               </div>
             ) : aiBullets.length > 0 ? (
               <div className="space-y-6">

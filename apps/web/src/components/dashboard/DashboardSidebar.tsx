@@ -91,7 +91,7 @@ export function DashboardSidebar({ activeTab, onTabChange, onNewAnalysis }: Prop
                 'w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-150 group',
                 active
                   ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/30'
-                  : 'text-slate-400 hover:bg-slate-800 hover:text-white dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white',
+                  : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white',
               )}
             >
               <Icon className={cn('h-4 w-4 shrink-0', active ? 'text-white' : 'text-slate-500 group-hover:text-white')} />
@@ -102,17 +102,17 @@ export function DashboardSidebar({ activeTab, onTabChange, onNewAnalysis }: Prop
       </nav>
 
       {/* ── Footer nav ── */}
-      <div className="px-3 pb-3 space-y-0.5 border-t border-slate-800 pt-3 mt-2">
+      <div className="px-3 pb-3 space-y-0.5 border-t pt-3 mt-2" style={{ borderColor: 'var(--dash-sidebar-border)' }}>
         <button
           onClick={() => { onTabChange('settings'); setMobileOpen(false); }}
           className={cn(
             'w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all group',
             activeTab === 'settings'
               ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/30'
-              : 'text-slate-400 hover:bg-slate-800 hover:text-white',
+              : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white',
           )}
         >
-          <Settings className={cn('h-4 w-4 shrink-0', activeTab === 'settings' ? 'text-white' : 'text-slate-500 group-hover:text-white')} />
+          <Settings className={cn('h-4 w-4 shrink-0', activeTab === 'settings' ? 'text-white' : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-900 dark:group-hover:text-white')} />
           Settings
         </button>
         <button
@@ -121,10 +121,10 @@ export function DashboardSidebar({ activeTab, onTabChange, onNewAnalysis }: Prop
             'w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all group',
             activeTab === 'support'
               ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/30'
-              : 'text-slate-400 hover:bg-slate-800 hover:text-white',
+              : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white',
           )}
         >
-          <LifeBuoy className={cn('h-4 w-4 shrink-0', activeTab === 'support' ? 'text-white' : 'text-slate-500 group-hover:text-white')} />
+          <LifeBuoy className={cn('h-4 w-4 shrink-0', activeTab === 'support' ? 'text-white' : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-900 dark:group-hover:text-white')} />
           Support
         </button>
       </div>
@@ -152,7 +152,7 @@ export function DashboardSidebar({ activeTab, onTabChange, onNewAnalysis }: Prop
       <button
         onClick={() => setMobileOpen((p) => !p)}
         className="fixed left-4 top-4 z-50 rounded-xl p-2.5 shadow-lg lg:hidden"
-        style={{ background: '#161b27', border: '1px solid rgba(255,255,255,0.08)' }}
+        style={{ background: 'var(--dash-card-bg)', border: '1px solid var(--dash-card-border)', transition: 'background 200ms ease' }}
         aria-label="Toggle navigation"
       >
         {mobileOpen ? (
@@ -177,8 +177,9 @@ export function DashboardSidebar({ activeTab, onTabChange, onNewAnalysis }: Prop
           mobileOpen ? 'translate-x-0' : '-translate-x-full',
         )}
         style={{
-          background: '#0f1623',
-          borderRight: '1px solid rgba(255,255,255,0.06)',
+          background: 'var(--dash-sidebar-bg)',
+          borderRight: '1px solid var(--dash-sidebar-border)',
+          transition: 'background 200ms ease',
         }}
       >
         <SidebarContent />

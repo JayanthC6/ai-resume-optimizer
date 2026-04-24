@@ -398,7 +398,7 @@ export default function DashboardPage() {
 
   // Results view (sidebar + top bar + content)
   return (
-    <div className="flex h-screen overflow-hidden" style={{ background: '#0d1117' }}>
+    <div className="flex h-screen overflow-hidden" style={{ background: 'var(--dash-bg)', transition: 'background 200ms ease' }}>
       {toast && <Toast toast={toast} />}
 
       {/* Sidebar */}
@@ -420,7 +420,7 @@ export default function DashboardPage() {
         />
 
         {/* Content */}
-        <main className="flex-1 overflow-y-auto p-6 lg:p-8" style={{ background: '#0d1117' }}>
+        <main className="flex-1 overflow-y-auto p-6 lg:p-8" style={{ background: 'var(--dash-bg)', transition: 'background 200ms ease' }}>
           {/* Settings and Support render independently of analysis results */}
           {activeTab === 'settings' && <SettingsPanel />}
           {activeTab === 'support' && <SupportPanel />}

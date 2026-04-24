@@ -122,7 +122,30 @@ export default function LoginPage() {
                 Log in to access your AI-powered resume optimizer and market analysis dashboard.
               </p>
             </div>
+            {/* Feature pills grid */}
+            <div className="grid grid-cols-2 gap-2.5 mb-6">
+              {[
+                { emoji: '⚡', label: 'ATS Score', sub: 'Instant results' },
+                { emoji: '🤖', label: 'AI Rewrite', sub: 'Gemini-powered' },
+                { emoji: '🎯', label: 'Keyword Match', sub: 'Gap analysis' },
+                { emoji: '🎤', label: 'Mock Interview', sub: 'AI interviewer' },
+              ].map(({ emoji, label, sub }) => (
+                <div
+                  key={label}
+                  className="rounded-xl px-3 py-3 flex items-center gap-2.5"
+                  style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)' }}
+                >
+                  <span className="text-xl shrink-0">{emoji}</span>
+                  <div>
+                    <p className="text-xs font-bold text-white leading-tight">{label}</p>
+                    <p className="text-[10px] text-blue-200 mt-0.5">{sub}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
 
+            {/* Divider line */}
+            <div className="border-t border-white/10 mb-5" />
 
           </div>
 

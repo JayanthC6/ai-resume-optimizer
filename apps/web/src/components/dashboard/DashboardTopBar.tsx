@@ -38,9 +38,10 @@ export function DashboardTopBar({
     <header
       className="flex items-center justify-between px-6 py-3.5 shrink-0"
       style={{
-        background: 'var(--topbar-bg, rgba(15,22,35,0.95))',
-        borderBottom: '1px solid rgba(255,255,255,0.06)',
+        background: 'var(--dash-topbar-bg)',
+        borderBottom: '1px solid var(--dash-topbar-border)',
         backdropFilter: 'blur(12px)',
+        transition: 'background 200ms ease',
       }}
     >
       {/* ── Left: Breadcrumb ── */}

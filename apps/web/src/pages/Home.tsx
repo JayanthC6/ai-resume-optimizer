@@ -76,10 +76,10 @@ const miniFeatures = [
   { icon: History, label: 'Evolution History' },
 ];
 
-const stats = [
-  { value: '98%', label: 'Success Rate' },
-  { value: '1.2M+', label: 'Resumes Scored' },
-  { value: '500+', label: 'Global Partners' },
+const highlights = [
+  { value: 'AI-Powered', label: 'Resume Analysis' },
+  { value: 'Real-time', label: 'ATS Score Check' },
+  { value: 'Gemini AI', label: 'Smart Rewrites' },
 ];
 
 const footerProduct = ['Overview', 'Features', 'API Docs', 'Release Notes'];
@@ -174,14 +174,14 @@ export default function HomePage() {
               </Link>
             </div>
 
-            {/* Trust bar */}
+            {/* Launch badge */}
             <div className="flex items-center gap-3">
-              <div className="flex -space-x-2">
-                {trustAvatars.map((src, i) => (
-                  <img key={i} src={src} alt="" className="h-8 w-8 rounded-full border-2 object-cover" style={{ borderColor: '#0d1117' }} />
-                ))}
-              </div>
-              <span className="text-sm text-slate-400">Trusted by <strong className="text-white">700+</strong> industry professionals</span>
+              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold"
+                style={{ background: 'rgba(37,99,235,0.15)', border: '1px solid rgba(37,99,235,0.35)', color: '#60a5fa' }}>
+                <span className="h-1.5 w-1.5 rounded-full bg-blue-400 animate-pulse" />
+                Now Live — Try It Free
+              </span>
+              <span className="text-sm text-slate-400">No credit card required</span>
             </div>
           </div>
 
@@ -320,21 +320,26 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ════════════════ STATS BAR ════════════════ */}
+      {/* ════════════════ HIGHLIGHTS BAR ════════════════ */}
       <section
         className="px-6 py-14 md:px-16 lg:px-24"
         style={{ background: '#0f1623', borderTop: '1px solid rgba(255,255,255,0.04)', borderBottom: '1px solid rgba(255,255,255,0.04)' }}
       >
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-10">
           <div>
-            <h2 className="text-2xl font-bold text-white mb-1">The Standard in AI Recruitment.</h2>
-            <p className="text-sm text-slate-400">Helping talent find opportunity, with precision.</p>
+            <h2 className="text-2xl font-bold text-white mb-1">Built for the modern job seeker.</h2>
+            <p className="text-sm text-slate-400">From resume to offer — HiredLens has you covered at every step.</p>
           </div>
-          <div className="flex gap-12">
-            {stats.map((s) => (
-              <div key={s.label} className="text-center">
-                <p className="text-3xl font-black text-white mb-1">{s.value}</p>
-                <p className="text-xs text-slate-500 uppercase tracking-widest font-semibold">{s.label}</p>
+          <div className="flex gap-8">
+            {[
+              { icon: '⚡', title: 'Instant Analysis', desc: 'Get your ATS score & keyword gaps in seconds' },
+              { icon: '🤖', title: 'AI Rewrites', desc: 'Gemini AI rewrites every bullet to match the JD' },
+              { icon: '🎯', title: 'Mock Interviews', desc: 'Practice with an AI interviewer before the real thing' },
+            ].map((item) => (
+              <div key={item.title} className="text-center max-w-[160px]">
+                <p className="text-2xl mb-2">{item.icon}</p>
+                <p className="text-sm font-bold text-white mb-1">{item.title}</p>
+                <p className="text-[11px] text-slate-500 leading-relaxed">{item.desc}</p>
               </div>
             ))}
           </div>

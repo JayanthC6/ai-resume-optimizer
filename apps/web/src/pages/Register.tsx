@@ -2,15 +2,12 @@ import { useState } from 'react';
 import { useAuthStore } from '../store/authStore';
 import api from '../lib/api';
 import { useNavigate, Link } from 'react-router-dom';
-import { Eye, EyeOff, Star, TrendingUp } from 'lucide-react';
+import { Eye, EyeOff, TrendingUp, Zap, Brain, Target, MessageSquare, CheckCircle2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { registerSchema, type RegisterFormValues } from '@/lib/validation';
 
-const communityAvatars = [
-  'https://i.pravatar.cc/40?img=5',
-  'https://i.pravatar.cc/40?img=12',
-];
+
 
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -68,44 +65,39 @@ export default function RegisterPage() {
             <em className="not-italic" style={{ color: '#38bdf8' }}>different<br />lens.</em>
           </h1>
 
-          {/* Testimonial card */}
-          <div className="rounded-2xl p-6 mb-8" style={{ background: '#161b27', border: '1px solid #1e2a3a' }}>
-            <div className="flex gap-1 mb-4">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Star key={i} className="h-5 w-5 fill-amber-400 text-amber-400" />
-              ))}
-            </div>
-            <blockquote className="text-slate-300 text-sm leading-relaxed italic mb-5">
-              "The Mock Interview AI was the closest thing to my real Google technical screen. I walked in feeling like I'd already done it ten times. HiredLens didn't just help me prepare; it gave me the confidence to negotiate a 20% higher offer."
-            </blockquote>
-            <div className="flex items-center gap-3">
-              <img
-                src="https://i.pravatar.cc/48?img=33"
-                alt="Marcus Chen"
-                className="h-11 w-11 rounded-full border-2 object-cover"
-                style={{ borderColor: '#2563eb' }}
-              />
-              <div>
-                <p className="text-sm font-bold text-white">Marcus Chen</p>
-                <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">Senior SWE at Google</p>
+          {/* What you unlock */}
+          <div className="space-y-3 mb-10">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] mb-4" style={{ color: '#38bdf8' }}>What you unlock for free</p>
+            {[
+              { icon: Zap, color: '#facc15', label: 'Instant ATS Score', desc: 'Know exactly how your resume performs' },
+              { icon: Brain, color: '#a78bfa', label: 'AI Resume Rewrite', desc: 'Gemini AI tailors every bullet to the job' },
+              { icon: Target, color: '#34d399', label: 'Keyword Gap Analysis', desc: 'Never miss a critical keyword again' },
+              { icon: MessageSquare, color: '#f472b6', label: 'AI Mock Interviews', desc: 'Practice with an AI interviewer, anytime' },
+            ].map(({ icon: Icon, color, label, desc }) => (
+              <div key={label} className="flex items-start gap-3.5 rounded-xl px-4 py-3.5 transition hover:bg-white/5"
+                style={{ border: '1px solid rgba(255,255,255,0.05)' }}
+              >
+                <div className="mt-0.5 h-8 w-8 rounded-lg flex items-center justify-center shrink-0"
+                  style={{ background: `${color}18` }}>
+                  <Icon className="h-4 w-4" style={{ color }} />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-white flex items-center gap-2">
+                    {label}
+                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+                  </p>
+                  <p className="text-xs text-slate-500 mt-0.5">{desc}</p>
+                </div>
               </div>
-            </div>
+            ))}
           </div>
 
-          {/* Community bar */}
-          <div className="flex items-center gap-3">
-            <div className="flex -space-x-2">
-              {communityAvatars.map((src, i) => (
-                <img key={i} src={src} alt="" className="h-8 w-8 rounded-full border-2 object-cover" style={{ borderColor: '#0d1117' }} />
-              ))}
-              <div
-                className="h-8 w-8 rounded-full border-2 flex items-center justify-center text-[10px] font-bold text-white"
-                style={{ background: '#1e2a3a', borderColor: '#0d1117' }}
-              >
-                +2k
-              </div>
-            </div>
-            <span className="text-xs font-bold uppercase tracking-widest text-slate-500">Join 2,400+ career-ready candidates</span>
+          {/* Motivational tagline */}
+          <div className="rounded-2xl px-5 py-4" style={{ background: 'linear-gradient(135deg, rgba(37,99,235,0.15), rgba(6,182,212,0.1))', border: '1px solid rgba(37,99,235,0.25)' }}>
+            <p className="text-sm font-semibold text-white leading-relaxed">
+              “Your next offer is one optimized resume away.”
+            </p>
+            <p className="text-xs text-slate-400 mt-1.5">Start free. No credit card. No limits on analysis.</p>
           </div>
         </div>
 

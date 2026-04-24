@@ -26,6 +26,24 @@
     --input: 214 28% 88%;
     --ring: 204 100% 44%;
     --radius: 0.9rem;
+
+    /* ── Dashboard surface tokens ── */
+    --dash-bg: #f0f4f8;
+    --dash-sidebar-bg: #ffffff;
+    --dash-sidebar-border: rgba(0,0,0,0.08);
+    --dash-topbar-bg: rgba(255,255,255,0.9);
+    --dash-topbar-border: rgba(0,0,0,0.07);
+    --dash-card-bg: #ffffff;
+    --dash-card-border: rgba(0,0,0,0.07);
+    --dash-text-primary: #0f172a;
+    --dash-text-secondary: #475569;
+    --dash-text-muted: #94a3b8;
+    --dash-nav-active-bg: #2563eb;
+    --dash-nav-active-text: #ffffff;
+    --dash-nav-hover-bg: #f1f5f9;
+    --dash-nav-hover-text: #0f172a;
+    --dash-nav-text: #64748b;
+    --dash-section-bg: #f8fafc;
   }
 
   .dark {
@@ -48,6 +66,24 @@
     --border: 223 20% 24%;
     --input: 223 20% 24%;
     --ring: 198 93% 60%;
+
+    /* ── Dashboard surface tokens ── */
+    --dash-bg: #0d1117;
+    --dash-sidebar-bg: #0f1623;
+    --dash-sidebar-border: rgba(255,255,255,0.06);
+    --dash-topbar-bg: rgba(15,22,35,0.9);
+    --dash-topbar-border: rgba(255,255,255,0.06);
+    --dash-card-bg: #161b27;
+    --dash-card-border: rgba(255,255,255,0.06);
+    --dash-text-primary: #f1f5f9;
+    --dash-text-secondary: #94a3b8;
+    --dash-text-muted: #475569;
+    --dash-nav-active-bg: #2563eb;
+    --dash-nav-active-text: #ffffff;
+    --dash-nav-hover-bg: #1e2533;
+    --dash-nav-hover-text: #ffffff;
+    --dash-nav-text: #64748b;
+    --dash-section-bg: #0f1623;
   }
 }
 

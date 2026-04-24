@@ -2,17 +2,12 @@ import { useEffect, useRef, useState } from 'react';
 import { useAuthStore } from '../store/authStore';
 import api from '../lib/api';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
-import { Eye, EyeOff, Star } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { loginSchema, type LoginFormValues } from '@/lib/validation';
 
-/* ─── tiny avatar stack ─── */
-const avatars = [
-  'https://i.pravatar.cc/40?img=11',
-  'https://i.pravatar.cc/40?img=32',
-  'https://i.pravatar.cc/40?img=47',
-];
+
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -20,7 +15,6 @@ export default function LoginPage() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [googleError, setGoogleError] = useState<string | null>(null);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const googleButtonRef = useRef<HTMLDivElement | null>(null);
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
   const setAuth = useAuthStore((s) => s.setAuth);
   const navigate = useNavigate();
@@ -37,55 +31,56 @@ export default function LoginPage() {
     defaultValues: { email: '', password: '' },
   });
 
-  /* ─── Google Sign-In ─── */
+  // Track whether google.accounts.id has been initialized
+  const this_googleClient_init = useRef(false);
+
+  // Load the Google GSI script once on mount
   useEffect(() => {
     if (!googleClientId) return;
-    let cancelled = false;
+    if (document.querySelector('script[src="https://accounts.google.com/gsi/client"]')) return;
+    const s = document.createElement('script');
+    s.src = 'https://accounts.google.com/gsi/client';
+    s.async = true;
+    s.defer = true;
+    document.head.appendChild(s);
+  }, [googleClientId]);
 
-    const handleGoogleCredential = async (credential: string) => {
-      setGoogleError(null);
-      setGoogleLoading(true);
-      try {
-        const { data } = await api.post('/auth/google-login', { idToken: credential });
-        setAuth(data.user, data.accessToken);
-        navigate('/dashboard');
-      } catch (err: unknown) {
-        const e = err as { response?: { data?: { message?: string | string[] } } };
-        const msg = e.response?.data?.message;
-        setGoogleError(
-          Array.isArray(msg) ? msg.join(', ') : msg || 'Google sign-in failed.',
-        );
-      } finally {
-        setGoogleLoading(false);
-      }
-    };
+  const handleGoogleCredential = async (credential: string) => {
+    setGoogleError(null);
+    setGoogleLoading(true);
+    try {
+      const { data } = await api.post('/auth/google-login', { idToken: credential });
+      setAuth(data.user, data.accessToken);
+      navigate('/dashboard');
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string | string[] } } };
+      const msg = e.response?.data?.message;
+      setGoogleError(
+        Array.isArray(msg) ? msg.join(', ') : msg || 'Google sign-in failed.',
+      );
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
 
-    const init = () => {
-      if (cancelled || !window.google || !googleButtonRef.current) return;
-      googleButtonRef.current.innerHTML = '';
+  const handleGoogleButtonClick = () => {
+    if (!googleClientId || !window.google) {
+      setGoogleError('Google Sign-In is not available right now.');
+      return;
+    }
+    if (!this_googleClient_init.current) {
       window.google.accounts.id.initialize({
         client_id: googleClientId,
-        callback: (res) => {
+        callback: (res: { credential?: string }) => {
           if (!res.credential) { setGoogleError('No credential received.'); return; }
           void handleGoogleCredential(res.credential);
         },
       });
-      window.google.accounts.id.renderButton(googleButtonRef.current, {
-        theme: 'outline', size: 'large', text: 'continue_with', width: '320',
-      });
-    };
+      this_googleClient_init.current = true;
+    }
+    window.google.accounts.id.prompt();
+  };
 
-    if (window.google) { init(); return () => { cancelled = true; }; }
-
-    const existing = document.querySelector('script[src="https://accounts.google.com/gsi/client"]') as HTMLScriptElement | null;
-    if (existing) { existing.addEventListener('load', init, { once: true }); return () => { cancelled = true; existing.removeEventListener('load', init); }; }
-
-    const s = document.createElement('script');
-    s.src = 'https://accounts.google.com/gsi/client';
-    s.async = true; s.defer = true; s.onload = init;
-    document.head.appendChild(s);
-    return () => { cancelled = true; s.onload = null; };
-  }, [googleClientId, navigate, setAuth]);
 
   const handleLogin = async (values: LoginFormValues) => {
     setSubmitError(null);
@@ -128,23 +123,7 @@ export default function LoginPage() {
               </p>
             </div>
 
-            {/* Social proof card */}
-            <div className="rounded-xl border border-blue-400/30 bg-blue-700/30 backdrop-blur-sm p-5">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="flex -space-x-2">
-                  {avatars.map((src, i) => (
-                    <img key={i} src={src} alt="" className="h-9 w-9 rounded-full border-2 border-blue-500 object-cover" />
-                  ))}
-                </div>
-                <span className="text-sm font-semibold text-blue-100">Joined by 12,000+ professionals</span>
-              </div>
-              <div className="flex items-center gap-2">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
-                ))}
-                <span className="text-xs font-bold uppercase tracking-widest text-blue-200 ml-1">Top Rated Career AI</span>
-              </div>
-            </div>
+
           </div>
 
           {/* ── Right: white form panel ── */}
@@ -161,19 +140,27 @@ export default function LoginPage() {
 
             {/* Social buttons */}
             <div className="grid grid-cols-2 gap-3 mb-6">
-              {/* Google (native rendered or custom) */}
-              {googleClientId ? (
-                <div ref={googleButtonRef} className="flex items-center justify-center rounded-lg border border-slate-200 h-11 overflow-hidden" />
-              ) : (
-                <button
-                  type="button"
-                  disabled
-                  className="flex items-center justify-center gap-2 rounded-lg border border-slate-200 h-11 text-sm font-medium text-slate-700 opacity-40 cursor-not-allowed"
-                >
-                  <svg className="h-4 w-4" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-                  Google
-                </button>
-              )}
+              {/* Google – always custom-styled so the G icon always shows */}
+              <button
+                type="button"
+                onClick={handleGoogleButtonClick}
+                disabled={googleLoading || !googleClientId}
+                className="flex items-center justify-center gap-2 rounded-lg border border-slate-200 h-11 text-sm font-medium text-slate-700 hover:bg-slate-50 transition disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {googleLoading ? (
+                  <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" stroke="#4285F4" strokeWidth="3" strokeDasharray="30" strokeLinecap="round" />
+                  </svg>
+                ) : (
+                  <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                  </svg>
+                )}
+                {googleLoading ? 'Signing in...' : 'Continue with Google'}
+              </button>
 
               <button
                 type="button"

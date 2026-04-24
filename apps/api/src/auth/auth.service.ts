@@ -164,17 +164,23 @@ export class AuthService {
       const payload = ticket.getPayload();
       const email = payload?.email?.toLowerCase();
       const isEmailVerified = payload?.email_verified === true;
+      const fullName = payload?.name ?? email?.split('@')[0] ?? 'HiredLens User';
 
       if (!email || !isEmailVerified) {
         throw new UnauthorizedException('Google account could not be verified');
       }
 
-      const user = await this.prisma.user.findUnique({ where: { email } });
-
+      // Find or auto-create the user
+      let user = await this.prisma.user.findUnique({ where: { email } });
       if (!user) {
-        throw new UnauthorizedException(
-          'Google sign-in is only available for existing HiredLens accounts',
-        );
+        user = await this.prisma.user.create({
+          data: {
+            email,
+            fullName,
+            hashedPassword: '', // No password for Google OAuth users
+          },
+        });
+        this.logger.log(`[Auth] New Google OAuth user created: ${email}`);
       }
 
       return this.generateToken(user);
@@ -182,6 +188,7 @@ export class AuthService {
       if (error instanceof BadRequestException || error instanceof UnauthorizedException) {
         throw error;
       }
+      this.logger.error(`[Auth] Google sign-in error: ${(error as any)?.message}`);
       throw new UnauthorizedException('Google sign-in failed');
     }
   }
@@ -198,6 +205,7 @@ export class AuthService {
       },
     };
   }
+
 
   private hashResetToken(token: string) {
     return createHash('sha256').update(token).digest('hex');

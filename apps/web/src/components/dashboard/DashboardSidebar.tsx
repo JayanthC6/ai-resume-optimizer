@@ -25,7 +25,9 @@ export type TabKey =
   | 'interview'
   | 'portfolio'
   | 'history'
-  | 'mock-interview';
+  | 'mock-interview'
+  | 'settings'
+  | 'support';
 
 type SidebarItem = {
   key: TabKey;
@@ -101,12 +103,28 @@ export function DashboardSidebar({ activeTab, onTabChange, onNewAnalysis }: Prop
 
       {/* ── Footer nav ── */}
       <div className="px-3 pb-3 space-y-0.5 border-t border-slate-800 pt-3 mt-2">
-        <button className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-400 hover:bg-slate-800 hover:text-white transition-all group">
-          <Settings className="h-4 w-4 text-slate-500 group-hover:text-white" />
+        <button
+          onClick={() => { onTabChange('settings'); setMobileOpen(false); }}
+          className={cn(
+            'w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all group',
+            activeTab === 'settings'
+              ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/30'
+              : 'text-slate-400 hover:bg-slate-800 hover:text-white',
+          )}
+        >
+          <Settings className={cn('h-4 w-4 shrink-0', activeTab === 'settings' ? 'text-white' : 'text-slate-500 group-hover:text-white')} />
           Settings
         </button>
-        <button className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-400 hover:bg-slate-800 hover:text-white transition-all group">
-          <LifeBuoy className="h-4 w-4 text-slate-500 group-hover:text-white" />
+        <button
+          onClick={() => { onTabChange('support'); setMobileOpen(false); }}
+          className={cn(
+            'w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all group',
+            activeTab === 'support'
+              ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/30'
+              : 'text-slate-400 hover:bg-slate-800 hover:text-white',
+          )}
+        >
+          <LifeBuoy className={cn('h-4 w-4 shrink-0', activeTab === 'support' ? 'text-white' : 'text-slate-500 group-hover:text-white')} />
           Support
         </button>
       </div>

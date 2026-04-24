@@ -22,6 +22,8 @@ import { InterviewPanel } from '@/components/dashboard/tabs/InterviewPanel';
 import { InterviewBotPanel } from '@/components/dashboard/tabs/interview/InterviewBotPanel';
 import { PortfolioPanel } from '@/components/dashboard/tabs/PortfolioPanel';
 import { HistoryPanel } from '@/components/dashboard/tabs/HistoryPanel';
+import { SettingsPanel } from '@/components/dashboard/tabs/SettingsPanel';
+import { SupportPanel } from '@/components/dashboard/tabs/SupportPanel';
 
 type ToastState = { type: 'success' | 'error'; message: string };
 
@@ -419,12 +421,17 @@ export default function DashboardPage() {
 
         {/* Content */}
         <main className="flex-1 overflow-y-auto p-6 lg:p-8" style={{ background: '#0d1117' }}>
-          {!result && activeTab !== 'history' ? (
-            <div className="flex h-full flex-col items-center justify-center gap-3" style={{ color: '#64748b' }}>
-              <Sparkles className="h-8 w-8" />
-              <p className="text-sm">No analysis results yet. Run an analysis to get started.</p>
-            </div>
-          ) : (
+          {/* Settings and Support render independently of analysis results */}
+          {activeTab === 'settings' && <SettingsPanel />}
+          {activeTab === 'support' && <SupportPanel />}
+
+          {activeTab !== 'settings' && activeTab !== 'support' && (
+            !result && activeTab !== 'history' ? (
+              <div className="flex h-full flex-col items-center justify-center gap-3" style={{ color: '#64748b' }}>
+                <Sparkles className="h-8 w-8" />
+                <p className="text-sm">No analysis results yet. Run an analysis to get started.</p>
+              </div>
+            ) : (
             <>
               {activeTab === 'history' && (
                 <HistoryPanel onSelectHistory={handleSelectHistory} />
@@ -504,7 +511,7 @@ export default function DashboardPage() {
                   onAnalyze={handleAnalyzeGithubPortfolio}
                 />
               )}
-            </>
+            </>)
           )}
         </main>
       </div>

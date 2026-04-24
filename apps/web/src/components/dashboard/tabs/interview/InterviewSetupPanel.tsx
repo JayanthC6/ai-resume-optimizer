@@ -16,14 +16,14 @@ const MODES = [
   { id: 'Mixed', title: 'Mixed', icon: Briefcase, desc: 'A balanced session covering behavioral and technical competencies.' },
 ];
 
-const LANGUAGES = ['JavaScript', 'TypeScript', 'Python', 'Java', 'C++', 'Go', 'SQL', 'English (US)', 'English (UK)'];
+const LANGUAGES = ['JavaScript', 'TypeScript', 'Python', 'Java', 'C++', 'Go', 'SQL', 'Rust', 'Swift', 'Kotlin'];
 
 const CARD_BG = '#161b27';
 const BORDER = 'rgba(255,255,255,0.07)';
 
 export function InterviewSetupPanel({ onStart, isLoading, onGetRecommendation, recommendation, recommendationLoading }: Props) {
   const [mode, setMode] = useState('Behavioral');
-  const [language, setLanguage] = useState('English (US)');
+  const [language, setLanguage] = useState('JavaScript');
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [langOpen, setLangOpen] = useState(false);
 

@@ -18,12 +18,7 @@ import {
   Linkedin,
 } from 'lucide-react';
 
-/* ─── avatar images for social proof ─── */
-const trustAvatars = [
-  'https://i.pravatar.cc/32?img=11',
-  'https://i.pravatar.cc/32?img=22',
-  'https://i.pravatar.cc/32?img=33',
-];
+
 
 /* ─── Feature cards data ─── */
 const primaryFeatures = [
@@ -76,11 +71,7 @@ const miniFeatures = [
   { icon: History, label: 'Evolution History' },
 ];
 
-const highlights = [
-  { value: 'AI-Powered', label: 'Resume Analysis' },
-  { value: 'Real-time', label: 'ATS Score Check' },
-  { value: 'Gemini AI', label: 'Smart Rewrites' },
-];
+
 
 const footerProduct = ['Overview', 'Features', 'API Docs', 'Release Notes'];
 const footerCompany = ['About', 'Privacy', 'Careers', 'Support', 'Privacy Policy'];

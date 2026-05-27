@@ -1,0 +1,23 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Copy root workspace manifests
+COPY package.json package-lock.json turbo.json ./
+
+# Copy package manifests for ALL workspace members
+COPY packages/types/package.json ./packages/types/package.json
+COPY packages/database/package.json ./packages/database/package.json
+COPY apps/api/package.json ./apps/api/package.json
+COPY apps/web/package.json ./apps/web/package.json
+
+# Install all dependencies
+RUN npm ci --legacy-peer-deps
+
+# Copy full source (volumes will override src/ in dev)
+COPY packages/ ./packages/
+COPY apps/web/ ./apps/web/
+
+EXPOSE 5173
+
+CMD ["npm", "run", "dev", "--workspace=apps/web"]

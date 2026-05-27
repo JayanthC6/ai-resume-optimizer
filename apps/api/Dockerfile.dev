@@ -1,0 +1,31 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Prisma's native query-engine binary requires OpenSSL on Alpine
+RUN apk add --no-cache openssl
+
+# Copy root workspace manifests
+COPY package.json package-lock.json turbo.json ./
+
+# Copy package manifests for ALL workspace members (must match lockfile)
+COPY packages/types/package.json ./packages/types/package.json
+COPY packages/database/package.json ./packages/database/package.json
+COPY apps/api/package.json ./apps/api/package.json
+COPY apps/web/package.json ./apps/web/package.json
+
+# Install all dependencies (including devDependencies for nest CLI)
+RUN npm ci --legacy-peer-deps
+
+# Copy full source (volumes will override src/ in dev)
+COPY packages/ ./packages/
+COPY apps/api/ ./apps/api/
+
+# Generate Prisma client using locally installed prisma (not npx which downloads v7)
+RUN cd packages/database && ../../node_modules/.bin/prisma generate
+
+EXPOSE 3000
+
+# Run migrations then start in watch mode
+CMD ["sh", "-c", "cd packages/database && ../../node_modules/.bin/prisma migrate deploy && cd /app && npm run dev --workspace=apps/api"]
+

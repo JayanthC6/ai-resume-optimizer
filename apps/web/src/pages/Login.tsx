@@ -78,7 +78,7 @@ export default function LoginPage() {
       });
       this_googleClient_init.current = true;
     }
-    window.google.accounts.id.prompt();
+    (window.google.accounts.id as unknown as { prompt: () => void }).prompt();
   };
 
 

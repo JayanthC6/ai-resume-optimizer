@@ -1,20 +1,23 @@
 services:
+  # ─── Infrastructure ──────────────────────────────────────────────────────────
   postgres:
     image: pgvector/pgvector:pg16
     container_name: ai_resume_postgres
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: ai_resume_db
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB: ${POSTGRES_DB:-ai_resume_db}
     ports:
       - "15432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
 
   redis:
     image: redis:7-alpine
@@ -27,7 +30,57 @@ services:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 3s
+      retries: 10
+      start_period: 5s
+    restart: unless-stopped
+
+  # ─── Backend API (NestJS) ────────────────────────────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: ai_resume_api
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password}@postgres:5432/${POSTGRES_DB:-ai_resume_db}?schema=public
+      REDIS_URL: redis://redis:6379
+      PORT: ${PORT:-3000}
+      JWT_SECRET: ${JWT_SECRET:-development_secret_key_change_in_production}
+      AUTH_EXPIRATION: ${AUTH_EXPIRATION:-7d}
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+      GOOGLE_GEMINI_MODEL: ${GOOGLE_GEMINI_MODEL:-models/gemini-flash-latest}
+      GOOGLE_GEMINI_FALLBACK_MODELS: ${GOOGLE_GEMINI_FALLBACK_MODELS:-models/gemini-2.0-flash,models/gemini-2.5-flash}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+    ports:
+      - "${PORT:-3000}:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000 || exit 1"]
+      interval: 10s
+      timeout: 5s
       retries: 5
+      start_period: 30s
+
+  # ─── Frontend (React + Vite → nginx) ─────────────────────────────────────────
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:3000}
+        VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-}
+    container_name: ai_resume_web
+    ports:
+      - "5173:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
 
 volumes:
   pgdata:

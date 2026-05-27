@@ -1,0 +1,32 @@
+# Development override — adds hot-reload for api and web
+# Usage: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+#
+# Or just use the convenience script: npm run docker:dev
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile.dev
+    environment:
+      NODE_ENV: development
+    volumes:
+      # Mount source for hot-reload
+      - ./apps/api/src:/app/apps/api/src:ro
+      - ./packages/types:/app/packages/types:ro
+      - ./packages/database:/app/packages/database:ro
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile.dev
+    environment:
+      NODE_ENV: development
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./apps/web/src:/app/apps/web/src:ro
+      - ./apps/web/index.html:/app/apps/web/index.html:ro
+      - ./packages/types:/app/packages/types:ro
+    depends_on:
+      - api

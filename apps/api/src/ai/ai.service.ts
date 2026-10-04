@@ -87,9 +87,13 @@ export class AiService {
             break;
           }
 
-          const computedDelayMs = 700 * attempt + Math.floor(Math.random() * 250);
+          const isRateLimit = message.toLowerCase().includes('429') || message.toLowerCase().includes('resource_exhausted');
+          const computedDelayMs = isRateLimit 
+            ? 8000 * attempt + Math.floor(Math.random() * 1000) 
+            : 700 * attempt + Math.floor(Math.random() * 250);
+            
           const suggestedDelayMs = this.extractRetryDelayMs(message);
-          const delayMs = Math.min(20000, Math.max(computedDelayMs, suggestedDelayMs));
+          const delayMs = Math.min(30000, Math.max(computedDelayMs, suggestedDelayMs));
           this.logger.warn(
             `AI call transient failure on ${modelName} (attempt ${attempt}/${maxAttempts}): ${message}. Retrying in ${delayMs}ms`,
           );
@@ -117,9 +121,7 @@ export class AiService {
     const normalized = message.toLowerCase();
     return (
       (normalized.includes('quota exceeded') &&
-        (normalized.includes('perday') || normalized.includes('limit: 0'))) ||
-      normalized.includes('resource_exhausted') ||
-      normalized.includes('429')
+        (normalized.includes('perday') || normalized.includes('limit: 0')))
     );
   }
 

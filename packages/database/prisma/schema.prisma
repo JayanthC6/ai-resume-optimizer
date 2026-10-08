@@ -24,6 +24,7 @@ model User {
   interviewSessions InterviewSession[]
   jobTargets      JobTarget[]
   reverseQuestions ReverseQuestionSet[]
+  drafts          Draft[]
 }
 
 model Resume {
@@ -56,6 +57,7 @@ model Analysis {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   reverseQuestions ReverseQuestionSet[]
+  drafts          Draft[]
 }
 
 model InterviewSession {
@@ -109,6 +111,24 @@ model ReverseQuestionSet {
   analysisId String
   analysis   Analysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
   questions  Json
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([userId])
+  @@index([analysisId])
+}
+
+model Draft {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  analysisId String
+  analysis   Analysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  type       String   // cover_letter, recruiter_message, follow_up_email
+  tone       String
+  length     String
+  title      String
+  content    String   @db.Text
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 

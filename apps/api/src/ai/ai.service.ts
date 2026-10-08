@@ -27,6 +27,20 @@ export class AiService {
     });
   }
 
+  private getTextModel(modelName: string) {
+    const apiKey = process.env.GOOGLE_API_KEY || '';
+    if (!apiKey) {
+      throw new Error(
+        'Missing GOOGLE_API_KEY. Please set it in your environment.',
+      );
+    }
+
+    const genAI = new GoogleGenerativeAI(apiKey);
+    return genAI.getGenerativeModel({
+      model: modelName,
+    });
+  }
+
   private getModelCandidates() {
     const primary = process.env.GOOGLE_GEMINI_MODEL;
     if (!primary) {
@@ -71,6 +85,87 @@ export class AiService {
             );
           }
           return JSON.parse(result.response.text());
+        } catch (error: any) {
+          lastError = error;
+          const message = String(error?.message || error || 'Unknown AI error');
+
+          if (this.isPermanentQuotaExhaustion(message)) {
+            throw new Error(
+              'Gemini API quota exhausted for this key. Please use a different GOOGLE_API_KEY or wait for quota reset.',
+            );
+          }
+
+          const is404 = message.includes('404') || message.toLowerCase().includes('not found');
+          if (is404) {
+            this.logger.warn(`AI model ${modelName} returned 404 (Not Found). Please check if this model name is valid in your .env`);
+            break;
+          }
+
+          const isRateLimit = message.toLowerCase().includes('429') || message.toLowerCase().includes('resource_exhausted') || message.toLowerCase().includes('quota');
+          if (isRateLimit) {
+            this.logger.warn(`AI model ${modelName} rate limited (429/Quota). Skipping to fallback.`);
+            break;
+          }
+
+          const transient = this.isTransientAiError(message);
+          const isLastAttempt = attempt === maxAttempts;
+
+          if (!transient) {
+            throw error;
+          }
+
+          if (isLastAttempt) {
+            this.logger.warn(
+              `AI model ${modelName} exhausted retries (${maxAttempts}/${maxAttempts}).`,
+            );
+            break;
+          }
+
+          const computedDelayMs = 700 * attempt + Math.floor(Math.random() * 250);
+          const suggestedDelayMs = this.extractRetryDelayMs(message);
+          const delayMs = Math.min(
+            30000,
+            Math.max(computedDelayMs, suggestedDelayMs),
+          );
+
+          if (Date.now() - startTime + delayMs > MAX_TOTAL_TIME_MS) {
+            break;
+          }
+
+          this.logger.warn(
+            `AI call transient failure on ${modelName} (attempt ${attempt}/${maxAttempts}): ${message}. Retrying in ${delayMs}ms`,
+          );
+          await new Promise((resolve) => setTimeout(resolve, delayMs));
+        }
+      }
+    }
+
+    throw new Error('The AI service is busy, please try again in a minute');
+  }
+
+  private async generateText(prompt: string) {
+    const maxAttempts = 2;
+    const models = this.getModelCandidates();
+    let lastError: unknown;
+    const startTime = Date.now();
+    const MAX_TOTAL_TIME_MS = 90000;
+
+    for (const modelName of models) {
+      const model = this.getTextModel(modelName);
+
+      for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+        if (Date.now() - startTime > MAX_TOTAL_TIME_MS) {
+          throw new Error('The AI service is busy, please try again in a minute');
+        }
+
+        try {
+          const result = await model.generateContent(prompt);
+          if (modelName !== models[0]) {
+            this.logger.warn(
+              `AI call succeeded using fallback model: ${modelName}`,
+            );
+          }
+          return result.response.text();
         } catch (error: any) {
           lastError = error;
           const message = String(error?.message || error || 'Unknown AI error');
@@ -745,6 +840,42 @@ Output MUST be valid JSON using this exact schema:
     } catch (error: any) {
       const message = String(error?.message || error || 'Unknown AI error');
       this.logger.error('Reverse questions generation failed', message);
+      throw new Error(`AI processing failed: ${message}`);
+    }
+  }
+
+  async generateOutreach(
+    resumeText: string,
+    jobDescription: string,
+    type: string,
+    tone: string,
+    length: string,
+  ): Promise<string> {
+    try {
+      const prompt = `
+        You are an expert career coach and professional copywriter.
+        Based ONLY on the candidate's resume and the job description, write a ${length} ${type.replace('_', ' ')} for the candidate.
+        The tone should be ${tone}.
+        
+        CRITICAL RULES:
+        1. Use ONLY facts that appear in the resume and job description.
+        2. NEVER invent employers, degrees, numbers, certifications, or skills.
+        3. Weave in the most relevant matched skills naturally.
+        4. Address key missing keywords honestly (as eagerness to learn), NEVER as claimed experience.
+        5. Use [Hiring Manager] and [Company Name] placeholders if the names are not clearly provided in the job description.
+        6. Do NOT output markdown formatting like \`\`\` or bold tags. Output pure plain text.
+        
+        Resume:
+        ${resumeText}
+        
+        Job Description:
+        ${jobDescription}
+      `;
+
+      return await this.generateText(prompt);
+    } catch (error: any) {
+      const message = String(error?.message || error || 'Unknown AI error');
+      this.logger.error('Outreach generation failed', message);
       throw new Error(`AI processing failed: ${message}`);
     }
   }

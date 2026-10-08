@@ -9,6 +9,7 @@ import { AiModule } from './ai/ai.module';
 import { AnalysisModule } from './analysis/analysis.module';
 import { InterviewModule } from './interview/interview.module';
 import { JobMarketModule } from './job-market/job-market.module';
+import { OutreachModule } from './outreach/outreach.module';
 import { RedisModule } from './redis/redis.module';
 
 @Module({
@@ -21,6 +22,7 @@ import { RedisModule } from './redis/redis.module';
     AnalysisModule,
     InterviewModule,
     JobMarketModule,
+    OutreachModule,
     RedisModule,
   ],
   controllers: [AppController],

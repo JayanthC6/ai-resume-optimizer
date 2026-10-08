@@ -26,6 +26,7 @@ import { HistoryPanel } from '@/components/dashboard/tabs/HistoryPanel';
 import { SettingsPanel } from '@/components/dashboard/tabs/SettingsPanel';
 import { SupportPanel } from '@/components/dashboard/tabs/SupportPanel';
 import { JobMarketPanel } from '@/components/dashboard/tabs/JobMarketPanel';
+import { OutreachPanel } from '@/components/dashboard/tabs/OutreachPanel';
 import { ReverseQuestionsPanel } from '@/components/dashboard/tabs/ReverseQuestionsPanel';
 
 type ToastState = { type: 'success' | 'error'; message: string };
@@ -565,6 +566,18 @@ export default function DashboardPage() {
               {activeTab === 'reverse-questions' && (
                 result?.analysisId ? (
                   <ReverseQuestionsPanel analysisId={result.analysisId} />
+                ) : (
+                  <div className="flex h-full flex-col items-center justify-center text-slate-400 dark:text-slate-500">
+                    <AlertCircle className="mb-3 h-8 w-8 text-amber-500" />
+                    <p className="text-lg font-medium text-slate-200">Analysis Setup Required</p>
+                    <p className="text-sm">Please run an analysis first.</p>
+                  </div>
+                )
+              )}
+
+              {activeTab === 'outreach' && (
+                result?.analysisId ? (
+                  <OutreachPanel analysisId={result.analysisId} />
                 ) : (
                   <div className="flex h-full flex-col items-center justify-center text-slate-400 dark:text-slate-500">
                     <AlertCircle className="mb-3 h-8 w-8 text-amber-500" />

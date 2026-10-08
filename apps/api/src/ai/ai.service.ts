@@ -717,4 +717,35 @@ Output MUST be valid JSON using this exact schema:
       throw new Error('AI Job Market analysis failed');
     }
   }
+
+  async generateReverseQuestions(resumeText: string, jobDescription: string) {
+    try {
+      const prompt = `
+        You are an expert technical recruiter and career coach.
+        Based ONLY on the candidate's resume and the job description, generate strategic questions for the candidate to ask the interviewer.
+        The questions should demonstrate deep engagement, highlight the candidate's strengths implicitly, and uncover valuable information about the role.
+        Do NOT invent facts about the candidate or company.
+        
+        Group the questions strictly into these 4 topics: "team", "role success", "growth", "culture".
+        For each question, provide a short one-line "reason" explaining why it's a good question to ask.
+        
+        Output MUST be valid JSON matching this schema exactly:
+        {
+          "team": [ { "question": "string", "reason": "string" } ],
+          "role success": [ { "question": "string", "reason": "string" } ],
+          "growth": [ { "question": "string", "reason": "string" } ],
+          "culture": [ { "question": "string", "reason": "string" } ]
+        }
+        
+        Resume: ${resumeText}
+        Job Description: ${jobDescription}
+      `;
+
+      return await this.generateJson(prompt);
+    } catch (error: any) {
+      const message = String(error?.message || error || 'Unknown AI error');
+      this.logger.error('Reverse questions generation failed', message);
+      throw new Error(`AI processing failed: ${message}`);
+    }
+  }
 }

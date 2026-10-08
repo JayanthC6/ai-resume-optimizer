@@ -92,4 +92,16 @@ export class AnalysisController {
   async getAnalysis(@Param('id') id: string, @Request() req: any) {
     return this.analysisService.getAnalysis(req.user.id, id);
   }
+
+  @Get(':id/reverse-questions')
+  async getReverseQuestions(@Param('id') id: string, @Request() req: any) {
+    const questions = await this.analysisService.getReverseQuestions(req.user.id, id);
+    return { questions };
+  }
+
+  @Post(':id/reverse-questions')
+  async generateReverseQuestions(@Param('id') id: string, @Request() req: any) {
+    const questions = await this.analysisService.generateReverseQuestions(req.user.id, id);
+    return { questions };
+  }
 }

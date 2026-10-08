@@ -14,6 +14,7 @@ import {
   Menu,
   X,
   PlusCircle,
+  MessageSquare,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -28,6 +29,7 @@ export type TabKey =
   | 'history'
   | 'mock-interview'
   | 'job-market'
+  | 'reverse-questions'
   | 'settings'
   | 'support';
 
@@ -47,6 +49,7 @@ const NAV_ITEMS: SidebarItem[] = [
   { key: 'mock-interview', label: 'Mock Interview',   icon: Mic },
   { key: 'portfolio',      label: 'Portfolio',        icon: FolderSearch },
   { key: 'job-market',     label: 'Market Gap',       icon: TrendingUp },
+  { key: 'reverse-questions', label: 'Questions to Ask', icon: MessageSquare },
   { key: 'history',        label: 'History',          icon: Clock },
 ];
 

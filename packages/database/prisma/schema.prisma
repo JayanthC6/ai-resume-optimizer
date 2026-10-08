@@ -23,6 +23,7 @@ model User {
   resumes         Resume[]
   interviewSessions InterviewSession[]
   jobTargets      JobTarget[]
+  reverseQuestions ReverseQuestionSet[]
 }
 
 model Resume {
@@ -54,6 +55,7 @@ model Analysis {
   rewrites        Json?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+  reverseQuestions ReverseQuestionSet[]
 }
 
 model InterviewSession {
@@ -98,4 +100,18 @@ model JobTarget {
 
   @@index([resumeId])
   @@index([userId])
+}
+
+model ReverseQuestionSet {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  analysisId String
+  analysis   Analysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  questions  Json
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([userId])
+  @@index([analysisId])
 }

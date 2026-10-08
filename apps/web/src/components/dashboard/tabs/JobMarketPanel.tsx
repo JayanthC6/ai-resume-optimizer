@@ -155,11 +155,16 @@ export function JobMarketPanel({ resumeId }: { resumeId: string }) {
 
           <h3 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white mt-8 mb-4">Fit Rankings</h3>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {result.jobTargets?.map((target: any, i: number) => (
+            {result.jobTargets?.slice().sort((a: any, b: any) => b.fitRanking - a.fitRanking).map((target: any, i: number) => (
               <Card key={i} className="border-slate-200 dark:border-slate-800 shadow-sm">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-base font-semibold leading-tight">{target.title}</CardTitle>
-                  <CardDescription className="text-sm">{target.company}</CardDescription>
+                  <CardTitle className="text-base font-semibold leading-tight flex items-start gap-2">
+                    <span className="text-slate-400 font-mono shrink-0">#{i + 1}</span>
+                    <span>{target.title}</span>
+                  </CardTitle>
+                  {target.company && target.company.trim() !== '' && target.company.toLowerCase() !== 'n/a' && (
+                    <CardDescription className="text-sm">{target.company}</CardDescription>
+                  )}
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-3">

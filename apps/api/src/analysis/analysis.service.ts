@@ -8,12 +8,15 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from '../ai/ai.service';
 import { OptimizationRequest, ResumeRegenerationRequest } from '@repo/types';
+import { RedisService } from '../redis/redis.service';
+import { createHash } from 'crypto';
 
 @Injectable()
 export class AnalysisService {
   constructor(
     private prisma: PrismaService,
     private aiService: AiService,
+    private redisService: RedisService,
   ) {}
 
   private mapAnalysisOutput(analysis: any) {
@@ -430,5 +433,81 @@ export class AnalysisService {
       dto.jobDescription,
       dto.companyName,
     );
+  }
+
+  async getReverseQuestions(userId: string, analysisId: string) {
+    const analysis = (await this.prisma.analysis.findFirst({
+      where: { id: analysisId, resume: { userId } },
+      include: { reverseQuestions: true },
+    })) as any;
+
+    if (!analysis) {
+      throw new NotFoundException('Analysis not found');
+    }
+
+    if ((analysis as any).reverseQuestions && (analysis as any).reverseQuestions.length > 0) {
+      return (analysis as any).reverseQuestions[0].questions;
+    }
+
+    return null;
+  }
+
+  async generateReverseQuestions(userId: string, analysisId: string) {
+    const analysis = (await this.prisma.analysis.findFirst({
+      where: { id: analysisId, resume: { userId } },
+      include: { resume: true, reverseQuestions: true },
+    })) as any;
+
+    if (!analysis) {
+      throw new NotFoundException('Analysis not found');
+    }
+
+    const resumeText = analysis.resume?.rawText;
+    if (!resumeText) {
+      throw new BadRequestException('Resume text is missing');
+    }
+
+    const hash = createHash('sha256')
+      .update(`${userId}:${analysis.jobDescription}:${resumeText}`)
+      .digest('hex');
+    const cacheKey = `reverse_questions:${hash}`;
+    const cached = await this.redisService.get(cacheKey);
+
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      return this.saveReverseQuestions(userId, analysisId, parsed, (analysis as any).reverseQuestions[0]?.id);
+    }
+
+    const aiResult = await this.aiService.generateReverseQuestions(
+      resumeText,
+      analysis.jobDescription
+    );
+
+    if (!aiResult.team || !aiResult['role success'] || !aiResult.growth || !aiResult.culture) {
+      throw new InternalServerErrorException('AI returned malformed JSON');
+    }
+
+    await this.redisService.set(cacheKey, JSON.stringify(aiResult), 86400); // 24h cache
+
+    return this.saveReverseQuestions(userId, analysisId, aiResult, (analysis as any).reverseQuestions[0]?.id);
+  }
+
+  private async saveReverseQuestions(userId: string, analysisId: string, questions: any, existingId?: string) {
+    if (existingId) {
+      const updated = await this.prisma.reverseQuestionSet.update({
+        where: { id: existingId },
+        data: { questions },
+      });
+      return updated.questions;
+    } else {
+      const created = await this.prisma.reverseQuestionSet.create({
+        data: {
+          userId,
+          analysisId,
+          questions,
+        },
+      });
+      return created.questions;
+    }
   }
 }

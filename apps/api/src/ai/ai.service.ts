@@ -60,7 +60,9 @@ export class AiService {
         try {
           const result = await model.generateContent(prompt);
           if (modelName !== models[0]) {
-            this.logger.warn(`AI call succeeded using fallback model: ${modelName}`);
+            this.logger.warn(
+              `AI call succeeded using fallback model: ${modelName}`,
+            );
           }
           return JSON.parse(result.response.text());
         } catch (error: any) {
@@ -87,13 +89,18 @@ export class AiService {
             break;
           }
 
-          const isRateLimit = message.toLowerCase().includes('429') || message.toLowerCase().includes('resource_exhausted');
-          const computedDelayMs = isRateLimit 
-            ? 8000 * attempt + Math.floor(Math.random() * 1000) 
+          const isRateLimit =
+            message.toLowerCase().includes('429') ||
+            message.toLowerCase().includes('resource_exhausted');
+          const computedDelayMs = isRateLimit
+            ? 8000 * attempt + Math.floor(Math.random() * 1000)
             : 700 * attempt + Math.floor(Math.random() * 250);
-            
+
           const suggestedDelayMs = this.extractRetryDelayMs(message);
-          const delayMs = Math.min(30000, Math.max(computedDelayMs, suggestedDelayMs));
+          const delayMs = Math.min(
+            30000,
+            Math.max(computedDelayMs, suggestedDelayMs),
+          );
           this.logger.warn(
             `AI call transient failure on ${modelName} (attempt ${attempt}/${maxAttempts}): ${message}. Retrying in ${delayMs}ms`,
           );
@@ -102,7 +109,10 @@ export class AiService {
       }
     }
 
-    throw lastError || new Error('AI request failed after retries and model fallbacks');
+    throw (
+      lastError ||
+      new Error('AI request failed after retries and model fallbacks')
+    );
   }
 
   private isTransientAiError(message: string) {
@@ -120,8 +130,8 @@ export class AiService {
   private isPermanentQuotaExhaustion(message: string) {
     const normalized = message.toLowerCase();
     return (
-      (normalized.includes('quota exceeded') &&
-        (normalized.includes('perday') || normalized.includes('limit: 0')))
+      normalized.includes('quota exceeded') &&
+      (normalized.includes('perday') || normalized.includes('limit: 0'))
     );
   }
 
@@ -256,12 +266,15 @@ ${rawText}
 `;
 
       const aiResult = await this.generateJson(prompt);
-      const updatedResume = aiResult?.updatedResume || aiResult?.regeneratedResume || '';
+      const updatedResume =
+        aiResult?.updatedResume || aiResult?.regeneratedResume || '';
 
       return {
         regeneratedResume: updatedResume,
         updatedResume,
-        highlights: Array.isArray(aiResult?.highlights) ? aiResult.highlights : [],
+        highlights: Array.isArray(aiResult?.highlights)
+          ? aiResult.highlights
+          : [],
         changeLog: Array.isArray(aiResult?.changeLog) ? aiResult.changeLog : [],
       };
     } catch (error: any) {
@@ -505,7 +518,8 @@ Constraints:
         error?.message || error,
       );
       return {
-        recommended_minutes: mode === 'Technical' ? 45 : mode === 'Mixed' ? 50 : 30,
+        recommended_minutes:
+          mode === 'Technical' ? 45 : mode === 'Mixed' ? 50 : 30,
         rationale:
           'This default duration gives enough time to cover behavioral and technical depth for interview readiness.',
         confidence: 'medium',
@@ -543,32 +557,34 @@ Output MUST be valid JSON exactly:
 `;
 
       const result = await this.generateJson(prompt);
-      const questions = Array.isArray(result?.questions) ? result.questions : [];
+      const questions = Array.isArray(result?.questions)
+        ? result.questions
+        : [];
 
       return {
-        questions: questions
-          .slice(0, 3)
-          .map((q: any, idx: number) => ({
-            title:
-              typeof q?.title === 'string' && q.title.trim().length > 0
-                ? q.title
-                : `Coding Challenge ${idx + 1}`,
-            difficulty:
-              q?.difficulty === 'easy' || q?.difficulty === 'medium' || q?.difficulty === 'hard'
-                ? q.difficulty
-                : idx === 0
-                  ? 'easy'
-                  : idx === 1
-                    ? 'medium'
-                    : 'hard',
-            prompt:
-              typeof q?.prompt === 'string' && q.prompt.trim().length > 0
-                ? q.prompt
-                : 'Implement a solution for a role-relevant problem and explain trade-offs.',
-            expected_topics: Array.isArray(q?.expected_topics)
-              ? q.expected_topics.filter((t: unknown) => typeof t === 'string')
-              : [],
-          })),
+        questions: questions.slice(0, 3).map((q: any, idx: number) => ({
+          title:
+            typeof q?.title === 'string' && q.title.trim().length > 0
+              ? q.title
+              : `Coding Challenge ${idx + 1}`,
+          difficulty:
+            q?.difficulty === 'easy' ||
+            q?.difficulty === 'medium' ||
+            q?.difficulty === 'hard'
+              ? q.difficulty
+              : idx === 0
+                ? 'easy'
+                : idx === 1
+                  ? 'medium'
+                  : 'hard',
+          prompt:
+            typeof q?.prompt === 'string' && q.prompt.trim().length > 0
+              ? q.prompt
+              : 'Implement a solution for a role-relevant problem and explain trade-offs.',
+          expected_topics: Array.isArray(q?.expected_topics)
+            ? q.expected_topics.filter((t: unknown) => typeof t === 'string')
+            : [],
+        })),
       };
     } catch (error: any) {
       this.logger.error(
@@ -634,12 +650,57 @@ Constraints:
         improvements: Array.isArray(result?.improvements)
           ? result.improvements.filter((s: unknown) => typeof s === 'string')
           : [],
-        time_complexity: typeof result?.time_complexity === 'string' ? result.time_complexity : 'O(N)',
-        space_complexity: typeof result?.space_complexity === 'string' ? result.space_complexity : 'O(N)',
+        time_complexity:
+          typeof result?.time_complexity === 'string'
+            ? result.time_complexity
+            : 'O(N)',
+        space_complexity:
+          typeof result?.space_complexity === 'string'
+            ? result.space_complexity
+            : 'O(N)',
       };
     } catch (error: any) {
       this.logger.error('Coding evaluation failed', error?.message || error);
       throw new Error('AI coding evaluation failed');
+    }
+  }
+
+  async analyzeJobMarket(resumeText: string, jobDescriptions: string[]) {
+    try {
+      const prompt = `
+You are an expert ATS recruiter. The candidate wants to apply to several roles.
+Here are the Job Descriptions they provided:
+${jobDescriptions.map((jd, i) => `--- JD ${i + 1} ---\n${jd}`).join('\n')}
+
+And here is the Candidate's Resume:
+${resumeText}
+
+Analyze the resume against these multiple job descriptions. 
+Do NOT invent skills, employers, or numbers.
+
+Output MUST be valid JSON using this exact schema:
+{
+  "jobTargets": [
+    {
+      "title": "string (inferred job title from JD)",
+      "company": "string (inferred company from JD if any)",
+      "jd": "string (the original JD text or summary)",
+      "fitRanking": number (0-100 fit score for this specific JD)
+    }
+  ],
+  "missingKeywords": [
+    "string (keywords missing across MOST of the jobs)"
+  ],
+  "priorityList": [
+    "string (a short 'learn these first' priority list based on the gaps)"
+  ]
+}
+      `;
+
+      return await this.generateJson(prompt);
+    } catch (error: any) {
+      this.logger.error('Job Market analysis failed', error?.message || error);
+      throw new Error('AI Job Market analysis failed');
     }
   }
 }

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import api from '../lib/api';
 import { jsPDF } from 'jspdf';
@@ -24,6 +25,7 @@ import { PortfolioPanel } from '@/components/dashboard/tabs/PortfolioPanel';
 import { HistoryPanel } from '@/components/dashboard/tabs/HistoryPanel';
 import { SettingsPanel } from '@/components/dashboard/tabs/SettingsPanel';
 import { SupportPanel } from '@/components/dashboard/tabs/SupportPanel';
+import { JobMarketPanel } from '@/components/dashboard/tabs/JobMarketPanel';
 
 type ToastState = { type: 'success' | 'error'; message: string };
 
@@ -73,6 +75,17 @@ export default function DashboardPage() {
   // UI state
   const [view, setView] = useState<'setup' | 'results'>(savedState?.view || 'setup');
   const [activeTab, setActiveTab] = useState<TabKey>(savedState?.activeTab || 'overview');
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  
+  const handleTabChange = (tab: TabKey) => {
+    if (tab === 'home') {
+      navigate('/home');
+      return;
+    }
+    setActiveTab(tab);
+  };
+
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [isGeneratingRoadmap, setIsGeneratingRoadmap] = useState(false);
   const [isGeneratingInterview, setIsGeneratingInterview] = useState(false);
@@ -338,9 +351,43 @@ export default function DashboardPage() {
     setStatus('idle');
   };
 
-  // Auto-navigate to results if result exists on mount
+  // Auto-navigate to results if result exists on mount or if query params specify a tab
   useEffect(() => {
-    if (result && status === 'done') {
+    const tabParam = searchParams.get('tab') as TabKey | null;
+    const analysisIdParam = searchParams.get('analysisId');
+
+    if (tabParam) {
+      if (analysisIdParam) {
+        handleSelectHistory(analysisIdParam).then(() => {
+          setActiveTab(tabParam);
+          setSearchParams({});
+        });
+      } else {
+        const requiresAnalysis = ['overview', 'keywords', 'rewrites', 'roadmap', 'interview'];
+        
+        if (requiresAnalysis.includes(tabParam) && !savedState?.resumeId) {
+          api.get('/analysis/history').then(({ data }) => {
+            if (data && data.length > 0) {
+              handleSelectHistory(data[0].id).then(() => {
+                setActiveTab(tabParam);
+                setSearchParams({});
+              });
+            } else {
+              showToast({ type: 'error', message: 'No analyses found. Please start a new one.' });
+              setView('setup');
+              setSearchParams({});
+            }
+          }).catch(() => {
+            setView('setup');
+            setSearchParams({});
+          });
+        } else {
+          setActiveTab(tabParam);
+          setView('results');
+          setSearchParams({});
+        }
+      }
+    } else if (result && status === 'done') {
       setView('results');
     }
   }, []);
@@ -402,7 +449,7 @@ export default function DashboardPage() {
       {toast && <Toast toast={toast} />}
 
       {/* Sidebar */}
-      <DashboardSidebar activeTab={activeTab} onTabChange={setActiveTab} onNewAnalysis={handleNewAnalysis} />
+      <DashboardSidebar activeTab={activeTab} onTabChange={handleTabChange} onNewAnalysis={handleNewAnalysis} />
 
       {/* Main area */}
       <div className="flex flex-1 flex-col overflow-hidden">
@@ -498,6 +545,18 @@ export default function DashboardPage() {
                     <AlertCircle className="mb-3 h-8 w-8 text-amber-500" />
                     <p className="text-lg font-medium text-slate-200">Interview Setup Required</p>
                     <p className="text-sm">Please upload your resume and enter the target job details in the Setup view first.</p>
+                  </div>
+                )
+              )}
+
+              {activeTab === 'job-market' && (
+                resumeId ? (
+                  <JobMarketPanel resumeId={resumeId} />
+                ) : (
+                  <div className="flex h-full flex-col items-center justify-center text-slate-400 dark:text-slate-500">
+                    <AlertCircle className="mb-3 h-8 w-8 text-amber-500" />
+                    <p className="text-lg font-medium text-slate-200">Analysis Setup Required</p>
+                    <p className="text-sm">Please upload your resume in the Setup view first.</p>
                   </div>
                 )
               )}

@@ -22,6 +22,7 @@ model User {
   updatedAt       DateTime @updatedAt
   resumes         Resume[]
   interviewSessions InterviewSession[]
+  jobTargets      JobTarget[]
 }
 
 model Resume {
@@ -35,6 +36,7 @@ model Resume {
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
   analyses         Analysis[]
+  jobTargets       JobTarget[]
 }
 
 model Analysis {
@@ -80,4 +82,20 @@ model InterviewMessage {
   role             String           // user, assistant, system
   content          String           @db.Text
   createdAt        DateTime         @default(now())
+}
+
+model JobTarget {
+  id              String   @id @default(uuid())
+  resumeId        String
+  resume          Resume   @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobTargets      Json     // Array of job targets { title, company, jd, fitRanking }
+  missingKeywords Json?    // Array of missing keywords
+  priorityList    Json?    // Array of "learn these first" items
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([resumeId])
+  @@index([userId])
 }

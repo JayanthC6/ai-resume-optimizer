@@ -18,6 +18,7 @@ import {
 import { useState } from 'react';
 
 export type TabKey =
+  | 'home'
   | 'overview'
   | 'keywords'
   | 'rewrites'
@@ -26,6 +27,7 @@ export type TabKey =
   | 'portfolio'
   | 'history'
   | 'mock-interview'
+  | 'job-market'
   | 'settings'
   | 'support';
 
@@ -36,13 +38,15 @@ type SidebarItem = {
 };
 
 const NAV_ITEMS: SidebarItem[] = [
-  { key: 'overview',       label: 'Overview',         icon: LayoutDashboard },
+  { key: 'home',           label: 'Home',             icon: LayoutDashboard },
+  { key: 'overview',       label: 'Overview',         icon: FileEdit },
   { key: 'keywords',       label: 'Keywords',         icon: KeyRound },
   { key: 'rewrites',       label: 'Rewrites',         icon: FileEdit },
   { key: 'roadmap',        label: 'Skill Roadmap',    icon: Map },
   { key: 'interview',      label: 'Q&A Prep',         icon: HelpCircle },
   { key: 'mock-interview', label: 'Mock Interview',   icon: Mic },
   { key: 'portfolio',      label: 'Portfolio',        icon: FolderSearch },
+  { key: 'job-market',     label: 'Market Gap',       icon: TrendingUp },
   { key: 'history',        label: 'History',          icon: Clock },
 ];
 

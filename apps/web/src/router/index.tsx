@@ -8,6 +8,7 @@ const RegisterPage = lazy(() => import('../pages/Register'));
 const ForgotPasswordPage = lazy(() => import('../pages/ForgotPassword'));
 const ResetPasswordPage = lazy(() => import('../pages/ResetPassword'));
 const DashboardPage = lazy(() => import('../pages/Dashboard'));
+const UserHomePage = lazy(() => import('../pages/UserHome'));
 
 function withSuspense(node: React.ReactNode) {
   return (
@@ -34,6 +35,14 @@ export const router = createBrowserRouter([
     element: withSuspense(
       <ProtectedRoute>
         <DashboardPage />
+      </ProtectedRoute>
+    )
+  },
+  {
+    path: '/home',
+    element: withSuspense(
+      <ProtectedRoute>
+        <UserHomePage />
       </ProtectedRoute>
     )
   },

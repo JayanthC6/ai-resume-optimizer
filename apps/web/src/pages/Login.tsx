@@ -51,7 +51,7 @@ export default function LoginPage() {
     try {
       const { data } = await api.post('/auth/google-login', { idToken: credential });
       setAuth(data.user, data.accessToken);
-      navigate('/dashboard');
+      navigate('/home');
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string | string[] } } };
       const msg = e.response?.data?.message;
@@ -87,7 +87,7 @@ export default function LoginPage() {
     try {
       const { data } = await api.post('/auth/login', values);
       setAuth(data.user, data.accessToken);
-      navigate('/dashboard');
+      navigate('/home');
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string | string[] } } };
       const msg = e.response?.data?.message;

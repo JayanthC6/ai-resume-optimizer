@@ -30,7 +30,7 @@ export default function RegisterPage() {
     try {
       const { data } = await api.post('/auth/register', values);
       setAuth(data.user, data.accessToken);
-      navigate('/dashboard');
+      navigate('/home');
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string | string[] } } };
       if (!e.response) {

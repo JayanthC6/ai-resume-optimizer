@@ -78,7 +78,7 @@ const footerCompany = ['About', 'Privacy', 'Careers', 'Support', 'Privacy Policy
 
 export default function HomePage() {
   const token = useAuthStore((s) => s.token);
-  const dashboardHref = token ? '/dashboard' : '/register';
+  const dashboardHref = token ? '/home' : '/register';
 
   return (
     <div className="min-h-screen text-white" style={{ background: '#0d1117', fontFamily: "'Inter', sans-serif" }}>

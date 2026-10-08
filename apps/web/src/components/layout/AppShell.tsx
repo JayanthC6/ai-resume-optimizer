@@ -20,7 +20,7 @@ export function AppShell({ title, subtitle, userLabel, onLogout, children }: App
   const links = useMemo(
     () => [
       { to: '/', label: 'Home' },
-      { to: '/dashboard', label: 'Dashboard' },
+      { to: '/home', label: 'Home' },
     ],
     []
   );

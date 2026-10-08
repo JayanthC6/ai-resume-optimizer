@@ -49,14 +49,20 @@ export class AiService {
   }
 
   private async generateJson(prompt: string) {
-    const maxAttempts = 4;
+    const maxAttempts = 2;
     const models = this.getModelCandidates();
     let lastError: unknown;
+    const startTime = Date.now();
+    const MAX_TOTAL_TIME_MS = 90000;
 
     for (const modelName of models) {
       const model = this.getJsonModel(modelName);
 
       for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+        if (Date.now() - startTime > MAX_TOTAL_TIME_MS) {
+          throw new Error('The AI service is busy, please try again in a minute');
+        }
+
         try {
           const result = await model.generateContent(prompt);
           if (modelName !== models[0]) {
@@ -75,6 +81,18 @@ export class AiService {
             );
           }
 
+          const is404 = message.includes('404') || message.toLowerCase().includes('not found');
+          if (is404) {
+            this.logger.warn(`AI model ${modelName} returned 404 (Not Found). Please check if this model name is valid in your .env`);
+            break;
+          }
+
+          const isRateLimit = message.toLowerCase().includes('429') || message.toLowerCase().includes('resource_exhausted') || message.toLowerCase().includes('quota');
+          if (isRateLimit) {
+            this.logger.warn(`AI model ${modelName} rate limited (429/Quota). Skipping to fallback.`);
+            break;
+          }
+
           const transient = this.isTransientAiError(message);
           const isLastAttempt = attempt === maxAttempts;
 
@@ -89,18 +107,17 @@ export class AiService {
             break;
           }
 
-          const isRateLimit =
-            message.toLowerCase().includes('429') ||
-            message.toLowerCase().includes('resource_exhausted');
-          const computedDelayMs = isRateLimit
-            ? 8000 * attempt + Math.floor(Math.random() * 1000)
-            : 700 * attempt + Math.floor(Math.random() * 250);
-
+          const computedDelayMs = 700 * attempt + Math.floor(Math.random() * 250);
           const suggestedDelayMs = this.extractRetryDelayMs(message);
           const delayMs = Math.min(
             30000,
             Math.max(computedDelayMs, suggestedDelayMs),
           );
+
+          if (Date.now() - startTime + delayMs > MAX_TOTAL_TIME_MS) {
+            break;
+          }
+
           this.logger.warn(
             `AI call transient failure on ${modelName} (attempt ${attempt}/${maxAttempts}): ${message}. Retrying in ${delayMs}ms`,
           );
@@ -109,10 +126,7 @@ export class AiService {
       }
     }
 
-    throw (
-      lastError ||
-      new Error('AI request failed after retries and model fallbacks')
-    );
+    throw new Error('The AI service is busy, please try again in a minute');
   }
 
   private isTransientAiError(message: string) {
@@ -120,10 +134,10 @@ export class AiService {
     return (
       normalized.includes('503') ||
       normalized.includes('service unavailable') ||
-      normalized.includes('429') ||
-      normalized.includes('resource_exhausted') ||
-      normalized.includes('quota') ||
-      normalized.includes('timeout')
+      normalized.includes('timeout') ||
+      normalized.includes('fetch failed') ||
+      normalized.includes('econnreset') ||
+      normalized.includes('etimedout')
     );
   }
 

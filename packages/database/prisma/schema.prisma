@@ -25,6 +25,8 @@ model User {
   jobTargets      JobTarget[]
   reverseQuestions ReverseQuestionSet[]
   drafts          Draft[]
+  planTasks       PlanTask[]
+  planReminderSetting PlanReminderSetting?
 }
 
 model Resume {
@@ -58,6 +60,7 @@ model Analysis {
   updatedAt       DateTime @updatedAt
   reverseQuestions ReverseQuestionSet[]
   drafts          Draft[]
+  planTasks       PlanTask[]
 }
 
 model InterviewSession {
@@ -134,4 +137,35 @@ model Draft {
 
   @@index([userId])
   @@index([analysisId])
+}
+
+model PlanTask {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  analysisId  String
+  analysis    Analysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  phase       String   // day30, day60, day90
+  title       String
+  description String?
+  status      String   // todo, in_progress, done
+  dueDate     DateTime?
+  completedAt DateTime?
+  sortOrder   Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([analysisId])
+  @@unique([analysisId, phase, title])
+}
+
+model PlanReminderSetting {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  enabled   Boolean  @default(false)
+  frequency String   @default("weekly")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

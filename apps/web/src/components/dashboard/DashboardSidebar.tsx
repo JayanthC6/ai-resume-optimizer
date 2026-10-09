@@ -16,6 +16,7 @@ import {
   PlusCircle,
   MessageSquare,
   Mail,
+  CheckSquare,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -32,6 +33,7 @@ export type TabKey =
   | 'job-market'
   | 'outreach'
   | 'reverse-questions'
+  | 'plan-tracker'
   | 'settings'
   | 'support';
 
@@ -51,6 +53,7 @@ const NAV_ITEMS: SidebarItem[] = [
   { key: 'mock-interview', label: 'Mock Interview',   icon: Mic },
   { key: 'portfolio',      label: 'Portfolio',        icon: FolderSearch },
   { key: 'job-market',     label: 'Market Gap',       icon: TrendingUp },
+  { key: 'plan-tracker',   label: 'Plan Tracker',     icon: CheckSquare },
   { key: 'outreach',       label: 'Outreach',         icon: Mail },
   { key: 'reverse-questions', label: 'Questions to Ask', icon: MessageSquare },
   { key: 'history',        label: 'History',          icon: Clock },

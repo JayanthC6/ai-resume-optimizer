@@ -858,11 +858,11 @@ Output MUST be valid JSON using this exact schema:
         The tone should be ${tone}.
         
         CRITICAL RULES:
-        1. Use ONLY facts that appear in the resume and job description.
-        2. NEVER invent employers, degrees, numbers, certifications, or skills.
+        1. Keep every claim traceable to the resume or job description. NEVER invent employers, degrees, numbers, certifications, or skills.
+        2. Do not use strength words such as "extensive", "proven track record", "expert", "highly experienced", "mastered" or "deep expertise" unless the same level of claim appears in the resume. Describe experience at the level the resume shows (for example "hands-on experience", "worked with", "built").
         3. Weave in the most relevant matched skills naturally.
-        4. Address key missing keywords honestly (as eagerness to learn), NEVER as claimed experience.
-        5. Use [Hiring Manager] and [Company Name] placeholders if the names are not clearly provided in the job description.
+        4. Describe missing skills only as willingness to learn, NEVER as experience.
+        5. Placeholders must always appear in square brackets exactly as [Company Name], [Hiring Manager], and [Your Phone/LinkedIn] so they are easy to spot. Never write them without brackets.
         6. Do NOT output markdown formatting like \`\`\` or bold tags. Output pure plain text.
         
         Resume:

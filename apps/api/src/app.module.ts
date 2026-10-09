@@ -11,6 +11,7 @@ import { InterviewModule } from './interview/interview.module';
 import { JobMarketModule } from './job-market/job-market.module';
 import { OutreachModule } from './outreach/outreach.module';
 import { RedisModule } from './redis/redis.module';
+import { PlanTrackerModule } from './plan-tracker/plan-tracker.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { RedisModule } from './redis/redis.module';
     JobMarketModule,
     OutreachModule,
     RedisModule,
+    PlanTrackerModule,
   ],
   controllers: [AppController],
   providers: [AppService],

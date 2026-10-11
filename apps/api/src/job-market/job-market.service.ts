@@ -53,4 +53,50 @@ export class JobMarketService {
 
     return jobTarget;
   }
+
+  async getLatest(userId: string) {
+    const latest = await this.prisma.jobTarget.findFirst({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return latest;
+  }
+
+  async getAll(userId: string) {
+    const items = await this.prisma.jobTarget.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      take: 10,
+    });
+
+    return items.map((item) => {
+      const jobs = Array.isArray(item.jobTargets) ? (item.jobTargets as any[]) : [];
+      const scores = jobs.map((j) =>
+        typeof j?.fitRanking === 'number' ? j.fitRanking : Number(j?.fitRanking) || 0,
+      );
+      const topFitScore = scores.length > 0 ? Math.max(...scores) : 0;
+
+      return {
+        id: item.id,
+        createdAt: item.createdAt,
+        jobCount: jobs.length,
+        numberOfJobs: jobs.length,
+        topFitScore,
+        topFit: topFitScore,
+      };
+    });
+  }
+
+  async getOne(id: string, userId: string) {
+    const result = await this.prisma.jobTarget.findFirst({
+      where: { id, userId },
+    });
+
+    if (!result) {
+      throw new NotFoundException('Job market analysis not found');
+    }
+
+    return result;
+  }
 }

@@ -72,10 +72,34 @@ export class JobMarketService {
 
     return items.map((item) => {
       const jobs = Array.isArray(item.jobTargets) ? (item.jobTargets as any[]) : [];
-      const scores = jobs.map((j) =>
-        typeof j?.fitRanking === 'number' ? j.fitRanking : Number(j?.fitRanking) || 0,
-      );
-      const topFitScore = scores.length > 0 ? Math.max(...scores) : 0;
+      let topJobTitle: string | null = null;
+      let topFitScore = 0;
+
+      if (jobs.length > 0) {
+        let highestScore = -Infinity;
+        let highestJob: any = null;
+
+        for (const job of jobs) {
+          if (job && typeof job === 'object') {
+            const score =
+              typeof job.fitRanking === 'number'
+                ? job.fitRanking
+                : Number(job.fitRanking);
+            const validScore = Number.isFinite(score) ? score : 0;
+            if (validScore > highestScore) {
+              highestScore = validScore;
+              highestJob = job;
+            }
+          }
+        }
+
+        if (highestJob) {
+          topFitScore = Math.max(0, highestScore);
+          const title =
+            typeof highestJob.title === 'string' ? highestJob.title.trim() : null;
+          topJobTitle = title || null;
+        }
+      }
 
       return {
         id: item.id,
@@ -84,6 +108,7 @@ export class JobMarketService {
         numberOfJobs: jobs.length,
         topFitScore,
         topFit: topFitScore,
+        topJobTitle,
       };
     });
   }

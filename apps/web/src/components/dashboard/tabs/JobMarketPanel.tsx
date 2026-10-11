@@ -202,7 +202,7 @@ export function JobMarketPanel({ resumeId }: { resumeId: string }) {
               <ChevronDown className="ml-1.5 h-3.5 w-3.5 opacity-60" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-64 max-h-80 overflow-y-auto">
+          <DropdownMenuContent align="end" className="w-72 sm:w-80 max-w-[calc(100vw-2rem)] max-h-80 overflow-y-auto">
             <DropdownMenuLabel className="text-xs font-semibold text-muted-foreground">
               Previous Analyses
             </DropdownMenuLabel>
@@ -225,32 +225,58 @@ export function JobMarketPanel({ resumeId }: { resumeId: string }) {
             ) : history.length === 0 ? (
               <div className="py-4 text-center text-xs text-muted-foreground">No previous analyses</div>
             ) : (
-              history.map((item) => (
-                <DropdownMenuItem
-                  key={item.id}
-                  onClick={() => handleSelectAnalysis(item.id)}
-                  className="flex flex-col items-start gap-0.5 cursor-pointer py-2 focus:bg-slate-100 dark:focus:bg-slate-800"
-                >
-                  <div className="flex w-full items-center justify-between text-xs font-medium">
-                    <span>
-                      {new Date(item.createdAt).toLocaleDateString(undefined, {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric',
-                      })}
-                    </span>
-                    {item.topFitScore ? (
-                      <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
-                        {item.topFitScore}% Top
-                      </span>
-                    ) : null}
-                  </div>
-                  <span className="text-[11px] text-muted-foreground">
-                    {item.jobCount ?? item.numberOfJobs ?? 0}{' '}
-                    {(item.jobCount ?? item.numberOfJobs) === 1 ? 'job' : 'jobs'}
-                  </span>
-                </DropdownMenuItem>
-              ))
+              history.map((item) => {
+                const formattedDate = new Date(item.createdAt).toLocaleDateString(undefined, {
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric',
+                });
+                const jobCount = item.jobCount ?? item.numberOfJobs ?? 0;
+                const jobsLabel = `${jobCount} ${jobCount === 1 ? 'job' : 'jobs'}`;
+
+                return (
+                  <DropdownMenuItem
+                    key={item.id}
+                    onClick={() => handleSelectAnalysis(item.id)}
+                    className="flex flex-col items-start gap-0.5 cursor-pointer py-2 focus:bg-slate-100 dark:focus:bg-slate-800 w-full overflow-hidden"
+                  >
+                    {item.topJobTitle ? (
+                      <>
+                        <div className="flex w-full items-center justify-between gap-2 text-xs font-medium">
+                          <span
+                            className="truncate text-slate-900 dark:text-slate-100"
+                            title={item.topJobTitle}
+                          >
+                            {item.topJobTitle}
+                          </span>
+                          {item.topFitScore ? (
+                            <span className="shrink-0 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                              {item.topFitScore}% Top
+                            </span>
+                          ) : null}
+                        </div>
+                        <span className="text-[11px] text-muted-foreground truncate">
+                          {formattedDate} • {jobsLabel}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex w-full items-center justify-between text-xs font-medium">
+                          <span>{formattedDate}</span>
+                          {item.topFitScore ? (
+                            <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                              {item.topFitScore}% Top
+                            </span>
+                          ) : null}
+                        </div>
+                        <span className="text-[11px] text-muted-foreground">
+                          {jobsLabel}
+                        </span>
+                      </>
+                    )}
+                  </DropdownMenuItem>
+                );
+              })
             )}
           </DropdownMenuContent>
         </DropdownMenu>

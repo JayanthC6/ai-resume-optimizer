@@ -777,7 +777,7 @@ Constraints:
   async analyzeJobMarket(resumeText: string, jobDescriptions: string[]) {
     try {
       const prompt = `
-You are an expert ATS recruiter. The candidate wants to apply to several roles.
+You are an expert ATS recruiter and hiring manager. The candidate wants to apply to several roles.
 Here are the Job Descriptions they provided:
 ${jobDescriptions.map((jd, i) => `--- JD ${i + 1} ---\n${jd}`).join('\n')}
 
@@ -787,6 +787,21 @@ ${resumeText}
 Analyze the resume against these multiple job descriptions. 
 Do NOT invent skills, employers, or numbers.
 
+SCORING RUBRIC FOR EACH ROLE'S FIT SCORE (fitRanking from 0 to 100):
+Compute each job's fit score from the resume using these weighted components:
+1. REQUIRED Skills & Tools (weight 60%): The share of the job's explicitly REQUIRED skills, frameworks, languages, and tools that clearly and demonstrably appear in the resume.
+2. PREFERRED / Nice-to-Have Items (weight 15%): The share of preferred, bonus, or secondary qualifications present in the resume.
+3. Experience & Project Evidence (weight 15%): Concrete evidence of relevant work experience, responsibilities, scale, and projects matching the JD.
+4. Education & Seniority / Level Match (weight 10%): Match with the required education, degree, and years of experience or seniority level.
+
+MANDATORY SCORE CAPS & CALIBRATION RULES:
+- If the resume is missing more than half (>50%) of the explicitly required skills or tools for a role, the fitRanking MUST NOT exceed 70.
+- If the resume is missing many core skills (3 or more key technologies), the fitRanking MUST NOT exceed 80.
+- Scores of 90 and above are strictly reserved for roles where nearly every required skill is present with clear evidence.
+- Do NOT reward similar-sounding skills as matches (for example, Docker experience does NOT cover Kubernetes; React does NOT cover Angular; Java does NOT cover C#).
+- Make the scores differ when the roles differ in fit; do NOT give nearly identical high scores to every role.
+- Count ONLY skills that appear in the resume; never assume, infer, or extrapolate skills.
+
 Output MUST be valid JSON using this exact schema:
 {
   "jobTargets": [
@@ -794,7 +809,7 @@ Output MUST be valid JSON using this exact schema:
       "title": "string (inferred job title from JD)",
       "company": "string (inferred company from JD if any)",
       "jd": "string (the original JD text or summary)",
-      "fitRanking": number (0-100 fit score for this specific JD)
+      "fitRanking": number (0-100 fit score for this specific JD adhering to the rubric and caps above)
     }
   ],
   "missingKeywords": [

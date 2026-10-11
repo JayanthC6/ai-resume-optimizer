@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, RefreshCw, CheckCircle2, Circle, Clock, Flame } from 'lucide-react';
+import { Loader2, RefreshCw, CheckCircle2, Circle, Clock, Flame, Mail } from 'lucide-react';
 import api from '@/lib/api';
 
 type PlanTask = {
@@ -35,12 +35,42 @@ export function PlanTrackerPanel({ analysisId }: Props) {
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [reminderEnabled, setReminderEnabled] = useState(false);
+  const [reminderLoading, setReminderLoading] = useState(false);
+  const [reminderError, setReminderError] = useState<string | null>(null);
+
   useEffect(() => {
     if (analysisId) {
       fetchTasks();
       fetchStreak();
+      fetchReminders();
     }
   }, [analysisId]);
+
+  const fetchReminders = async () => {
+    try {
+      const res = await api.get('/plan-tracker/reminders');
+      setReminderEnabled(Boolean(res.data.enabled));
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleToggleReminders = async () => {
+    const nextVal = !reminderEnabled;
+    setReminderLoading(true);
+    setReminderError(null);
+    try {
+      await api.patch('/plan-tracker/reminders', { enabled: nextVal });
+      setReminderEnabled(nextVal);
+    } catch (e: any) {
+      setReminderError(
+        e.response?.data?.message || 'Failed to update reminder settings.',
+      );
+    } finally {
+      setReminderLoading(false);
+    }
+  };
 
   const fetchTasks = async () => {
     try {
@@ -199,6 +229,51 @@ export function PlanTrackerPanel({ analysisId }: Props) {
           Sync Tasks from Analysis
         </Button>
       </div>
+
+      {/* Weekly Email Reminders Card */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
+        <div className="flex items-start sm:items-center gap-3">
+          <div className="p-2 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded-lg shrink-0">
+            <Mail className="w-4 h-4" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                Weekly Plan Reminders
+              </span>
+              {reminderLoading && <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-500" />}
+            </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Receive a weekly summary of your open tasks and streak. Emails are only sent when the server has email configured.
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 self-end sm:self-center shrink-0">
+          <button
+            type="button"
+            disabled={reminderLoading}
+            onClick={handleToggleReminders}
+            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+              reminderEnabled ? 'bg-blue-600' : 'bg-slate-200 dark:bg-slate-700'
+            } ${reminderLoading ? 'opacity-60 cursor-not-allowed' : ''}`}
+            role="switch"
+            aria-checked={reminderEnabled}
+          >
+            <span
+              aria-hidden="true"
+              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                reminderEnabled ? 'translate-x-5' : 'translate-x-0'
+              }`}
+            />
+          </button>
+        </div>
+      </div>
+
+      {reminderError && (
+        <div className="p-3 bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 rounded-lg text-xs">
+          {reminderError}
+        </div>
+      )}
 
       {error && (
         <div className="p-4 bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 rounded-lg text-sm">

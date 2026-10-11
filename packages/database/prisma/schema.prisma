@@ -161,11 +161,12 @@ model PlanTask {
 }
 
 model PlanReminderSetting {
-  id        String   @id @default(uuid())
-  userId    String   @unique
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  enabled   Boolean  @default(false)
-  frequency String   @default("weekly")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String    @id @default(uuid())
+  userId     String    @unique
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  enabled    Boolean   @default(false)
+  frequency  String    @default("weekly")
+  lastSentAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 }

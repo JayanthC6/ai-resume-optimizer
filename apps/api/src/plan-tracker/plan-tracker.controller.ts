@@ -2,6 +2,7 @@ import { Controller, Post, Get, Patch, Param, Body, UseGuards, Request } from '@
 import { PlanTrackerService } from './plan-tracker.service';
 import { JwtAuthGuard } from '../auth/jwt.guard';
 import { UpdateTaskDto } from './dto/update-task.dto';
+import { UpdateReminderDto } from './dto/update-reminder.dto';
 
 @Controller('plan-tracker')
 @UseGuards(JwtAuthGuard)
@@ -16,6 +17,21 @@ export class PlanTrackerController {
   @Get('streak')
   async getStreak(@Request() req: any) {
     return this.planService.getStreak(req.user.id);
+  }
+
+  @Get('reminders')
+  async getReminders(@Request() req: any) {
+    return this.planService.getReminderSettings(req.user.id);
+  }
+
+  @Patch('reminders')
+  async updateReminders(@Body() dto: UpdateReminderDto, @Request() req: any) {
+    return this.planService.updateReminderSettings(req.user.id, dto.enabled);
+  }
+
+  @Post('reminders/test-trigger')
+  async testTriggerReminder(@Request() req: any) {
+    return this.planService.testTriggerReminder(req.user.id);
   }
 
   @Get(':analysisId')

@@ -1,10 +1,23 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+  HttpException,
+  HttpStatus,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateTaskDto } from './dto/update-task.dto';
+import { PlanReminderService } from './plan-reminder.service';
 
 @Injectable()
 export class PlanTrackerService {
-  constructor(private prisma: PrismaService) {}
+  private testTriggerTimestamps = new Map<string, number[]>();
+
+  constructor(
+    private prisma: PrismaService,
+    private reminderService: PlanReminderService,
+  ) {}
 
   async syncRoadmapTasks(userId: string, analysisId: string) {
     const analysis = await this.prisma.analysis.findFirst({
@@ -242,5 +255,60 @@ export class PlanTrackerService {
     }
 
     return { streak };
+  }
+
+  async getReminderSettings(userId: string) {
+    const setting = await this.prisma.planReminderSetting.findUnique({
+      where: { userId },
+    });
+    return {
+      enabled: setting?.enabled ?? false,
+      lastSentAt: setting?.lastSentAt ?? null,
+    };
+  }
+
+  async updateReminderSettings(userId: string, enabled: boolean) {
+    const setting = await this.prisma.planReminderSetting.upsert({
+      where: { userId },
+      create: { userId, enabled },
+      update: { enabled },
+    });
+    return {
+      enabled: setting.enabled,
+      lastSentAt: setting.lastSentAt,
+    };
+  }
+
+  async testTriggerReminder(userId: string) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new ForbiddenException('Test trigger is disabled in production mode');
+    }
+
+    const now = Date.now();
+    const oneHourAgo = now - 3600000;
+    const history = (this.testTriggerTimestamps.get(userId) || []).filter(
+      (ts) => ts > oneHourAgo,
+    );
+
+    if (history.length >= 3) {
+      throw new HttpException(
+        'Rate limit exceeded: maximum 3 test triggers per hour.',
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+
+    history.push(now);
+    this.testTriggerTimestamps.set(userId, history);
+
+    const queue = this.reminderService.getQueue();
+    if (queue) {
+      await queue.add('check-user-reminder', {
+        userId,
+        isManualTest: true,
+      });
+      return { message: 'Test reminder job queued successfully' };
+    }
+
+    return this.reminderService.processUserReminder(userId, true);
   }
 }

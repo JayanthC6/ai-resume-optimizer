@@ -18,45 +18,136 @@ export class PlanTrackerService {
     const rewrites = analysis.rewrites as any;
     const roadmap = rewrites?.skillGapRoadmap;
 
-    if (!roadmap || !roadmap.day30 || !roadmap.day60 || !roadmap.day90) {
-      throw new BadRequestException('Roadmap not found or invalid format in analysis');
+    if (!roadmap) {
+      throw new BadRequestException('Roadmap not found in analysis');
     }
 
-    const phases = ['day30', 'day60', 'day90'];
-    const upsertedTasks = [];
+    type TaskCandidate = {
+      phase: string;
+      title: string;
+      description: string | null;
+      sortOrder: number;
+    };
 
-    for (const phase of phases) {
-      const tasks = roadmap[phase] || [];
-      for (let i = 0; i < tasks.length; i++) {
-        const title = typeof tasks[i] === 'string' ? tasks[i] : tasks[i].title || tasks[i].task;
-        const description = tasks[i].description || null;
+    const taskCandidates: TaskCandidate[] = [];
 
-        if (!title) continue;
+    if (Array.isArray(roadmap.phases)) {
+      roadmap.phases.forEach((phaseObj: any, index: number) => {
+        let phaseKey = 'day30';
+        const timeframe = (phaseObj?.timeframe ?? '').toString().toLowerCase();
 
-        const task = await this.prisma.planTask.upsert({
-          where: {
-            analysisId_phase_title: {
-              analysisId,
-              phase,
+        if (timeframe.includes('30')) {
+          phaseKey = 'day30';
+        } else if (timeframe.includes('60')) {
+          phaseKey = 'day60';
+        } else if (timeframe.includes('90')) {
+          phaseKey = 'day90';
+        } else {
+          phaseKey = index === 0 ? 'day30' : index === 1 ? 'day60' : 'day90';
+        }
+
+        const resources = Array.isArray(phaseObj?.learningResources)
+          ? phaseObj.learningResources.filter(Boolean).map((r: any) => String(r).trim()).filter(Boolean).join(', ')
+          : '';
+
+        let order = 0;
+
+        // Goals
+        if (Array.isArray(phaseObj?.goals)) {
+          phaseObj.goals.forEach((goal: any) => {
+            const rawTitle = typeof goal === 'string' ? goal : goal?.title || goal?.goal || '';
+            const title = String(rawTitle).trim();
+            if (!title) return;
+
+            const description = resources
+              ? `Goal. Resources: ${resources}`
+              : 'Goal';
+
+            taskCandidates.push({
+              phase: phaseKey,
               title: title.substring(0, 255),
-            },
-          },
-          update: {
-            description,
-            sortOrder: i,
-          },
-          create: {
-            userId,
-            analysisId,
-            phase,
-            title: title.substring(0, 255),
-            description,
-            status: 'todo',
-            sortOrder: i,
-          },
-        });
-        upsertedTasks.push(task);
+              description,
+              sortOrder: order++,
+            });
+          });
+        }
+
+        // MiniProjects
+        if (Array.isArray(phaseObj?.miniProjects)) {
+          phaseObj.miniProjects.forEach((proj: any) => {
+            const rawTitle = typeof proj === 'string' ? proj : proj?.title || proj?.project || '';
+            const title = String(rawTitle).trim();
+            if (!title) return;
+
+            taskCandidates.push({
+              phase: phaseKey,
+              title: title.substring(0, 255),
+              description: 'Mini project',
+              sortOrder: order++,
+            });
+          });
+        }
+      });
+    } else {
+      // Fallback if day30, day60, day90 exist directly
+      const directPhases = ['day30', 'day60', 'day90'];
+      for (const phaseKey of directPhases) {
+        if (Array.isArray(roadmap[phaseKey])) {
+          let order = 0;
+          for (const item of roadmap[phaseKey]) {
+            const rawTitle = typeof item === 'string' ? item : item?.title || item?.task || '';
+            const title = String(rawTitle).trim();
+            if (!title) continue;
+
+            taskCandidates.push({
+              phase: phaseKey,
+              title: title.substring(0, 255),
+              description: item?.description || 'Goal',
+              sortOrder: order++,
+            });
+          }
+        }
       }
+    }
+
+    if (taskCandidates.length === 0) {
+      throw new BadRequestException('Roadmap has no valid tasks or invalid format in analysis');
+    }
+
+    // Deduplicate candidates with identical (phase, title) to respect unique constraint
+    const seen = new Set<string>();
+    const uniqueCandidates = taskCandidates.filter((item) => {
+      const key = `${item.phase}:::${item.title}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    const upsertedTasks = [];
+    for (const item of uniqueCandidates) {
+      const task = await this.prisma.planTask.upsert({
+        where: {
+          analysisId_phase_title: {
+            analysisId,
+            phase: item.phase,
+            title: item.title,
+          },
+        },
+        update: {
+          description: item.description,
+          sortOrder: item.sortOrder,
+        },
+        create: {
+          userId,
+          analysisId,
+          phase: item.phase,
+          title: item.title,
+          description: item.description,
+          status: 'todo',
+          sortOrder: item.sortOrder,
+        },
+      });
+      upsertedTasks.push(task);
     }
 
     return { success: true, count: upsertedTasks.length };

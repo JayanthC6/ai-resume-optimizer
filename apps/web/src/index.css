@@ -133,7 +133,7 @@
 
 @page {
   size: letter portrait;
-  margin: 0.5in;
+  margin: 0;
 }
 
 @media print {

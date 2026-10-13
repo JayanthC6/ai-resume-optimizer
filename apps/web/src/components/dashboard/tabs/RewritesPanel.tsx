@@ -3,7 +3,6 @@ import {
   WandSparkles,
   RefreshCw,
   SlidersHorizontal,
-  CheckCircle,
   Download,
   Zap,
   TrendingUp,
@@ -98,7 +97,7 @@ export function RewritesPanel({
     pageStyle: `
       @page {
         size: letter portrait;
-        margin: 0.5in;
+        margin: 0;
       }
       @media print {
         html, body {
@@ -468,33 +467,41 @@ export function RewritesPanel({
 
           {/* Action buttons */}
           <div
-            className="flex items-center gap-3 px-5 py-4 shrink-0 print:hidden"
+            className="flex items-center justify-between gap-3 px-5 py-4 shrink-0 print:hidden flex-wrap"
             style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}
           >
-            <button
-              onClick={onRegenerate}
-              disabled={isRegenerating}
-              className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-semibold text-slate-300 transition hover:bg-slate-700 disabled:opacity-40"
-              style={{ border: '1px solid rgba(255,255,255,0.1)' }}
-            >
-              <RefreshCw className="h-3.5 w-3.5" />
-              Regenerate
-            </button>
-            <button
-              className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-semibold text-slate-300 transition hover:bg-slate-700"
-              style={{ border: '1px solid rgba(255,255,255,0.1)' }}
-            >
-              <SlidersHorizontal className="h-3.5 w-3.5" />
-              Adjust Tone
-            </button>
-            <button
-              onClick={() => (isStructured ? handlePrint() : onExportPdf())}
-              className="ml-auto flex items-center gap-2 rounded-xl px-5 py-2.5 text-xs font-bold text-white transition hover:opacity-90 active:scale-95"
-              style={{ background: 'linear-gradient(90deg,#2563eb,#1d4ed8)' }}
-            >
-              <CheckCircle className="h-3.5 w-3.5" />
-              Apply Change
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={onRegenerate}
+                disabled={isRegenerating}
+                className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-semibold text-slate-300 transition hover:bg-slate-700 disabled:opacity-40"
+                style={{ border: '1px solid rgba(255,255,255,0.1)' }}
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+                Regenerate
+              </button>
+              <button
+                className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-semibold text-slate-300 transition hover:bg-slate-700"
+                style={{ border: '1px solid rgba(255,255,255,0.1)' }}
+              >
+                <SlidersHorizontal className="h-3.5 w-3.5" />
+                Adjust Tone
+              </button>
+            </div>
+
+            <div className="ml-auto flex items-center gap-3">
+              <span className="text-[11px] text-slate-400 max-w-sm text-right leading-tight">
+                In the print window, choose Destination: Save as PDF (not Microsoft Print to PDF) so links stay clickable and text stays selectable.
+              </span>
+              <button
+                onClick={() => (isStructured ? handlePrint() : onExportPdf())}
+                className="flex items-center gap-2 rounded-xl px-5 py-2.5 text-xs font-bold text-white transition hover:opacity-90 active:scale-95 shrink-0"
+                style={{ background: 'linear-gradient(90deg,#2563eb,#1d4ed8)' }}
+              >
+                <Download className="h-3.5 w-3.5" />
+                Download PDF
+              </button>
+            </div>
           </div>
         </div>
       </div>

@@ -1,6 +1,7 @@
 import { Suspense, lazy } from 'react';
-import { createBrowserRouter, Navigate } from 'react-router-dom';
+import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom';
 import ProtectedRoute from './ProtectedRoute';
+import { RouteErrorBoundary } from '@/components/RouteErrorBoundary';
 
 const HomePage = lazy(() => import('../pages/Home'));
 const LoginPage = lazy(() => import('../pages/Login'));
@@ -25,26 +26,32 @@ function withSuspense(node: React.ReactNode) {
 }
 
 export const router = createBrowserRouter([
-  { path: '/', element: withSuspense(<HomePage />) },
-  { path: '/login', element: withSuspense(<LoginPage />) },
-  { path: '/register', element: withSuspense(<RegisterPage />) },
-  { path: '/forgot-password', element: withSuspense(<ForgotPasswordPage />) },
-  { path: '/reset-password', element: withSuspense(<ResetPasswordPage />) },
   {
-    path: '/dashboard',
-    element: withSuspense(
-      <ProtectedRoute>
-        <DashboardPage />
-      </ProtectedRoute>
-    )
+    element: <Outlet />,
+    errorElement: <RouteErrorBoundary />,
+    children: [
+      { path: '/', element: withSuspense(<HomePage />) },
+      { path: '/login', element: withSuspense(<LoginPage />) },
+      { path: '/register', element: withSuspense(<RegisterPage />) },
+      { path: '/forgot-password', element: withSuspense(<ForgotPasswordPage />) },
+      { path: '/reset-password', element: withSuspense(<ResetPasswordPage />) },
+      {
+        path: '/dashboard',
+        element: withSuspense(
+          <ProtectedRoute>
+            <DashboardPage />
+          </ProtectedRoute>
+        )
+      },
+      {
+        path: '/home',
+        element: withSuspense(
+          <ProtectedRoute>
+            <UserHomePage />
+          </ProtectedRoute>
+        )
+      },
+      { path: '*', element: <Navigate to="/" replace /> },
+    ],
   },
-  {
-    path: '/home',
-    element: withSuspense(
-      <ProtectedRoute>
-        <UserHomePage />
-      </ProtectedRoute>
-    )
-  },
-  { path: '*', element: <Navigate to="/" replace /> },
 ]);

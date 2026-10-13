@@ -22,7 +22,7 @@ function escapeLatex(text: string | undefined): string {
  * Generates the raw LaTeX code for a provided StructuredResume based on the design template.
  */
 export function generateLatexCode(data: StructuredResume): string {
-  const { personalInfo, summary, experience, education, skills, projects } = data;
+  const { personalInfo, summary, experience, education, skills, projects } = data || {};
 
   let latex = `\\documentclass[letterpaper,10pt]{article}
 
@@ -65,7 +65,7 @@ export function generateLatexCode(data: StructuredResume): string {
     \\begin{tabular*}{0.97\\textwidth}[t]{l@{\\extracolsep{\\fill}}r}
       \\textbf{#1} & #2 \\\\
       \\textit{\\small#3} & \\textit{\\small #4} \\\\
-    \end{tabular*}\\vspace{-5pt}
+    \\end{tabular*}\\vspace{-5pt}
 }
 
 \\newcommand{\\resumeProjectHeading}[2]{
@@ -78,14 +78,14 @@ export function generateLatexCode(data: StructuredResume): string {
 
 % HEADING AREA
 \\begin{center}
-    \\textbf{\\Large \\scshape ${escapeLatex(personalInfo.name)}} \\\\ \\vspace{3pt}
-    \\small ${escapeLatex(personalInfo.phone)} $|$ 
-    \\href{mailto:${personalInfo.email}}{${escapeLatex(personalInfo.email)}} $|$ 
-    ${personalInfo.linkedin ? `\\href{${personalInfo.linkedin}}{LinkedIn} $|$ ` : ''}
-    ${personalInfo.github ? `\\href{${personalInfo.github}}{GitHub} $|$ ` : ''}
-    ${personalInfo.portfolio ? `\\href{${personalInfo.portfolio}}{Portfolio} $|$ ` : ''}
-    ${personalInfo.additionalLinks?.map(link => `\\href{${link.url}}{${escapeLatex(link.label)}} $|$ `).join('')}
-    ${escapeLatex(personalInfo.location)}
+    \\textbf{\\Large \\scshape ${escapeLatex(personalInfo?.name || 'Candidate')}} \\\\ \\vspace{3pt}
+    ${personalInfo?.phone ? `\\small ${escapeLatex(personalInfo.phone)} $|$ ` : ''}
+    ${personalInfo?.email ? `\\href{mailto:${personalInfo.email}}{${escapeLatex(personalInfo.email)}} $|$ ` : ''}
+    ${personalInfo?.linkedin ? `\\href{${personalInfo.linkedin}}{LinkedIn} $|$ ` : ''}
+    ${personalInfo?.github ? `\\href{${personalInfo.github}}{GitHub} $|$ ` : ''}
+    ${personalInfo?.portfolio ? `\\href{${personalInfo.portfolio}}{Portfolio} $|$ ` : ''}
+    ${(personalInfo?.additionalLinks ?? []).map(link => `\\href{${link?.url || ''}}{${escapeLatex(link?.label || link?.url || '')}} $|$ `).join('')}
+    ${escapeLatex(personalInfo?.location || '')}
 \\end{center}
 
 % SUMMARY SECTION
@@ -95,52 +95,52 @@ ${summary ? `
 ` : ''}
 
 % EXPERIENCE SECTION
-${experience && experience.length > 0 ? `
+${(experience ?? []).length > 0 ? `
 \\section{Experience}
 \\begin{itemize}[leftmargin=0.15in, label={}]
-${experience.map(exp => `
+${(experience ?? []).map(exp => `
     \\resumeSubheading
-      {${escapeLatex(exp.company)}}{${escapeLatex(exp.location)}}
-      {${escapeLatex(exp.title)}}{${escapeLatex(exp.startDate)} -- ${escapeLatex(exp.endDate)}}
+      {${escapeLatex(exp?.company || '')}}{${escapeLatex(exp?.location || '')}}
+      {${escapeLatex(exp?.title || '')}}{${escapeLatex(exp?.startDate || '')} -- ${escapeLatex(exp?.endDate || '')}}
       \\begin{itemize}[leftmargin=0.2in]
-${exp.bullets.map(bullet => `        \\resumeItem{${escapeLatex(bullet)}}`).join('\n')}
+${(exp?.bullets ?? []).map(bullet => `        \\resumeItem{${escapeLatex(bullet)}}`).join('\n')}
       \\end{itemize}
 `).join('')}
 \\end{itemize}
 ` : ''}
 
 % PROJECTS SECTION
-${projects && projects.length > 0 ? `
+${(projects ?? []).length > 0 ? `
 \\section{Projects}
 \\begin{itemize}[leftmargin=0.15in, label={}]
-${projects.map(proj => `
+${(projects ?? []).map(proj => `
     \\resumeProjectHeading
-      {${escapeLatex(proj.name)} ${proj.technologies ? `$|$ \\emph{${escapeLatex(proj.technologies.join(', '))}}` : ''}}{${proj.link ? `\\href{${proj.link}}{Live Link}` : ''}}
+      {${escapeLatex(proj?.name || 'Project')} ${(proj?.technologies ?? []).length > 0 ? `$|$ \\emph{${escapeLatex((proj?.technologies ?? []).join(', '))}}` : ''}}{${proj?.link ? `\\href{${proj.link}}{Live Link}` : ''}}
       \\begin{itemize}[leftmargin=0.2in]
-        \\resumeItem{${escapeLatex(proj.description)}}
+        ${proj?.description ? `\\resumeItem{${escapeLatex(proj.description)}}` : ''}
       \\end{itemize}
 `).join('')}
 \\end{itemize}
 ` : ''}
 
 % EDUCATION SECTION
-${education && education.length > 0 ? `
+${(education ?? []).length > 0 ? `
 \\section{Education}
 \\begin{itemize}[leftmargin=0.15in, label={}]
-${education.map(edu => `
+${(education ?? []).map(edu => `
     \\resumeSubheading
-      {${escapeLatex(edu.institution)}}{${escapeLatex(edu.location)}}
-      {${escapeLatex(edu.degree)} ${edu.gpa ? `$|$ GPA: ${escapeLatex(edu.gpa)}` : ''}}{${edu.startDate ? escapeLatex(edu.startDate) + ' -- ' : ''}${escapeLatex(edu.endDate)}}
+      {${escapeLatex(edu?.institution || '')}}{${escapeLatex(edu?.location || '')}}
+      {${escapeLatex(edu?.degree || '')} ${edu?.gpa ? `$|$ GPA: ${escapeLatex(edu.gpa)}` : ''}}{${edu?.startDate ? escapeLatex(edu.startDate) + ' -- ' : ''}${escapeLatex(edu?.endDate || '')}}
 `).join('')}
 \\end{itemize}
 ` : ''}
 
 % SKILLS SECTION
-${skills && skills.length > 0 ? `
+${(skills ?? []).length > 0 ? `
 \\section{Skills}
  \\begin{itemize}[leftmargin=0.15in, label={}]
     \\small{\\item{
-     ${skills.map(s => `\\textbf{${escapeLatex(s.category)}}: {${escapeLatex(s.items.join(', '))}}`).join(' \\\\\\\\ \n ')}
+     ${(skills ?? []).map(s => `\\textbf{${escapeLatex(s?.category || '')}}: {${escapeLatex((s?.items ?? []).join(', '))}}`).join(' \\\\\\\\ \n ')}
     }}
  \\end{itemize}
 ` : ''}
@@ -161,7 +161,8 @@ export function downloadLatexFile(data: StructuredResume) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = `${data.personalInfo.name.replace(/\s+/g, '_')}_Resume.tex`;
+  const candidateName = data?.personalInfo?.name ? data.personalInfo.name.replace(/\s+/g, '_') : 'Resume';
+  link.download = `${candidateName}_Resume.tex`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);

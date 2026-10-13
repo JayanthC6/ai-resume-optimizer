@@ -78,7 +78,10 @@ export function RewritesPanel({
 }: Props) {
   const [activeTemplate, setActiveTemplate] = useState<'standard' | 'latex'>('standard');
   const draft = regeneratedResume?.updatedResume ?? regeneratedResume?.regeneratedResume;
-  const isStructured = typeof draft === 'object' && draft !== null;
+  const isStructured =
+    typeof draft === 'object' &&
+    draft !== null &&
+    ('personalInfo' in draft || 'experience' in draft);
   const printRef = useRef<HTMLDivElement>(null);
   const [originalFileUrl, setOriginalFileUrl] = useState<string | null>(null);
 
@@ -92,6 +95,23 @@ export function RewritesPanel({
   const handlePrint = useReactToPrint({
     contentRef: printRef,
     documentTitle: 'Optimized_Resume',
+    pageStyle: `
+      @page {
+        size: letter portrait;
+        margin: 0.5in;
+      }
+      @media print {
+        html, body {
+          width: 100% !important;
+          height: auto !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          background: #ffffff !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+      }
+    `,
   });
 
   const filename = originalFile?.name ?? 'RESUME_V2.PDF';
@@ -194,7 +214,7 @@ export function RewritesPanel({
     <div className="flex flex-col gap-4">
 
       {/* Header row */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between print:hidden">
         <div className="flex items-center gap-3">
           <h1 className="text-xl font-extrabold text-white">Resume AI Rewrite</h1>
           <div
@@ -217,11 +237,11 @@ export function RewritesPanel({
       </div>
 
       {/* ── COMPARISON PANELS ── */}
-      <div className="grid grid-cols-2 gap-4" style={{ minHeight: '70vh' }}>
+      <div className="grid grid-cols-2 gap-4 print:block print:w-full" style={{ minHeight: '70vh' }}>
 
         {/* LEFT — Original Source */}
         <div
-          className="rounded-2xl overflow-hidden flex flex-col"
+          className="rounded-2xl overflow-hidden flex flex-col print:hidden"
           style={{ background: '#161b27', border: '1px solid rgba(255,255,255,0.06)' }}
         >
           {/* Panel header */}
@@ -313,12 +333,12 @@ export function RewritesPanel({
 
         {/* RIGHT — AI-Optimized Revision */}
         <div
-          className="rounded-2xl overflow-hidden flex flex-col"
+          className="rounded-2xl overflow-hidden flex flex-col print:border-none print:shadow-none print:bg-transparent print:p-0 print:m-0 print:rounded-none print:w-full"
           style={{ background: '#161b27', border: '1px solid rgba(37,99,235,0.35)' }}
         >
           {/* Panel header */}
           <div
-            className="flex items-center justify-between px-5 py-3.5 shrink-0"
+            className="flex items-center justify-between px-5 py-3.5 shrink-0 print:hidden"
             style={{ borderBottom: '1px solid rgba(37,99,235,0.2)', background: 'rgba(37,99,235,0.05)' }}
           >
             <div className="flex items-center gap-4 text-[11px] font-bold uppercase tracking-[0.18em] text-blue-400">
@@ -327,20 +347,22 @@ export function RewritesPanel({
                 AI-Optimized Revision
               </div>
               
-              <div className="flex bg-slate-900/50 p-1 rounded-lg border border-white/5 ml-2">
-                <button
-                  onClick={() => setActiveTemplate('standard')}
-                  className={`px-3 py-1 rounded-md transition-all ${activeTemplate === 'standard' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:text-slate-300'}`}
-                >
-                  Standard
-                </button>
-                <button
-                  onClick={() => setActiveTemplate('latex')}
-                  className={`px-3 py-1 rounded-md transition-all ${activeTemplate === 'latex' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:text-slate-300'}`}
-                >
-                  LaTeX
-                </button>
-              </div>
+              {isStructured && (
+                <div className="flex bg-slate-900/50 p-1 rounded-lg border border-white/5 ml-2">
+                  <button
+                    onClick={() => setActiveTemplate('standard')}
+                    className={`px-3 py-1 rounded-md transition-all ${activeTemplate === 'standard' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:text-slate-300'}`}
+                  >
+                    Standard
+                  </button>
+                  <button
+                    onClick={() => setActiveTemplate('latex')}
+                    className={`px-3 py-1 rounded-md transition-all ${activeTemplate === 'latex' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:text-slate-300'}`}
+                  >
+                    LaTeX
+                  </button>
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-2">
               {activeTemplate === 'latex' && isStructured && (
@@ -361,10 +383,10 @@ export function RewritesPanel({
           </div>
 
           {/* Document content */}
-          <div className="flex-1 overflow-y-auto p-8" ref={printRef} style={{ minHeight: '60vh' }}>
+          <div className="flex-1 overflow-y-auto p-8 print:p-0 print:m-0 print:overflow-visible print:min-h-0 print:w-full print:bg-transparent" ref={printRef} style={{ minHeight: '60vh' }}>
             {isStructured ? (
               /* Structured resume template */
-              <div className="bg-white rounded-xl p-6 shadow-xl">
+              <div className="bg-white rounded-xl p-6 shadow-xl print:p-0 print:m-0 print:border-none print:shadow-none print:rounded-none print:w-full print:bg-transparent">
                 {activeTemplate === 'standard' ? (
                   <StructuredResumeTemplate data={draft as unknown as StructuredResume} />
                 ) : (
@@ -425,16 +447,28 @@ export function RewritesPanel({
                 </div>
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
-                <WandSparkles className="h-8 w-8 text-blue-400 opacity-50" />
-                <p className="text-sm" style={{ color: '#64748b' }}>AI-generated content will appear here.</p>
+              <div className="flex flex-col items-center justify-center h-full gap-4 text-center py-12">
+                <WandSparkles className="h-10 w-10 text-blue-400 opacity-60" />
+                <div className="max-w-sm space-y-1">
+                  <p className="text-sm font-semibold text-slate-200">No complete draft available</p>
+                  <p className="text-xs text-slate-400">Generate a tailored, structured resume for this role.</p>
+                </div>
+                <button
+                  onClick={onRegenerate}
+                  disabled={isRegenerating}
+                  className="flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold text-white transition hover:opacity-90 active:scale-95 disabled:opacity-50"
+                  style={{ background: 'linear-gradient(90deg, #2563eb, #1d4ed8)' }}
+                >
+                  <RefreshCw className={`h-3.5 w-3.5 ${isRegenerating ? 'animate-spin' : ''}`} />
+                  {isRegenerating ? 'Generating...' : 'Regenerate Resume'}
+                </button>
               </div>
             )}
           </div>
 
           {/* Action buttons */}
           <div
-            className="flex items-center gap-3 px-5 py-4 shrink-0"
+            className="flex items-center gap-3 px-5 py-4 shrink-0 print:hidden"
             style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}
           >
             <button
@@ -466,7 +500,7 @@ export function RewritesPanel({
       </div>
 
       {/* ── Stats bar ── */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 gap-4 print:hidden">
         <div
           className="rounded-2xl p-5"
           style={{ background: '#161b27', border: '1px solid rgba(255,255,255,0.06)' }}

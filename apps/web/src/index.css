@@ -130,3 +130,33 @@
     letter-spacing: -0.02em;
   }
 }
+
+@page {
+  size: letter portrait;
+  margin: 0.5in;
+}
+
+@media print {
+  aside,
+  nav,
+  header:not(.resume-header),
+  footer,
+  button,
+  [role="navigation"],
+  .no-print {
+    display: none !important;
+  }
+
+  html,
+  body,
+  #root,
+  main {
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+    background-image: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+}

@@ -30,6 +30,27 @@ export interface ResumeRegenerationRequest {
   jobDescription: string;
 }
 
+export interface ExtractedLink {
+  label: string;
+  url: string;
+}
+
+export interface StructuredProject {
+  name: string;
+  technologies: string[];
+  description?: string;
+  bullets?: string[];
+  link?: string;
+  githubUrl?: string;
+  liveUrl?: string;
+}
+
+export interface StructuredAchievement {
+  label: string;
+  text: string;
+  githubUrl?: string;
+}
+
 export interface StructuredResume {
   personalInfo: {
     name: string;
@@ -62,12 +83,8 @@ export interface StructuredResume {
     category: string;
     items: string[];
   }[];
-  projects?: {
-    name: string;
-    description: string;
-    technologies: string[];
-    link?: string;
-  }[];
+  projects?: StructuredProject[];
+  achievements?: StructuredAchievement[];
 }
 
 export interface ResumeRegenerationResponse {

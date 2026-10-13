@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from '../ai/ai.service';
-import { OptimizationRequest, ResumeRegenerationRequest } from '@repo/types';
+import { OptimizationRequest, ResumeRegenerationRequest, ExtractedLink } from '@repo/types';
 import { RedisService } from '../redis/redis.service';
 import { createHash } from 'crypto';
 
@@ -427,11 +427,19 @@ export class AnalysisService {
       throw new NotFoundException('Resume not found or not parsed');
     }
 
+    const parsedData = (resume.parsedData as any) ?? {};
+    const extractedLinks: ExtractedLink[] = Array.isArray(
+      parsedData?.extractedLinks,
+    )
+      ? parsedData.extractedLinks
+      : [];
+
     return this.aiService.regenerateResume(
       resume.rawText,
       dto.jobTitle,
       dto.jobDescription,
       dto.companyName,
+      extractedLinks,
     );
   }
 

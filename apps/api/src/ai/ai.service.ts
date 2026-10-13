@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import {
+  ExtractedLink,
   GithubAnalyzerResult,
   InterviewQuestionSet,
   SkillGapRoadmap,
@@ -305,53 +306,150 @@ export class AiService {
     }
   }
 
+  private normalizeUrlForComparison(raw: string): string {
+    if (!raw || typeof raw !== 'string') return '';
+    const trimmed = raw.trim().replace(/\/+$/, '');
+    try {
+      const parsed = new URL(trimmed);
+      const host = parsed.hostname.toLowerCase().replace(/^www\./, '');
+      const pathname = parsed.pathname.replace(/\/+$/, '').toLowerCase();
+      const search = parsed.search;
+      return `${parsed.protocol.toLowerCase()}//${host}${pathname}${search}`;
+    } catch {
+      return trimmed.toLowerCase();
+    }
+  }
+
+  private validateAndFilterUrl(
+    url: any,
+    allowedUrlsMap: Map<string, string>,
+  ): string | undefined {
+    if (!url || typeof url !== 'string') return undefined;
+    const trimmed = url.trim();
+    if (!trimmed) return undefined;
+    const normalized = this.normalizeUrlForComparison(trimmed);
+    if (allowedUrlsMap.has(normalized)) {
+      return allowedUrlsMap.get(normalized)!;
+    }
+    return undefined;
+  }
+
   async regenerateResume(
     rawText: string,
     jobTitle: string,
     jobDescription: string,
     companyName?: string,
+    extractedLinks: ExtractedLink[] = [],
   ) {
     try {
+      const linksListStr =
+        extractedLinks.length > 0
+          ? extractedLinks
+              .map((l) => `- "${l.label}": ${l.url}`)
+              .join('\n')
+          : '(No links found in document)';
+
       const prompt = `
 You are an expert resume writer and ATS optimization specialist.
 You will EDIT the candidate's existing resume text.
 Return the same resume content, improved for the target role.
 
+VERIFIED EXTRACTED LINKS FROM CANDIDATE'S RESUME (Label -> URL):
+${linksListStr}
+
 CRITICAL RULES:
-- Preserve ALL factual information from the original resume. Do not drop any data.
-- Preserve EVERY link, profile URL, and website from the original resume. This includes LinkedIn, GitHub, LeetCode, HackerRank, portfolio, personal website, Kaggle, CodeChef, blog URLs, and any other profile links. If a link exists in the original resume, it MUST appear in personalInfo fields (linkedin, github, portfolio) or in the "additionalLinks" array.
-- Do not invent employers, dates, degrees, or certifications.
-- Keep existing section flow and overall structure from the original resume.
-- Keep original achievements, and only rewrite wording to improve clarity/impact.
-- Improve ATS keyword alignment to the job description.
-- Use concise, strong bullet points and measurable outcomes where possible.
-- If some original text is weak, rewrite it instead of deleting major information.
-- Keep the resume content CONCISE. Aim for a single-page resume:
-  - Professional summary should be 2-3 lines maximum.
-  - Each experience entry should have 2-3 bullet points maximum, not more.
-  - Each project description should be 1-2 sentences.
-  - Combine related skills into broader categories (max 4-5 skill categories).
-  - Keep bullet points short (1 line each, under 120 characters ideally).
+1. VERIFIED LINKS USAGE:
+   - You may ONLY use URLs from the verified list above.
+   - NEVER invent, fabricate, guess, or hallucinate ANY URL. If a URL is not present in the verified list above, leave the URL field empty or omitted.
+   - Map links to the appropriate fields:
+     * LinkedIn profile -> personalInfo.linkedin
+     * GitHub profile -> personalInfo.github
+     * Portfolio / website -> personalInfo.portfolio
+     * Other platforms (e.g. LeetCode, HackerRank, CodeChef, Kaggle) -> personalInfo.additionalLinks [{ label, url }]
+     * Project repositories or demos -> project.githubUrl, project.liveUrl, or project.link
+     * Achievement links -> achievement.githubUrl
+
+2. ABSOLUTE CONTENT RETENTION:
+   - NEVER drop any project, achievement, research paper, publication, certification, or quantitative metric from the original resume.
+   - Every single project present in the original resume MUST be retained in the "projects" array.
+   - Every single achievement, honor, award, competition, or extracurricular item MUST be retained in the "achievements" array.
+   - Preserve all specific quantitative metrics (e.g. percentages, test counts, API counts, numbers like "15+ APIs", "22 JUnit 5 tests", "500+ stocks") exactly.
+
+3. SKILL CATEGORIES & PRESERVATION:
+   - Preserve the skill categories and their names EXACTLY as they appear in the uploaded resume (do NOT rename them, do NOT merge or collapse them into 4-5 categories, and do NOT hard-code any specific categories, since this app serves many diverse candidates). Group the candidate's skills under their exact original category names.
+   - ACCURACY: Never add missing job keywords or technologies as skills the candidate has if they did not exist in the original resume. Tailor framing and emphasize real existing skills, but NEVER fabricate skills.
+
+4. PROFESSIONAL SUMMARY:
+   - Keep the original summary, only lightly tailored to the target role.
+   - Do NOT use exaggerated claims or buzzwords like "proven track record", "results-driven visionary", etc.
+   - Do NOT add job titles that are not in the candidate's actual resume.
+
+5. CONCISENESS & ONE-PAGE FIT:
+   - Keep the result suitable for a single-page resume by tightening phrasing and shortening wording, NEVER by dropping sections, projects, achievements, bullets, or metrics.
+   - Do NOT impose arbitrary truncation limits (such as max 2 bullets or 1-2 sentence projects); instead write tight, impactful, high-density bullet points that preserve all achievements and outcomes concisely.
 
 Output MUST be valid JSON using this schema exactly:
 {
   "updatedResume": {
     "personalInfo": {
-      "name": "string", "email": "string", "phone": "string", "location": "string", "linkedin": "string", "github": "string", "portfolio": "string",
-      "additionalLinks": [{ "label": "string (e.g. LeetCode, HackerRank, Kaggle)", "url": "string" }]
+      "name": "string",
+      "email": "string",
+      "phone": "string",
+      "location": "string",
+      "linkedin": "string (URL from verified list only, or empty)",
+      "github": "string (URL from verified list only, or empty)",
+      "portfolio": "string (URL from verified list only, or empty)",
+      "additionalLinks": [
+        {
+          "label": "string (e.g. LeetCode, HackerRank, CodeChef)",
+          "url": "string (URL from verified list only)"
+        }
+      ]
     },
     "summary": "string",
     "experience": [
-      { "company": "string", "title": "string", "location": "string", "startDate": "string", "endDate": "string", "bullets": ["string"] }
+      {
+        "company": "string",
+        "title": "string",
+        "location": "string",
+        "startDate": "string",
+        "endDate": "string",
+        "bullets": ["string"]
+      }
     ],
     "education": [
-      { "institution": "string", "degree": "string", "location": "string", "startDate": "string", "endDate": "string", "gpa": "string" }
+      {
+        "institution": "string",
+        "degree": "string",
+        "location": "string",
+        "startDate": "string",
+        "endDate": "string",
+        "gpa": "string"
+      }
     ],
     "skills": [
-      { "category": "string", "items": ["string"] }
+      {
+        "category": "string (Preserve original category name as written in resume)",
+        "items": ["string"]
+      }
     ],
     "projects": [
-      { "name": "string", "description": "string", "technologies": ["string"], "link": "string" }
+      {
+        "name": "string",
+        "technologies": ["string"],
+        "description": "string",
+        "bullets": ["string"],
+        "link": "string (URL from verified list only, or empty)",
+        "githubUrl": "string (URL from verified list only, or empty)",
+        "liveUrl": "string (URL from verified list only, or empty)"
+      }
+    ],
+    "achievements": [
+      {
+        "label": "string (e.g. Academic, Competition, Extracurricular)",
+        "text": "string",
+        "githubUrl": "string (URL from verified list only, or empty)"
+      }
     ]
   },
   "highlights": ["string"],
@@ -364,8 +462,6 @@ Output MUST be valid JSON using this schema exactly:
   ]
 }
 
-The updatedResume must contain the full, improved CV content structured into the categories above. Do not omit any sections, links, or profile URLs from the original resume. If there are links like LeetCode, HackerRank etc. that don't fit in linkedin/github/portfolio, put them in additionalLinks.
-
 Target Role: ${jobTitle}
 Company: ${companyName || 'Not specified'}
 Job Description: ${jobDescription}
@@ -376,7 +472,83 @@ ${rawText}
 
       const aiResult = await this.generateJson(prompt);
       const updatedResume =
-        aiResult?.updatedResume || aiResult?.regeneratedResume || '';
+        aiResult?.updatedResume || aiResult?.regeneratedResume || {};
+
+      // Validate every URL field against extracted links to prevent invented URLs
+      const allowedUrlsMap = new Map<string, string>();
+      for (const link of extractedLinks) {
+        if (link?.url) {
+          allowedUrlsMap.set(
+            this.normalizeUrlForComparison(link.url),
+            link.url.trim(),
+          );
+        }
+      }
+
+      if (updatedResume?.personalInfo) {
+        updatedResume.personalInfo.linkedin = this.validateAndFilterUrl(
+          updatedResume.personalInfo.linkedin,
+          allowedUrlsMap,
+        );
+        updatedResume.personalInfo.github = this.validateAndFilterUrl(
+          updatedResume.personalInfo.github,
+          allowedUrlsMap,
+        );
+        updatedResume.personalInfo.portfolio = this.validateAndFilterUrl(
+          updatedResume.personalInfo.portfolio,
+          allowedUrlsMap,
+        );
+
+        if (Array.isArray(updatedResume.personalInfo.additionalLinks)) {
+          updatedResume.personalInfo.additionalLinks =
+            updatedResume.personalInfo.additionalLinks
+              .filter((item: any) =>
+                Boolean(this.validateAndFilterUrl(item?.url, allowedUrlsMap)),
+              )
+              .map((item: any) => ({
+                label: item.label || 'Link',
+                url: this.validateAndFilterUrl(item?.url, allowedUrlsMap)!,
+              }));
+        }
+      }
+
+      if (Array.isArray(updatedResume?.projects)) {
+        for (const proj of updatedResume.projects) {
+          proj.link = this.validateAndFilterUrl(proj.link, allowedUrlsMap);
+          proj.githubUrl = this.validateAndFilterUrl(
+            proj.githubUrl,
+            allowedUrlsMap,
+          );
+          proj.liveUrl = this.validateAndFilterUrl(
+            proj.liveUrl,
+            allowedUrlsMap,
+          );
+        }
+      }
+
+      if (Array.isArray(updatedResume?.achievements)) {
+        for (const ach of updatedResume.achievements) {
+          ach.githubUrl = this.validateAndFilterUrl(
+            ach.githubUrl,
+            allowedUrlsMap,
+          );
+        }
+      }
+
+      const linksFoundCount = extractedLinks.length;
+      const projectsCount = Array.isArray(updatedResume?.projects)
+        ? updatedResume.projects.length
+        : 0;
+      const achievementsCount = Array.isArray(updatedResume?.achievements)
+        ? updatedResume.achievements.length
+        : 0;
+      const skillCategoriesCount = Array.isArray(updatedResume?.skills)
+        ? updatedResume.skills.length
+        : 0;
+
+      this.logger.log(
+        `Resume regenerated: links=${linksFoundCount}, projects=${projectsCount}, achievements=${achievementsCount}, skillCategories=${skillCategoriesCount}`,
+      );
 
       return {
         regeneratedResume: updatedResume,

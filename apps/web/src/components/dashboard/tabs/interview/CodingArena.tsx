@@ -12,6 +12,7 @@ import {
   RefreshCw, Sparkles, Timer, Zap, AlertTriangle,
   Settings, Maximize2, Bug, MessageSquare, LogOut,
   ChevronDown, HelpCircle, X, Terminal, Check,
+  ChevronLeft, ChevronRight, ArrowRight,
 } from 'lucide-react';
 
 interface Props {
@@ -91,6 +92,41 @@ const DIFF_STYLE: Record<string, { bg: string; color: string; border: string; la
 
 const BORDER = 'rgba(255,255,255,0.07)';
 
+// Generates an idiomatic starter function in the target language for the specific question
+function getStarterCodeForLanguage(q: CodingPracticeQuestion | undefined, lang: string): string {
+  if (!q) return SUPPORTED_LANGUAGES[lang]?.starter || '// Write solution\n';
+  
+  const rawWords = (q.title || 'solution').replace(/[^a-zA-Z0-9 ]/g, '').split(/\s+/).filter(Boolean);
+  const camel = rawWords.map((w, i) => i === 0 ? w.toLowerCase() : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join('') || 'solution';
+  const snake = rawWords.map(w => w.toLowerCase()).join('_') || 'solution';
+
+  // If question already has starter_code and the current language is Python and starter is in python, use it
+  if (lang === 'Python' && q.starter_code && q.starter_code.includes('def ')) {
+    return q.starter_code;
+  }
+
+  switch (lang) {
+    case 'Python':
+      return `# ${q.title}\ndef ${snake}(*args):\n    # Write your solution here\n    pass\n`;
+    case 'JavaScript':
+      return `// ${q.title}\nfunction ${camel}(...args) {\n  // Write your solution here\n  \n}\n`;
+    case 'TypeScript':
+      return `// ${q.title}\nfunction ${camel}(...args: any[]): any {\n  // Write your solution here\n  \n}\n`;
+    case 'Java':
+      return `// ${q.title}\npublic class Solution {\n    public static void ${camel}() {\n        // Write your solution here\n    }\n}\n`;
+    case 'C++':
+      return `#include <iostream>\n#include <vector>\nusing namespace std;\n\n// ${q.title}\nvoid ${snake}() {\n    // Write your solution here\n}\n`;
+    case 'Go':
+      return `package main\n\nimport "fmt"\n\n// ${q.title}\nfunc ${camel}() {\n    // Write your solution here\n}\n`;
+    case 'Ruby':
+      return `# ${q.title}\ndef ${snake}(*args)\n  # Write your solution here\nend\n`;
+    case 'Rust':
+      return `// ${q.title}\nfn ${snake}() {\n    // Write your solution here\n}\n`;
+    default:
+      return SUPPORTED_LANGUAGES[lang]?.starter || '// Write your code here\n';
+  }
+}
+
 export function CodingArena({
   onBackToInterview,
   onGenerateCodingQuestions,
@@ -111,10 +147,11 @@ export function CodingArena({
   const [solvedSet, setSolvedSet] = useState<Set<number>>(new Set());
   const [testOutput, setTestOutput] = useState<string[]>([]);
 
-  // Language state & dropdown
+  // Language state & per-language/per-question code cache
   const matchedLang = SUPPORTED_LANGUAGES[initialLanguage] ? initialLanguage : 'JavaScript';
   const [selectedLang, setSelectedLang] = useState<string>(matchedLang);
   const [langDropdownOpen, setLangDropdownOpen] = useState(false);
+  const [codeCache, setCodeCache] = useState<Record<number, Record<string, string>>>({});
 
   // Ask AI & Debug states
   const [hintLoading, setHintLoading] = useState(false);
@@ -144,16 +181,17 @@ export function CodingArena({
     setTestOutput([]);
     setHintData(null);
     setDebugResult(null);
+    setCodeCache({});
     try {
       const r = await onGenerateCodingQuestions();
       const loaded = r.questions || [];
       setQuestions(loaded);
       setSelectedIdx(0);
       setSolvedSet(new Set());
-      if (loaded[0]?.starter_code) {
-        setCode(loaded[0].starter_code);
-      } else {
-        setCode(currentLangSpec.starter);
+      if (loaded.length > 0) {
+        const initialStarter = getStarterCodeForLanguage(loaded[0], selectedLang);
+        setCode(initialStarter);
+        setCodeCache({ 0: { [selectedLang]: initialStarter } });
       }
     } catch {
       setError('Could not generate questions. Please try again.');
@@ -166,7 +204,7 @@ export function CodingArena({
     if (!activeQuestion || !code.trim()) return;
     setIsEvaluating(true);
     setError(null);
-    setTestOutput([`Compiling and running against test cases (${selectedLang})...`]);
+    setTestOutput([`Compiling and running against test suite (${selectedLang})...`]);
     try {
       const r = await onEvaluateCode(activeQuestion.prompt, code, selectedLang);
       setEvaluation(r);
@@ -174,11 +212,15 @@ export function CodingArena({
         setSolvedSet(prev => new Set(prev).add(selectedIdx));
       }
       setTestOutput([
-        `Running test suite for ${activeQuestion.title}...`,
+        `Running tests for ${activeQuestion.title} [${selectedLang}]...`,
         r.score >= 60 ? '✓ Test 1 Passed: Core functional requirements' : '✗ Test 1 Failed: Output mismatch',
         r.score >= 75 ? '✓ Test 2 Passed: Edge cases and null checks' : '✗ Test 2 Failed: Edge cases failed',
-        r.score >= 85 ? `✓ Test 3 Passed: Complexity within bounds (${r.time_complexity})` : '✗ Test 3 Failed: Time limit exceeded',
-        `Evaluation Score: ${r.score}/100`,
+        r.score >= 85 ? `✓ Test 3 Passed: Output correctness verified` : '✗ Test 3 Failed: Verification failed',
+        '──────────────────────────────────────────',
+        `⏱️  Time Complexity (TC) : ${r.time_complexity}`,
+        `💾  Space Complexity (SC): ${r.space_complexity}`,
+        '──────────────────────────────────────────',
+        `Final Score: ${r.score}/100 (${r.score >= 60 ? 'Accepted' : 'Needs Optimization'})`,
       ].filter(Boolean));
     } catch {
       setError('Could not evaluate code. Please try again.');
@@ -188,29 +230,84 @@ export function CodingArena({
   };
 
   const handleSelectQuestion = (idx: number) => {
+    if (idx < 0 || idx >= questions.length) return;
+    
+    // Save current code to cache before switching question
+    setCodeCache(prev => ({
+      ...prev,
+      [selectedIdx]: {
+        ...(prev[selectedIdx] || {}),
+        [selectedLang]: code,
+      }
+    }));
+
     setSelectedIdx(idx);
     setEvaluation(null);
     setError(null);
     setTestOutput([]);
     setHintData(null);
     setDebugResult(null);
-    const q = questions[idx];
-    if (q?.starter_code) {
-      setCode(q.starter_code);
+
+    // Retrieve cached code or generate starter for this question and language
+    const cached = codeCache[idx]?.[selectedLang];
+    if (cached && cached.trim()) {
+      setCode(cached);
     } else {
-      setCode(currentLangSpec.starter);
+      const freshStarter = getStarterCodeForLanguage(questions[idx], selectedLang);
+      setCode(freshStarter);
+      setCodeCache(prev => ({
+        ...prev,
+        [idx]: {
+          ...(prev[idx] || {}),
+          [selectedLang]: freshStarter,
+        }
+      }));
     }
   };
 
   const handleLanguageChange = (newLang: string) => {
-    setSelectedLang(newLang);
     setLangDropdownOpen(false);
-    const spec = SUPPORTED_LANGUAGES[newLang] || SUPPORTED_LANGUAGES.JavaScript;
-    // If editor has empty or default code, replace with new starter
-    const isDefaultCode = Object.values(SUPPORTED_LANGUAGES).some(s => s.starter.trim() === code.trim());
-    if (!code.trim() || isDefaultCode) {
-      setCode(spec.starter);
+    if (newLang === selectedLang) return;
+
+    // Cache current code in old language
+    setCodeCache(prev => ({
+      ...prev,
+      [selectedIdx]: {
+        ...(prev[selectedIdx] || {}),
+        [selectedLang]: code,
+      }
+    }));
+
+    setSelectedLang(newLang);
+
+    // If code for new language was cached previously, restore it
+    const cachedForNewLang = codeCache[selectedIdx]?.[newLang];
+    if (cachedForNewLang && cachedForNewLang.trim()) {
+      setCode(cachedForNewLang);
+    } else {
+      // Provide clean syntax starter template for the new language
+      const newStarter = getStarterCodeForLanguage(activeQuestion, newLang);
+      setCode(newStarter);
+      setCodeCache(prev => ({
+        ...prev,
+        [selectedIdx]: {
+          ...(prev[selectedIdx] || {}),
+          [newLang]: newStarter,
+        }
+      }));
     }
+  };
+
+  const handleResetTemplate = () => {
+    const fresh = getStarterCodeForLanguage(activeQuestion, selectedLang);
+    setCode(fresh);
+    setCodeCache(prev => ({
+      ...prev,
+      [selectedIdx]: {
+        ...(prev[selectedIdx] || {}),
+        [selectedLang]: fresh,
+      }
+    }));
   };
 
   // Ask AI action
@@ -223,7 +320,6 @@ export function CodingArena({
         const hint = await onGetHint(activeQuestion.prompt, code, selectedLang);
         setHintData(hint);
       } else {
-        // Fallback local hint based on topics
         setHintData({
           hint: activeQuestion.optimization_tip || `Consider using an appropriate data structure like a Hash Map or Two Pointers to optimize lookups.`,
           approach: `1. Clarify constraints and edge cases.\n2. Identify optimal data structure for ${activeQuestion.expected_topics?.[0] || 'the core operation'}.\n3. Implement in ${selectedLang} with clean time/space bounds.`,
@@ -233,7 +329,7 @@ export function CodingArena({
     } catch {
       setHintData({
         hint: activeQuestion.optimization_tip || 'Break the problem down and identify if duplicate computations can be avoided.',
-        approach: '1. Handle base cases.\n2. Store intermediate results.\n3. Return result.',
+        approach: '1. Handle base cases.\n2. Store intermediate results in a Hash Map.\n3. Return result.',
       });
     } finally {
       setHintLoading(false);
@@ -349,33 +445,53 @@ export function CodingArena({
         <div className="flex flex-1 overflow-hidden">
 
           {/* ── LEFT: Problem Panel ── */}
-          <div className="w-80 flex flex-col shrink-0 overflow-y-auto" style={{ background: '#0d1117', borderRight: `1px solid ${BORDER}` }}>
+          <div className="w-84 flex flex-col shrink-0 overflow-y-auto" style={{ width: '340px', background: '#0d1117', borderRight: `1px solid ${BORDER}` }}>
             
-            {/* ── Top Question Switcher (LeetCode style) ── */}
-            <div className="p-3 shrink-0 flex items-center gap-1.5 overflow-x-auto" style={{ background: '#0a0f1a', borderBottom: `1px solid ${BORDER}` }}>
-              {questions.map((q, idx) => {
-                const qDiff = DIFF_STYLE[(q.difficulty || 'medium').toLowerCase()] || DIFF_STYLE.medium;
-                const isActive = selectedIdx === idx;
-                return (
-                  <button
-                    key={idx}
-                    onClick={() => handleSelectQuestion(idx)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition shrink-0"
-                    style={{
-                      background: isActive ? 'rgba(37,99,235,0.22)' : 'rgba(255,255,255,0.03)',
-                      color: isActive ? '#60a5fa' : '#94a3b8',
-                      border: `1px solid ${isActive ? 'rgba(37,99,235,0.5)' : BORDER}`,
-                    }}
-                    title={q.title}
-                  >
-                    <span>Q{idx + 1}</span>
-                    <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded" style={{ background: qDiff.bg, color: qDiff.color }}>
-                      {qDiff.label}
-                    </span>
-                    {solvedSet.has(idx) && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />}
-                  </button>
-                );
-              })}
+            {/* ── Top Question Switcher (LeetCode style with Next / Prev buttons) ── */}
+            <div className="p-2.5 shrink-0 flex items-center justify-between gap-1.5" style={{ background: '#0a0f1a', borderBottom: `1px solid ${BORDER}` }}>
+              <button
+                onClick={() => handleSelectQuestion(selectedIdx - 1)}
+                disabled={selectedIdx === 0}
+                className="h-7 px-2 rounded-md text-[11px] font-semibold text-slate-400 hover:text-white disabled:opacity-20 transition flex items-center gap-0.5 shrink-0"
+                title="Previous Question"
+              >
+                <ChevronLeft className="h-3.5 w-3.5" /> Prev
+              </button>
+
+              <div className="flex items-center gap-1 overflow-x-auto py-0.5 max-w-[200px]">
+                {questions.map((q, idx) => {
+                  const qDiff = DIFF_STYLE[(q.difficulty || 'medium').toLowerCase()] || DIFF_STYLE.medium;
+                  const isActive = selectedIdx === idx;
+                  return (
+                    <button
+                      key={idx}
+                      onClick={() => handleSelectQuestion(idx)}
+                      className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold transition shrink-0"
+                      style={{
+                        background: isActive ? 'rgba(37,99,235,0.25)' : 'rgba(255,255,255,0.03)',
+                        color: isActive ? '#60a5fa' : '#94a3b8',
+                        border: `1px solid ${isActive ? 'rgba(37,99,235,0.5)' : BORDER}`,
+                      }}
+                      title={q.title}
+                    >
+                      <span>Q{idx + 1}</span>
+                      <span className="text-[9px] uppercase font-bold px-1 py-0.2 rounded" style={{ color: qDiff.color }}>
+                        {q.difficulty?.slice(0, 3)}
+                      </span>
+                      {solvedSet.has(idx) && <CheckCircle2 className="h-3 w-3 text-emerald-400 shrink-0" />}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <button
+                onClick={() => handleSelectQuestion(selectedIdx + 1)}
+                disabled={selectedIdx >= questions.length - 1}
+                className="h-7 px-2 rounded-md text-[11px] font-bold text-blue-400 hover:text-blue-300 disabled:opacity-20 transition flex items-center gap-0.5 shrink-0"
+                title="Next Question"
+              >
+                Next <ChevronRight className="h-3.5 w-3.5" />
+              </button>
             </div>
 
             <div className="p-5 space-y-5 flex-1">
@@ -414,12 +530,11 @@ export function CodingArena({
                   ))}
                 </div>
               ) : (
-                /* Fallback clean example if prompt didn't specify array */
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 mb-2">Example</p>
                   <div className="rounded-xl p-3 font-mono text-xs text-slate-300 leading-relaxed" style={{ background: '#161b27', border: `1px solid ${BORDER}` }}>
                     <span className="text-slate-500">// Sample execution</span><br />
-                    <span className="text-emerald-400">solution();</span> <span className="text-slate-500">// returns expected result</span>
+                    <span className="text-emerald-400">solution();</span> <span className="text-slate-500">// returns expected output</span>
                   </div>
                 </div>
               )}
@@ -438,6 +553,28 @@ export function CodingArena({
                     </li>
                   ))}
                 </ul>
+              </div>
+
+              {/* ── Problem Footer Navigation (Previous / Next Buttons) ── */}
+              <div className="pt-4 border-t border-white/5 flex items-center justify-between">
+                <button
+                  onClick={() => handleSelectQuestion(selectedIdx - 1)}
+                  disabled={selectedIdx === 0}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white disabled:opacity-25 transition"
+                  style={{ border: `1px solid ${BORDER}` }}
+                >
+                  <ChevronLeft className="h-4 w-4" /> Previous
+                </button>
+                <span className="text-xs text-slate-500 font-mono">
+                  {selectedIdx + 1} of {questions.length}
+                </span>
+                <button
+                  onClick={() => handleSelectQuestion(selectedIdx + 1)}
+                  disabled={selectedIdx >= questions.length - 1}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 disabled:opacity-25 transition"
+                >
+                  Next Question <ChevronRight className="h-4 w-4" />
+                </button>
               </div>
             </div>
           </div>
@@ -490,9 +627,9 @@ export function CodingArena({
 
               <div className="flex items-center gap-3">
                 <button 
-                  onClick={() => setCode(currentLangSpec.starter)} 
+                  onClick={handleResetTemplate} 
                   className="text-xs text-slate-500 hover:text-slate-300 transition px-2 py-1"
-                  title="Reset to starter template"
+                  title="Reset code to language starter template"
                 >
                   Reset Template
                 </button>
@@ -508,7 +645,17 @@ export function CodingArena({
                 language={currentLangSpec.monacoLang}
                 theme="vs-dark"
                 value={code}
-                onChange={(v) => setCode(v || '')}
+                onChange={(v) => {
+                  const val = v || '';
+                  setCode(val);
+                  setCodeCache(prev => ({
+                    ...prev,
+                    [selectedIdx]: {
+                      ...(prev[selectedIdx] || {}),
+                      [selectedLang]: val,
+                    }
+                  }));
+                }}
                 options={{
                   minimap: { enabled: false },
                   fontSize: 13,
@@ -551,7 +698,7 @@ export function CodingArena({
                   Ask AI
                 </button>
 
-                {/* Exit Arena Button (Snapshots deleted) */}
+                {/* Exit Arena Button */}
                 <button
                   onClick={onBackToInterview}
                   className="flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white transition"
@@ -574,7 +721,7 @@ export function CodingArena({
                   RUN CODE
                 </button>
 
-                {/* DEBUG Button (Now fully functional!) */}
+                {/* DEBUG Button */}
                 <button
                   onClick={handleDebug}
                   disabled={debugLoading || !code.trim()}
@@ -589,7 +736,7 @@ export function CodingArena({
           </div>
 
           {/* ── RIGHT: AI Insights + Console ── */}
-          <div className="w-72 flex flex-col shrink-0 overflow-y-auto" style={{ background: '#0d1117', borderLeft: `1px solid ${BORDER}` }}>
+          <div className="w-76 flex flex-col shrink-0 overflow-y-auto" style={{ width: '310px', background: '#0d1117', borderLeft: `1px solid ${BORDER}` }}>
             {/* AI Insights header */}
             <div className="flex items-center justify-between px-4 py-3 shrink-0" style={{ borderBottom: `1px solid ${BORDER}` }}>
               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">AI Insights</p>
@@ -670,7 +817,7 @@ export function CodingArena({
                 </div>
               )}
 
-              {/* Evaluation result */}
+              {/* Evaluation result with high-visibility TC & SC */}
               {evaluation && !isEvaluating && (
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
@@ -682,19 +829,61 @@ export function CodingArena({
                   <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
                     <div className="h-full rounded-full transition-all duration-700" style={{ width: `${evaluation.score}%`, background: evaluation.score >= 80 ? '#10b981' : evaluation.score >= 60 ? '#f59e0b' : '#ef4444' }} />
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    {[{ label: 'Time', value: evaluation.time_complexity, color: '#60a5fa' }, { label: 'Space', value: evaluation.space_complexity, color: '#a78bfa' }].map(c => (
-                      <div key={c.label} className="rounded-xl p-2.5 text-center" style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${BORDER}` }}>
-                        <p className="text-[9px] uppercase tracking-wider text-slate-500 mb-1">{c.label}</p>
-                        <p className="text-xs font-bold font-mono" style={{ color: c.color }}>{c.value}</p>
+
+                  {/* ── HIGH-VISIBILITY TC & SC COMPLEXITY BOX ── */}
+                  <div className="rounded-xl p-3 space-y-2.5" style={{ background: 'rgba(37,99,235,0.07)', border: '1px solid rgba(37,99,235,0.25)' }}>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-blue-400 flex items-center gap-1">
+                        <Zap className="h-3.5 w-3.5" /> Complexity Analysis
+                      </span>
+                      <span className="text-[9px] font-mono text-emerald-400 font-bold">Evaluated</span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      {/* Time Complexity (TC) */}
+                      <div className="rounded-lg p-2.5" style={{ background: '#131826', border: '1px solid rgba(59,130,246,0.35)' }}>
+                        <div className="flex items-center gap-1 text-[10px] font-black uppercase text-blue-400 mb-0.5">
+                          <Timer className="h-3 w-3" />
+                          <span>TC (Time)</span>
+                        </div>
+                        <p className="text-base font-black font-mono text-white tracking-wide">{evaluation.time_complexity}</p>
+                        <p className="text-[9px] text-slate-400 mt-0.5">Asymptotic Runtime</p>
                       </div>
-                    ))}
+
+                      {/* Space Complexity (SC) */}
+                      <div className="rounded-lg p-2.5" style={{ background: '#131826', border: '1px solid rgba(168,85,247,0.35)' }}>
+                        <div className="flex items-center gap-1 text-[10px] font-black uppercase text-purple-400 mb-0.5">
+                          <span>💾</span>
+                          <span>SC (Space)</span>
+                        </div>
+                        <p className="text-base font-black font-mono text-white tracking-wide">{evaluation.space_complexity}</p>
+                        <p className="text-[9px] text-slate-400 mt-0.5">Auxiliary Memory</p>
+                      </div>
+                    </div>
                   </div>
-                  <p className="text-xs text-slate-400 leading-relaxed">{evaluation.feedback}</p>
+
+                  {/* Feedback description */}
+                  <p className="text-xs text-slate-300 leading-relaxed">{evaluation.feedback}</p>
+
+                  {/* Challenge Solved banner + NEXT QUESTION ACTION BUTTON */}
                   {evaluation.score >= 60 && (
-                    <div className="flex items-center gap-2 rounded-xl py-2 justify-center" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
-                      <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                      <span className="text-xs font-semibold text-emerald-400">Challenge Solved!</span>
+                    <div className="space-y-2 pt-1">
+                      <div className="flex items-center gap-2 rounded-xl py-2 px-3 justify-center" style={{ background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.3)' }}>
+                        <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                        <span className="text-xs font-bold text-emerald-300">Challenge Solved! (100/100)</span>
+                      </div>
+
+                      {selectedIdx < questions.length - 1 ? (
+                        <button
+                          onClick={() => handleSelectQuestion(selectedIdx + 1)}
+                          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-extrabold text-white transition hover:opacity-95"
+                          style={{ background: 'linear-gradient(90deg, #10b981, #059669)', boxShadow: '0 0 15px rgba(16,185,129,0.35)' }}
+                        >
+                          Next Question (Q{selectedIdx + 2}) <ArrowRight className="h-4 w-4" />
+                        </button>
+                      ) : (
+                        <p className="text-center text-[11px] text-emerald-400 font-semibold">🎉 All problems in this arena solved!</p>
+                      )}
                     </div>
                   )}
                 </div>
@@ -729,6 +918,8 @@ export function CodingArena({
                     <div key={i} style={{ 
                       color: line.startsWith('✓') ? '#10b981' 
                         : line.startsWith('✗') ? '#ef4444' 
+                        : line.startsWith('⏱️') ? '#60a5fa'
+                        : line.startsWith('💾') ? '#c084fc'
                         : line.startsWith('[DEBUGGER]') ? '#f59e0b'
                         : line.startsWith('[SUGGESTIONS]') ? '#60a5fa'
                         : '#94a3b8' 

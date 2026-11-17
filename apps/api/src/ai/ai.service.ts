@@ -581,7 +581,13 @@ Output MUST be valid JSON using this schema exactly:
     {
       "timeframe": "30_days" | "60_days" | "90_days",
       "goals": string[],
-      "learningResources": string[],
+      "learningResources": [
+        {
+          "title": "Clear curriculum or documentation title",
+          "url": "https://... valid official documentation, tutorial, or course URL",
+          "type": "Course" | "Documentation" | "Tutorial"
+        }
+      ],
       "miniProjects": string[]
     }
   ]
@@ -592,7 +598,30 @@ Job Description: ${jobDescription}
 Resume: ${rawText}
 `;
 
-      return await this.generateJson(prompt);
+      const result = await this.generateJson(prompt);
+      if (result && Array.isArray(result.phases)) {
+        result.phases = result.phases.map((p: any) => ({
+          ...p,
+          learningResources: Array.isArray(p.learningResources)
+            ? p.learningResources.map((res: any) => {
+                if (typeof res === 'object' && res?.title) {
+                  return {
+                    title: res.title,
+                    url: res.url || `https://www.google.com/search?q=${encodeURIComponent(res.title + ' official tutorial')}`,
+                    type: res.type || 'Documentation',
+                  };
+                }
+                const title = String(res);
+                return {
+                  title,
+                  url: `https://www.google.com/search?q=${encodeURIComponent(title + ' official tutorial')}`,
+                  type: 'Documentation',
+                };
+              })
+            : [],
+        }));
+      }
+      return result;
     } catch (error: any) {
       this.logger.error('Roadmap generation failed', error?.message || error);
       throw new Error('AI roadmap generation failed');

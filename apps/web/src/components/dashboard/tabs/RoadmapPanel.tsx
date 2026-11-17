@@ -1,4 +1,4 @@
-import { Map, CheckCircle2, Lock, ChevronRight, BookOpen, FileText, Sparkles, RefreshCw } from 'lucide-react';
+import { Map, CheckCircle2, Lock, ChevronRight, BookOpen, FileText, Sparkles, RefreshCw, ExternalLink } from 'lucide-react';
 import type { SkillGapRoadmap } from '@repo/types';
 
 type Props = {
@@ -12,6 +12,48 @@ function formatTimeframe(v: string) {
   if (v === '60_days') return 'Days 31–60';
   if (v === '90_days') return 'Days 61–90';
   return v;
+}
+
+function getResourceUrl(resource: any): string {
+  if (typeof resource === 'object' && resource?.url) {
+    return resource.url;
+  }
+  const text = typeof resource === 'string' ? resource : resource?.title || '';
+  
+  const urlMatch = text.match(/https?:\/\/[^\s)]+/);
+  if (urlMatch) return urlMatch[0];
+
+  const lower = text.toLowerCase();
+  if (lower.includes('docker')) return 'https://docs.docker.com/get-started/';
+  if (lower.includes('sql') || lower.includes('postgres')) return 'https://www.postgresql.org/docs/current/tutorial.html';
+  if (lower.includes('kubernetes') || lower.includes('k8s')) return 'https://kubernetes.io/docs/tutorials/';
+  if (lower.includes('python')) return 'https://docs.python.org/3/tutorial/';
+  if (lower.includes('react')) return 'https://react.dev/learn';
+  if (lower.includes('nest') || lower.includes('nestjs')) return 'https://docs.nestjs.com/';
+  if (lower.includes('ci/cd') || lower.includes('github actions') || lower.includes('pipeline')) return 'https://docs.github.com/en/actions/learn-github-actions';
+  if (lower.includes('redis')) return 'https://redis.io/docs/latest/develop/';
+  if (lower.includes('agile') || lower.includes('scrum')) return 'https://www.atlassian.com/agile';
+  if (lower.includes('javascript') || lower.includes('js')) return 'https://developer.mozilla.org/en-US/docs/Web/JavaScript';
+  if (lower.includes('typescript') || lower.includes('ts')) return 'https://www.typescriptlang.org/docs/';
+  if (lower.includes('system design')) return 'https://github.com/donnemartin/system-design-primer';
+  if (lower.includes('linux') || lower.includes('bash')) return 'https://www.linux.org/forums/#linux-tutorials.122';
+  if (lower.includes('git')) return 'https://git-scm.com/doc';
+
+  return `https://www.google.com/search?q=${encodeURIComponent(text + ' official documentation tutorial')}`;
+}
+
+function getResourceTitle(resource: any): string {
+  if (typeof resource === 'object' && resource?.title) {
+    return resource.title;
+  }
+  return typeof resource === 'string' ? resource : 'Learning Resource';
+}
+
+function getResourceType(resource: any, index: number): string {
+  if (typeof resource === 'object' && resource?.type) {
+    return resource.type;
+  }
+  return index === 0 ? 'Course' : 'Documentation';
 }
 
 const PHASE_HOURS = [8, 12, 10, 6];
@@ -224,21 +266,34 @@ export function RoadmapPanel({ skillGapRoadmap, isGenerating, onGenerate }: Prop
                   <div className="border-t flex flex-col gap-4 px-6 py-5" style={{ borderColor: BORDER }}>
                     <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">Recommended Resources</p>
                     <div className="grid grid-cols-2 gap-3">
-                      {phase.learningResources.slice(0, 2).map((res, ri) => (
-                        <div
-                          key={ri}
-                          className="flex items-start gap-3 rounded-xl p-3 cursor-pointer transition hover:opacity-80"
-                          style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${BORDER}` }}
-                        >
-                          <div className="h-8 w-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: ri === 0 ? 'rgba(37,99,235,0.15)' : 'rgba(255,255,255,0.05)' }}>
-                            {ri === 0 ? <BookOpen className="h-4 w-4 text-blue-400" /> : <FileText className="h-4 w-4 text-slate-400" />}
-                          </div>
-                          <div>
-                            <p className="text-xs font-semibold text-white leading-tight line-clamp-2">{res}</p>
-                            <p className="text-[10px] text-slate-500 mt-0.5">{ri === 0 ? 'Course' : 'Documentation'} • Official</p>
-                          </div>
-                        </div>
-                      ))}
+                      {phase.learningResources.slice(0, 2).map((res, ri) => {
+                        const url = getResourceUrl(res);
+                        const title = getResourceTitle(res);
+                        const type = getResourceType(res, ri);
+
+                        return (
+                          <a
+                            key={ri}
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-start gap-3 rounded-xl p-3 cursor-pointer transition hover:bg-white/5 hover:border-blue-500/40 group no-underline"
+                            style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${BORDER}` }}
+                            title={`Open ${title}`}
+                          >
+                            <div className="h-8 w-8 rounded-lg flex items-center justify-center shrink-0 transition group-hover:scale-105" style={{ background: ri === 0 ? 'rgba(37,99,235,0.15)' : 'rgba(255,255,255,0.05)' }}>
+                              {ri === 0 ? <BookOpen className="h-4 w-4 text-blue-400" /> : <FileText className="h-4 w-4 text-slate-400" />}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-semibold text-white leading-tight line-clamp-2 group-hover:text-blue-300 transition">{title}</p>
+                              <div className="flex items-center gap-1.5 mt-1">
+                                <span className="text-[10px] text-slate-500">{type} • Official</span>
+                                <ExternalLink className="h-3 w-3 text-slate-500 group-hover:text-blue-400 transition shrink-0" />
+                              </div>
+                            </div>
+                          </a>
+                        );
+                      })}
                     </div>
                   </div>
                 )}

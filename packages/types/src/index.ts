@@ -119,10 +119,16 @@ export interface RewriteSuggestions {
   weakAdjectivesToRemove?: string[];
 }
 
+export interface RoadmapResource {
+  title: string;
+  url: string;
+  type?: 'Course' | 'Documentation' | 'Tutorial';
+}
+
 export interface RoadmapPhase {
   timeframe: '30_days' | '60_days' | '90_days';
   goals: string[];
-  learningResources: string[];
+  learningResources: (string | RoadmapResource)[];
   miniProjects: string[];
 }
 

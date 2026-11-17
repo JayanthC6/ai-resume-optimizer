@@ -816,22 +816,42 @@ Constraints:
   ) {
     try {
       const prompt = `
-You are a senior interviewer preparing coding practice for a candidate.
-Generate 3 coding questions likely to be asked for this role and JD.
+You are a senior technical interviewer at a top tech company preparing a LeetCode/HackerRank-style coding round.
+Generate exactly 4 distinct, real-world coding problems tailored to the candidate's target role, JD, and skills.
 
 Role: ${role}
-Language: ${language}
+Target Language: ${language}
 JD: ${jobDescription}
 Resume: ${resumeText}
 
-Output MUST be valid JSON exactly:
+Generate exactly 4 questions with this difficulty distribution:
+1. Question 1: "easy" (Warm-up, arrays/strings/hash maps, fundamental algorithms)
+2. Question 2: "medium" (Core algorithmic problem, two pointers, sliding window, binary search, or trees)
+3. Question 3: "medium" (Practical engineering/algorithmic scenario, data structure design, graphs, or backend logic)
+4. Question 4: "hard" (Advanced optimization, dynamic programming, complex constraints, or edge-case heavy problem)
+
+Output MUST be valid JSON matching this schema exactly:
 {
   "questions": [
     {
-      "title": string,
+      "title": "Clean, memorable LeetCode-style title",
       "difficulty": "easy" | "medium" | "hard",
-      "prompt": string,
-      "expected_topics": string[]
+      "category": "e.g. Arrays & Hashing, Two Pointers, Trees, Dynamic Programming, System Design",
+      "prompt": "Clear, detailed problem statement explaining the goal, inputs, expected return, and requirements.",
+      "expected_topics": ["topic1", "topic2"],
+      "examples": [
+        {
+          "input": "e.g. nums = [2,7,11,15], target = 9",
+          "output": "e.g. [0,1]",
+          "explanation": "Brief explanation of why this is the output"
+        }
+      ],
+      "constraints": [
+        "e.g. 1 <= nums.length <= 10^5",
+        "e.g. -10^9 <= nums[i] <= 10^9"
+      ],
+      "starter_code": "Function signature and template in ${language}",
+      "optimization_tip": "A constructive 1-sentence tip on optimal data structures or algorithmic approaches (e.g. using a hash map to achieve O(N) time)."
     }
   ]
 }
@@ -842,8 +862,10 @@ Output MUST be valid JSON exactly:
         ? result.questions
         : [];
 
+      const fallbackDifficulties: ('easy' | 'medium' | 'hard')[] = ['easy', 'medium', 'medium', 'hard'];
+
       return {
-        questions: questions.slice(0, 3).map((q: any, idx: number) => ({
+        questions: questions.slice(0, 4).map((q: any, idx: number) => ({
           title:
             typeof q?.title === 'string' && q.title.trim().length > 0
               ? q.title
@@ -853,11 +875,11 @@ Output MUST be valid JSON exactly:
             q?.difficulty === 'medium' ||
             q?.difficulty === 'hard'
               ? q.difficulty
-              : idx === 0
-                ? 'easy'
-                : idx === 1
-                  ? 'medium'
-                  : 'hard',
+              : fallbackDifficulties[idx] || 'medium',
+          category:
+            typeof q?.category === 'string' && q.category.trim().length > 0
+              ? q.category
+              : (Array.isArray(q?.expected_topics) && q.expected_topics[0]) || 'Algorithms',
           prompt:
             typeof q?.prompt === 'string' && q.prompt.trim().length > 0
               ? q.prompt
@@ -865,21 +887,65 @@ Output MUST be valid JSON exactly:
           expected_topics: Array.isArray(q?.expected_topics)
             ? q.expected_topics.filter((t: unknown) => typeof t === 'string')
             : [],
+          examples: Array.isArray(q?.examples) && q.examples.length > 0
+            ? q.examples.map((ex: any) => ({
+                input: String(ex?.input ?? ''),
+                output: String(ex?.output ?? ''),
+                explanation: ex?.explanation ? String(ex.explanation) : undefined,
+              }))
+            : undefined,
+          constraints: Array.isArray(q?.constraints)
+            ? q.constraints.filter((c: unknown) => typeof c === 'string')
+            : undefined,
+          starter_code: typeof q?.starter_code === 'string' ? q.starter_code : undefined,
+          optimization_tip: typeof q?.optimization_tip === 'string' ? q.optimization_tip : undefined,
         })),
       };
     } catch (error: any) {
-      this.logger.error(
-        'Coding practice generation failed',
-        error?.message || error,
-      );
+      this.logger.error('Failed to generate coding practice questions', error?.message || error);
       return {
         questions: [
           {
-            title: 'Array Transform Challenge',
-            difficulty: 'easy',
-            prompt:
-              'Given an array of transactions, return the top 3 users by total spend. Discuss time complexity.',
-            expected_topics: ['arrays', 'sorting', 'hash maps'],
+            title: 'Two Sum Variant',
+            difficulty: 'easy' as const,
+            category: 'Arrays & Hashing',
+            prompt: 'Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target. Each input has exactly one solution.',
+            expected_topics: ['arrays', 'hash map', 'time complexity'],
+            examples: [
+              { input: 'nums = [2,7,11,15], target = 9', output: '[0, 1]', explanation: 'nums[0] + nums[1] == 9, so return [0, 1].' },
+            ],
+            constraints: ['2 <= nums.length <= 10^4', '-10^9 <= nums[i] <= 10^9'],
+            optimization_tip: 'Use a single-pass Hash Map to achieve O(N) time and O(N) space instead of O(N^2) brute force.',
+          },
+          {
+            title: 'LRU Cache Design',
+            difficulty: 'medium' as const,
+            category: 'Data Structures',
+            prompt: 'Design a data structure that follows the constraints of a Least Recently Used (LRU) cache with get(key) and put(key, value) in O(1) average time.',
+            expected_topics: ['doubly linked list', 'hash map', 'cache eviction'],
+            examples: [
+              { input: 'LRUCache(2); put(1,1); put(2,2); get(1); put(3,3); get(2);', output: '[null, null, null, 1, null, -1]', explanation: 'key 2 was evicted because key 1 was retrieved.' },
+            ],
+            constraints: ['1 <= capacity <= 3000', 'get and put must run in O(1) average time'],
+            optimization_tip: 'Combine a Doubly Linked List with a Hash Map to get O(1) node removal and insertion.',
+          },
+          {
+            title: 'Task Scheduling with Deadlines',
+            difficulty: 'medium' as const,
+            category: 'Greedy & Heap',
+            prompt: 'Given an array of tasks with execution times and priorities, determine the minimum latency required to schedule all tasks without starving high-priority workloads.',
+            expected_topics: ['priority queue', 'greedy', 'sorting'],
+            constraints: ['1 <= tasks.length <= 50000'],
+            optimization_tip: 'A Min-Priority Queue lets you pick the lowest remaining deadline in O(log N).',
+          },
+          {
+            title: 'Distributed Rate Limiter Algorithm',
+            difficulty: 'hard' as const,
+            category: 'System Design & Algorithms',
+            prompt: 'Implement a Token Bucket or Sliding Window Log rate limiter that handles concurrent requests across distributed instances with minimal locking contention.',
+            expected_topics: ['sliding window', 'concurrency', 'rate limiting'],
+            constraints: ['Must sustain 100k requests/second', 'Max drift 50ms'],
+            optimization_tip: 'A Sliding Window Counter backed by atomic increments reduces memory compared to storing individual timestamp logs.',
           },
         ],
       };
@@ -943,6 +1009,88 @@ Constraints:
     } catch (error: any) {
       this.logger.error('Coding evaluation failed', error?.message || error);
       throw new Error('AI coding evaluation failed');
+    }
+  }
+
+  async getCodingHint(
+    question: string,
+    code: string,
+    language: string,
+  ) {
+    try {
+      const prompt = `
+You are a senior algorithmic mentor helping a candidate during a live coding interview.
+Question:
+${question}
+
+Selected Language: ${language}
+
+Candidate's current code (may be empty or incomplete):
+${code.trim() ? code : '(Candidate has not written code yet)'}
+
+Provide progressive, encouraging guidance to unblock them WITHOUT writing out the full complete solution code.
+Output MUST be valid JSON exactly:
+{
+  "hint": "A 1-2 sentence hint nudging them towards the core data structure or observation.",
+  "approach": "A 2-3 step high-level approach (e.g. 1. Initialize map... 2. Iterate and check... 3. Return result).",
+  "complexity_tip": "Target time and space complexity (e.g. O(N) time, O(N) space using a hash table)."
+}
+`;
+      const result = await this.generateJson(prompt);
+      return {
+        hint: typeof result?.hint === 'string' ? result.hint : 'Consider breaking the problem down and identifying which data structure offers the fastest lookups.',
+        approach: typeof result?.approach === 'string' ? result.approach : '1. Define the input bounds. 2. Track seen elements with an efficient lookup table. 3. Return the result.',
+        complexity_tip: typeof result?.complexity_tip === 'string' ? result.complexity_tip : 'Optimal target: O(N) time and O(N) auxiliary space.',
+      };
+    } catch (error: any) {
+      this.logger.error('Coding hint failed', error?.message || error);
+      return {
+        hint: 'Break the problem down into smaller sub-problems. Identify the base case and examine if past state can be cached.',
+        approach: '1. Validate constraints. 2. Choose an optimal data structure (Map, Set, or Two Pointers). 3. Iterate once while updating state.',
+        complexity_tip: 'Aim for O(N) time complexity.',
+      };
+    }
+  }
+
+  async debugCodingSubmission(
+    question: string,
+    code: string,
+    language: string,
+  ) {
+    try {
+      const prompt = `
+You are an expert compiler and code reviewer. Analyze the candidate's code for syntax errors, logical bugs, off-by-one errors, edge cases, and infinite loops.
+
+Question:
+${question}
+
+Language: ${language}
+
+Candidate Code:
+${code.trim() ? code : '// empty'}
+
+Output MUST be valid JSON exactly:
+{
+  "has_issues": boolean,
+  "issues": ["Concise description of bug 1", "Bug 2..."],
+  "suggestions": ["Specific tip on how to fix issue 1", "Tip 2..."],
+  "fixed_code": "Optional snippet illustrating the corrected lines if applicable"
+}
+`;
+      const result = await this.generateJson(prompt);
+      return {
+        has_issues: Boolean(result?.has_issues ?? (Array.isArray(result?.issues) && result.issues.length > 0)),
+        issues: Array.isArray(result?.issues) ? result.issues.filter((i: unknown) => typeof i === 'string') : [],
+        suggestions: Array.isArray(result?.suggestions) ? result.suggestions.filter((s: unknown) => typeof s === 'string') : [],
+        fixed_code: typeof result?.fixed_code === 'string' ? result.fixed_code : undefined,
+      };
+    } catch (error: any) {
+      this.logger.error('Coding debug failed', error?.message || error);
+      return {
+        has_issues: false,
+        issues: ['Could not run deep static analysis at this moment.'],
+        suggestions: ['Double check loop boundaries, variable declarations, and null/undefined edge cases.'],
+      };
     }
   }
 

@@ -176,12 +176,32 @@ export function InterviewBotPanel({ resumeId, jobTitle, jobDescription }: Props)
     return data;
   };
 
-  const handleEvaluateCode = async (question: string, code: string): Promise<CodingEvaluation> => {
+  const handleEvaluateCode = async (question: string, code: string, lang?: string): Promise<CodingEvaluation> => {
     if (!session) throw new Error('Session not found');
     const { data } = await api.post(`/analysis/interview-bot/coding/${session.id}/evaluate`, {
       question,
       code,
-      language: config?.language || 'JavaScript',
+      language: lang || config?.language || 'JavaScript',
+    });
+    return data;
+  };
+
+  const handleGetHint = async (question: string, code: string, lang?: string) => {
+    if (!session) throw new Error('Session not found');
+    const { data } = await api.post(`/analysis/interview-bot/coding/${session.id}/hint`, {
+      question,
+      code,
+      language: lang || config?.language || 'JavaScript',
+    });
+    return data;
+  };
+
+  const handleDebugCode = async (question: string, code: string, lang?: string) => {
+    if (!session) throw new Error('Session not found');
+    const { data } = await api.post(`/analysis/interview-bot/coding/${session.id}/debug`, {
+      question,
+      code,
+      language: lang || config?.language || 'JavaScript',
     });
     return data;
   };
@@ -238,6 +258,8 @@ export function InterviewBotPanel({ resumeId, jobTitle, jobDescription }: Props)
           onBackToInterview={() => setActiveSubView('interview')}
           onGenerateCodingQuestions={handleGenerateCodingQuestions}
           onEvaluateCode={handleEvaluateCode}
+          onGetHint={handleGetHint}
+          onDebugCode={handleDebugCode}
           language={config.language}
           remainingSeconds={remainingSeconds}
           jobTitle={session.jobTitle}

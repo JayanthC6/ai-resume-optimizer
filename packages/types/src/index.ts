@@ -254,11 +254,22 @@ export interface InterviewDurationRecommendation {
   confidence: 'low' | 'medium' | 'high';
 }
 
+export interface CodingPracticeExample {
+  input: string;
+  output: string;
+  explanation?: string;
+}
+
 export interface CodingPracticeQuestion {
   title: string;
   difficulty: 'easy' | 'medium' | 'hard';
   prompt: string;
   expected_topics: string[];
+  category?: string;
+  examples?: CodingPracticeExample[];
+  constraints?: string[];
+  starter_code?: string;
+  optimization_tip?: string;
 }
 
 export interface CodingPracticeSet {
@@ -272,4 +283,17 @@ export interface CodingEvaluation {
   improvements: string[];
   time_complexity: string;
   space_complexity: string;
+}
+
+export interface CodingHintResponse {
+  hint: string;
+  approach: string;
+  complexity_tip?: string;
+}
+
+export interface CodingDebugResponse {
+  has_issues: boolean;
+  issues: string[];
+  suggestions: string[];
+  fixed_code?: string;
 }

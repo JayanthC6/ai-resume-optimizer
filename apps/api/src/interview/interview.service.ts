@@ -211,4 +211,32 @@ export class InterviewService {
 
     return result;
   }
+
+  async getCodingHint(
+    userId: string,
+    sessionId: string,
+    question: string,
+    code: string,
+    language: string,
+  ) {
+    const session = await this.prisma.interviewSession.findUnique({ where: { id: sessionId } });
+    if (!session || session.userId !== userId) {
+      throw new NotFoundException('Session not found');
+    }
+    return this.aiService.getCodingHint(question, code, language);
+  }
+
+  async debugCodingPractice(
+    userId: string,
+    sessionId: string,
+    question: string,
+    code: string,
+    language: string,
+  ) {
+    const session = await this.prisma.interviewSession.findUnique({ where: { id: sessionId } });
+    if (!session || session.userId !== userId) {
+      throw new NotFoundException('Session not found');
+    }
+    return this.aiService.debugCodingSubmission(question, code, language);
+  }
 }

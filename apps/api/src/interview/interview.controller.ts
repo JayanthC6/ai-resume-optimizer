@@ -73,6 +73,36 @@ export class InterviewController {
     );
   }
 
+  @Post('coding/:id/hint')
+  getCodingHint(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Body() data: { question: string; code?: string; language?: string },
+  ) {
+    return this.interviewService.getCodingHint(
+      req.user.id,
+      id,
+      data.question,
+      data.code || '',
+      data.language || 'JavaScript',
+    );
+  }
+
+  @Post('coding/:id/debug')
+  debugCoding(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Body() data: { question: string; code: string; language: string },
+  ) {
+    return this.interviewService.debugCodingPractice(
+      req.user.id,
+      id,
+      data.question,
+      data.code,
+      data.language,
+    );
+  }
+
   @Post('end/:id')
   end(@Req() req: any, @Param('id') id: string) {
     return this.interviewService.endSession(req.user.id, id);

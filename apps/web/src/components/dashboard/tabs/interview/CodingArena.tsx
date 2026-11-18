@@ -56,7 +56,7 @@ const SUPPORTED_LANGUAGES: Record<string, LanguageSpec> = {
     name: 'SQL',
     monacoLang: 'sql',
     filename: 'query.sql',
-    starter: '-- Write your SQL query below\nSELECT \n    *\nFROM table_name;\n',
+    starter: '-- Write your SQL query statement below\n\n',
   },
   Java: {
     name: 'Java',
@@ -100,23 +100,15 @@ const BORDER = 'rgba(255,255,255,0.07)';
 
 // Generates an idiomatic starter function in the target language for the specific question
 function getStarterCodeForLanguage(q: CodingPracticeQuestion | undefined, lang: string): string {
-  if (!q) return SUPPORTED_LANGUAGES[lang]?.starter || '// Write solution\n';
-
   if (lang === 'SQL') {
-    if (q.starter_code && (q.starter_code.includes('SELECT') || q.starter_code.includes('WITH') || q.starter_code.includes('--'))) {
-      return q.starter_code;
-    }
-    return `-- ${q.title}\n-- Write your SQL query below\nSELECT \n    *\nFROM table_name;\n`;
+    return `-- Write your SQL query statement below\n\n`;
   }
+
+  if (!q) return SUPPORTED_LANGUAGES[lang]?.starter || '// Write solution\n';
   
   const rawWords = (q.title || 'solution').replace(/[^a-zA-Z0-9 ]/g, '').split(/\s+/).filter(Boolean);
   const camel = rawWords.map((w, i) => i === 0 ? w.toLowerCase() : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join('') || 'solution';
   const snake = rawWords.map(w => w.toLowerCase()).join('_') || 'solution';
-
-  // If question already has starter_code and the current language is Python and starter is in python, use it
-  if (lang === 'Python' && q.starter_code && q.starter_code.includes('def ')) {
-    return q.starter_code;
-  }
 
   switch (lang) {
     case 'Python':

@@ -865,7 +865,7 @@ CRITICAL INSTRUCTIONS FOR SQL:
 - Each "prompt" MUST describe the business scenario and clearly define the Table Schemas with column names and types (e.g. Table: Orders (id INT, user_id INT, amount DECIMAL, created_at TIMESTAMP)).
 - "examples": Provide sample table rows for input, and the expected query result table for output.
 - "category": e.g. "Aggregations & Filtering", "Multi-Table JOINs", "Window Functions & Ranking", "CTE & Analytics"
-- "starter_code": Clean SQL starter template (e.g. "-- Write your SQL query below\\nSELECT \\n    \\nFROM \\n;\\n")
+- "starter_code": MUST be an empty query placeholder: "-- Write your SQL query statement below\\n\\n". NEVER write the answer, solution query, CTE, joins, or clauses in starter_code! The user must solve the problem themselves.
 - "optimization_tip": A concrete indexing or query execution tip (e.g. "Create a composite index on (user_id, status) to avoid a full table scan.").
 
 Output MUST be valid JSON matching this schema exactly:
@@ -888,7 +888,7 @@ Output MUST be valid JSON matching this schema exactly:
         "Write standard ANSI SQL / PostgreSQL query",
         "Result table must be ordered by ..."
       ],
-      "starter_code": "-- Write your SQL query below\\nSELECT \\n    *\\nFROM ...;\\n",
+      "starter_code": "-- Write your SQL query statement below\\n\\n",
       "optimization_tip": "Specific indexing or performance tip for this query."
     }
   ]
@@ -929,7 +929,7 @@ Output MUST be valid JSON matching this schema exactly:
         "e.g. 1 <= nums.length <= 10^5",
         "e.g. -10^9 <= nums[i] <= 10^9"
       ],
-      "starter_code": "Function signature and template in ${language}",
+      "starter_code": "Function signature stub only in ${language} with empty body / pass. NEVER provide the solution code!",
       "optimization_tip": "A constructive 1-sentence tip on optimal data structures or algorithmic approaches (e.g. using a hash map to achieve O(N) time)."
     }
   ]
@@ -997,7 +997,7 @@ Output MUST be valid JSON matching this schema exactly:
                 { input: 'Customers + Orders tables', output: '| customer_name | total_spent |\n| Alice | 1200.00 |\n| Bob | 650.00 |', explanation: 'Only Alice and Bob spent >= 500.' },
               ],
               constraints: ['Return columns: customer_name, total_spent', 'Order by total_spent DESC'],
-              starter_code: '-- Write your SQL query below\nSELECT \n    c.name AS customer_name,\n    SUM(o.amount) AS total_spent\nFROM Customers c\nJOIN Orders o ON c.id = o.customer_id\nGROUP BY c.id, c.name\nHAVING SUM(o.amount) > 500\nORDER BY total_spent DESC;\n',
+              starter_code: '-- Write your SQL query statement below\n\n',
               optimization_tip: 'Create a composite index on Orders(customer_id, amount) to eliminate sequential table scans during join aggregation.',
             },
             {
@@ -1010,7 +1010,7 @@ Output MUST be valid JSON matching this schema exactly:
                 { input: 'Employees in IT and Sales', output: '| Department | Employee | Salary |\n| IT | Joe | 85000 |', explanation: 'Joe has the highest salary in IT.' },
               ],
               constraints: ['If ties exist, include all tied employees'],
-              starter_code: '-- Write your SQL query below\nSELECT \n    d.name AS Department,\n    e.name AS Employee,\n    e.salary AS Salary\nFROM Employee e\nJOIN Department d ON e.department_id = d.id\nWHERE (e.department_id, e.salary) IN (\n    SELECT department_id, MAX(salary) \n    FROM Employee \n    GROUP BY department_id\n);\n',
+              starter_code: '-- Write your SQL query statement below\n\n',
               optimization_tip: 'Index Employee(department_id, salary) for optimal subquery resolution.',
             },
             {
@@ -1020,7 +1020,7 @@ Output MUST be valid JSON matching this schema exactly:
               prompt: `Table: UserLogins\n+----+---------+------------+\n| id | user_id | login_date |\n+----+---------+------------+\n\nWrite a SQL query to calculate month-over-month user retention: users who logged in during a month and also logged in during the subsequent month.`,
               expected_topics: ['self join', 'date functions', 'distinct count'],
               constraints: ['Calculate retention percentage rounded to 2 decimals'],
-              starter_code: '-- Write your SQL query below\nSELECT \n    DATE_TRUNC(\'month\', a.login_date) AS month,\n    COUNT(DISTINCT b.user_id) * 100.0 / COUNT(DISTINCT a.user_id) AS retention_rate\nFROM UserLogins a\nLEFT JOIN UserLogins b \n    ON a.user_id = b.user_id \n    AND DATE_TRUNC(\'month\', b.login_date) = DATE_TRUNC(\'month\', a.login_date) + INTERVAL \'1 month\'\nGROUP BY 1\nORDER BY 1;\n',
+              starter_code: '-- Write your SQL query statement below\n\n',
               optimization_tip: 'Partition UserLogins by login_date and user_id to minimize self-join comparison volume.',
             },
             {
@@ -1030,7 +1030,7 @@ Output MUST be valid JSON matching this schema exactly:
               prompt: `A company's executives are interested in seeing who earns the most money in each of the company's departments. A high earner in a department is an employee who has a salary in the top three unique salaries for that department.\n\nWrite a SQL query to find the employees who are high earners in each of the departments using DENSE_RANK().`,
               expected_topics: ['window functions', 'dense_rank', 'common table expressions'],
               constraints: ['Must rank unique salaries so ties share the rank without skipping ranks'],
-              starter_code: '-- Write your SQL query below\nWITH RankedSalaries AS (\n    SELECT \n        d.name AS Department,\n        e.name AS Employee,\n        e.salary AS Salary,\n        DENSE_RANK() OVER (PARTITION BY e.department_id ORDER BY e.salary DESC) AS rnk\n    FROM Employee e\n    JOIN Department d ON e.department_id = d.id\n)\nSELECT Department, Employee, Salary\nFROM RankedSalaries\nWHERE rnk <= 3\nORDER BY Department, Salary DESC;\n',
+              starter_code: '-- Write your SQL query statement below\n\n',
               optimization_tip: 'Window functions with PARTITION BY execute in-memory with O(N log N) sorting; avoid correlated subqueries which yield O(N^2).',
             },
           ],

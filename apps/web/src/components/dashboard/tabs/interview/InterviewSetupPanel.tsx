@@ -200,10 +200,6 @@ export function InterviewSetupPanel({
           >
             {isLoading ? <><div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Preparing Room…</> : <>Enter Simulation <Play className="h-5 w-5 fill-current" /></>}
           </button>
-          <button className="flex items-center gap-2 rounded-xl px-6 py-4 text-sm font-semibold text-white transition hover:bg-white/10 border border-white/20">
-            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><circle cx="12" cy="12" r="10" /><path d="M12 8v4M12 16h.01" /></svg>
-            Test Hardware
-          </button>
         </div>
         <div className="flex items-center justify-center gap-6 mt-6 text-[10px] font-bold uppercase tracking-widest text-slate-400">
           <span className="flex items-center gap-1.5"><Lock className="h-3 w-3" /> Private Session</span>

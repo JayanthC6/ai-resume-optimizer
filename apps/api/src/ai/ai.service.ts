@@ -843,8 +843,58 @@ Constraints:
     role: string,
     language: string,
   ) {
+    const isSql = language.trim().toUpperCase() === 'SQL';
     try {
-      const prompt = `
+      const prompt = isSql
+        ? `
+You are a senior database architect and technical interviewer.
+Generate exactly 4 realistic, progressive SQL query challenges directly tailored to the candidate's target role, job description, and resume.
+
+Role: ${role}
+Domain Context:
+Job Description: ${jobDescription}
+Candidate Resume: ${resumeText}
+
+Generate 4 SQL challenges rooted in real business schemas relevant to this candidate's domain (e.g. backend services, ecommerce, analytics, task management, or user events):
+1. Question 1: "easy" (Aggregations, COUNT/SUM/AVG, multi-condition WHERE, GROUP BY, HAVING, ORDER BY)
+2. Question 2: "medium" (Multi-table INNER/LEFT JOINs, relational schema queries, subqueries, NULL handling)
+3. Question 3: "medium" (Common Table Expressions / CTEs, self-joins, date intervals, conditional CASE WHEN)
+4. Question 4: "hard" (Window functions like DENSE_RANK() / ROW_NUMBER() / LEAD() / LAG() OVER (PARTITION BY ...), running totals, or complex retention/deduplication queries)
+
+CRITICAL INSTRUCTIONS FOR SQL:
+- Each "prompt" MUST describe the business scenario and clearly define the Table Schemas with column names and types (e.g. Table: Orders (id INT, user_id INT, amount DECIMAL, created_at TIMESTAMP)).
+- "examples": Provide sample table rows for input, and the expected query result table for output.
+- "category": e.g. "Aggregations & Filtering", "Multi-Table JOINs", "Window Functions & Ranking", "CTE & Analytics"
+- "starter_code": Clean SQL starter template (e.g. "-- Write your SQL query below\\nSELECT \\n    \\nFROM \\n;\\n")
+- "optimization_tip": A concrete indexing or query execution tip (e.g. "Create a composite index on (user_id, status) to avoid a full table scan.").
+
+Output MUST be valid JSON matching this schema exactly:
+{
+  "questions": [
+    {
+      "title": "Clean, memorable LeetCode/HackerRank-style SQL title",
+      "difficulty": "easy" | "medium" | "hard",
+      "category": "e.g. Aggregations, Multi-Table JOINs, Window Functions",
+      "prompt": "Scenario with explicit Table Schemas, columns, data types, and query requirements.",
+      "expected_topics": ["joins", "group by", "window functions"],
+      "examples": [
+        {
+          "input": "Table: Users (id, name)\\nTable: Transactions (id, user_id, amount)",
+          "output": "| user_name | total_amount |\\n| Alice | 120.00 |",
+          "explanation": "Brief explanation of query result"
+        }
+      ],
+      "constraints": [
+        "Write standard ANSI SQL / PostgreSQL query",
+        "Result table must be ordered by ..."
+      ],
+      "starter_code": "-- Write your SQL query below\\nSELECT \\n    *\\nFROM ...;\\n",
+      "optimization_tip": "Specific indexing or performance tip for this query."
+    }
+  ]
+}
+`
+        : `
 You are a senior technical interviewer at a top tech company preparing a LeetCode/HackerRank-style coding round.
 Generate exactly 4 distinct, real-world coding problems tailored to the candidate's target role, JD, and skills.
 
@@ -908,11 +958,13 @@ Output MUST be valid JSON matching this schema exactly:
           category:
             typeof q?.category === 'string' && q.category.trim().length > 0
               ? q.category
-              : (Array.isArray(q?.expected_topics) && q.expected_topics[0]) || 'Algorithms',
+              : (Array.isArray(q?.expected_topics) && q.expected_topics[0]) || (isSql ? 'SQL Queries' : 'Algorithms'),
           prompt:
             typeof q?.prompt === 'string' && q.prompt.trim().length > 0
               ? q.prompt
-              : 'Implement a solution for a role-relevant problem and explain trade-offs.',
+              : isSql
+                ? 'Write an optimized SQL query to solve this data retrieval requirement.'
+                : 'Implement a solution for a role-relevant problem and explain trade-offs.',
           expected_topics: Array.isArray(q?.expected_topics)
             ? q.expected_topics.filter((t: unknown) => typeof t === 'string')
             : [],
@@ -932,6 +984,59 @@ Output MUST be valid JSON matching this schema exactly:
       };
     } catch (error: any) {
       this.logger.error('Failed to generate coding practice questions', error?.message || error);
+      if (isSql) {
+        return {
+          questions: [
+            {
+              title: 'Customer Order Aggregation & High Spenders',
+              difficulty: 'easy' as const,
+              category: 'Aggregations & Filtering',
+              prompt: `Given an e-commerce platform database:\n\nTable: Customers\n+----+------------+\n| id | name       |\n+----+------------+\n\nTable: Orders\n+----+-------------+--------+------------+\n| id | customer_id | amount | order_date |\n+----+-------------+--------+------------+\n\nWrite a SQL query to find the total amount spent by each customer who has spent more than 500 in total. Order results by total amount in descending order.`,
+              expected_topics: ['group by', 'having', 'inner join', 'order by'],
+              examples: [
+                { input: 'Customers + Orders tables', output: '| customer_name | total_spent |\n| Alice | 1200.00 |\n| Bob | 650.00 |', explanation: 'Only Alice and Bob spent >= 500.' },
+              ],
+              constraints: ['Return columns: customer_name, total_spent', 'Order by total_spent DESC'],
+              starter_code: '-- Write your SQL query below\nSELECT \n    c.name AS customer_name,\n    SUM(o.amount) AS total_spent\nFROM Customers c\nJOIN Orders o ON c.id = o.customer_id\nGROUP BY c.id, c.name\nHAVING SUM(o.amount) > 500\nORDER BY total_spent DESC;\n',
+              optimization_tip: 'Create a composite index on Orders(customer_id, amount) to eliminate sequential table scans during join aggregation.',
+            },
+            {
+              title: 'Department Top Earners',
+              difficulty: 'medium' as const,
+              category: 'JOINs & Subqueries',
+              prompt: `Table: Employee\n+----+-------+--------+---------------+ \n| id | name  | salary | department_id |\n+----+-------+--------+---------------+ \n\nTable: Department\n+----+---------+\n| id | name    |\n+----+---------+\n\nWrite a SQL query to find employees who have the highest salary in each of the departments.`,
+              expected_topics: ['joins', 'subquery', 'max aggregate'],
+              examples: [
+                { input: 'Employees in IT and Sales', output: '| Department | Employee | Salary |\n| IT | Joe | 85000 |', explanation: 'Joe has the highest salary in IT.' },
+              ],
+              constraints: ['If ties exist, include all tied employees'],
+              starter_code: '-- Write your SQL query below\nSELECT \n    d.name AS Department,\n    e.name AS Employee,\n    e.salary AS Salary\nFROM Employee e\nJOIN Department d ON e.department_id = d.id\nWHERE (e.department_id, e.salary) IN (\n    SELECT department_id, MAX(salary) \n    FROM Employee \n    GROUP BY department_id\n);\n',
+              optimization_tip: 'Index Employee(department_id, salary) for optimal subquery resolution.',
+            },
+            {
+              title: 'Monthly Active User Retention Rate',
+              difficulty: 'medium' as const,
+              category: 'Self-Joins & Dates',
+              prompt: `Table: UserLogins\n+----+---------+------------+\n| id | user_id | login_date |\n+----+---------+------------+\n\nWrite a SQL query to calculate month-over-month user retention: users who logged in during a month and also logged in during the subsequent month.`,
+              expected_topics: ['self join', 'date functions', 'distinct count'],
+              constraints: ['Calculate retention percentage rounded to 2 decimals'],
+              starter_code: '-- Write your SQL query below\nSELECT \n    DATE_TRUNC(\'month\', a.login_date) AS month,\n    COUNT(DISTINCT b.user_id) * 100.0 / COUNT(DISTINCT a.user_id) AS retention_rate\nFROM UserLogins a\nLEFT JOIN UserLogins b \n    ON a.user_id = b.user_id \n    AND DATE_TRUNC(\'month\', b.login_date) = DATE_TRUNC(\'month\', a.login_date) + INTERVAL \'1 month\'\nGROUP BY 1\nORDER BY 1;\n',
+              optimization_tip: 'Partition UserLogins by login_date and user_id to minimize self-join comparison volume.',
+            },
+            {
+              title: 'Top 3 Salaried Employees per Department (Dense Rank)',
+              difficulty: 'hard' as const,
+              category: 'Window Functions & CTEs',
+              prompt: `A company's executives are interested in seeing who earns the most money in each of the company's departments. A high earner in a department is an employee who has a salary in the top three unique salaries for that department.\n\nWrite a SQL query to find the employees who are high earners in each of the departments using DENSE_RANK().`,
+              expected_topics: ['window functions', 'dense_rank', 'common table expressions'],
+              constraints: ['Must rank unique salaries so ties share the rank without skipping ranks'],
+              starter_code: '-- Write your SQL query below\nWITH RankedSalaries AS (\n    SELECT \n        d.name AS Department,\n        e.name AS Employee,\n        e.salary AS Salary,\n        DENSE_RANK() OVER (PARTITION BY e.department_id ORDER BY e.salary DESC) AS rnk\n    FROM Employee e\n    JOIN Department d ON e.department_id = d.id\n)\nSELECT Department, Employee, Salary\nFROM RankedSalaries\nWHERE rnk <= 3\nORDER BY Department, Salary DESC;\n',
+              optimization_tip: 'Window functions with PARTITION BY execute in-memory with O(N log N) sorting; avoid correlated subqueries which yield O(N^2).',
+            },
+          ],
+        };
+      }
+
       return {
         questions: [
           {
@@ -986,8 +1091,39 @@ Output MUST be valid JSON matching this schema exactly:
     code: string,
     language: string,
   ) {
+    const isSql = language.trim().toUpperCase() === 'SQL';
     try {
-      const prompt = `
+      const prompt = isSql
+        ? `
+You are a senior database architect and SQL technical interviewer. Evaluate the candidate's SQL query solution.
+
+Question & Table Schemas:
+${question}
+
+Candidate SQL Query:
+${code}
+
+Evaluation Guidelines for SQL:
+- Check ANSI SQL / PostgreSQL syntax correctness.
+- Validate table joins, aliases, WHERE / HAVING filtering conditions, GROUP BY expressions, and column projections.
+- Check NULL handling (e.g. COALESCE, IS NULL), duplicate handling (DISTINCT, UNION vs UNION ALL), and window function usage where needed.
+- Assess query performance and indexing opportunities:
+  - time_complexity: Explain plan / execution cost (e.g. "O(N) Seq Scan", "O(M + N) Hash Join", "O(N log N) Sort / Window", "O(log N) B-Tree Index Scan").
+  - space_complexity: Auxiliary working memory usage (e.g. "O(1) Streaming", "O(K) Hash Table Buffer", "O(N) Temp Table / Work Mem").
+- score must be 0 to 100 based on query correctness, edge cases, and performance.
+- feedback: max 3 concise sentences highlighting correctness and indexing/execution plan suggestions.
+
+Output MUST be valid JSON exactly:
+{
+  "score": number,
+  "feedback": string,
+  "strengths": string[],
+  "improvements": string[],
+  "time_complexity": string,
+  "space_complexity": string
+}
+`
+        : `
 You are a coding interviewer. Evaluate the submitted solution.
 
 Question:
@@ -1019,7 +1155,9 @@ Constraints:
         feedback:
           typeof result?.feedback === 'string'
             ? result.feedback
-            : 'Your solution is partially correct. Improve edge case handling and complexity explanation.',
+            : isSql
+              ? 'Your SQL query syntax is partially valid. Review column projections, JOIN conditions, and NULL handling.'
+              : 'Your solution is partially correct. Improve edge case handling and complexity explanation.',
         strengths: Array.isArray(result?.strengths)
           ? result.strengths.filter((s: unknown) => typeof s === 'string')
           : [],
@@ -1029,11 +1167,15 @@ Constraints:
         time_complexity:
           typeof result?.time_complexity === 'string'
             ? result.time_complexity
-            : 'O(N)',
+            : isSql
+              ? 'O(N) Hash Join'
+              : 'O(N)',
         space_complexity:
           typeof result?.space_complexity === 'string'
             ? result.space_complexity
-            : 'O(N)',
+            : isSql
+              ? 'O(K) Hash Buffer'
+              : 'O(N)',
       };
     } catch (error: any) {
       this.logger.error('Coding evaluation failed', error?.message || error);
@@ -1046,8 +1188,26 @@ Constraints:
     code: string,
     language: string,
   ) {
+    const isSql = language.trim().toUpperCase() === 'SQL';
     try {
-      const prompt = `
+      const prompt = isSql
+        ? `
+You are a senior database administrator and SQL mentor helping a candidate write a SQL query during an interview.
+Question & Schema:
+${question}
+
+Candidate's current SQL query:
+${code.trim() ? code : '(Candidate has not written query yet)'}
+
+Provide progressive, encouraging SQL guidance WITHOUT giving away the full final query.
+Output MUST be valid JSON exactly:
+{
+  "hint": "A 1-2 sentence hint nudging them towards the core SQL clause, JOIN type, or window function.",
+  "approach": "A 2-3 step high-level query structure (e.g. 1. JOIN Orders with Customers ON... 2. Apply GROUP BY and HAVING... 3. ORDER BY ...).",
+  "complexity_tip": "Target query plan and indexing tip (e.g. Index on foreign key to enable Index Scan instead of Seq Scan)."
+}
+`
+        : `
 You are a senior algorithmic mentor helping a candidate during a live coding interview.
 Question:
 ${question}
@@ -1067,12 +1227,34 @@ Output MUST be valid JSON exactly:
 `;
       const result = await this.generateJson(prompt);
       return {
-        hint: typeof result?.hint === 'string' ? result.hint : 'Consider breaking the problem down and identifying which data structure offers the fastest lookups.',
-        approach: typeof result?.approach === 'string' ? result.approach : '1. Define the input bounds. 2. Track seen elements with an efficient lookup table. 3. Return the result.',
-        complexity_tip: typeof result?.complexity_tip === 'string' ? result.complexity_tip : 'Optimal target: O(N) time and O(N) auxiliary space.',
+        hint:
+          typeof result?.hint === 'string'
+            ? result.hint
+            : isSql
+              ? 'Identify which tables contain the necessary attributes and determine whether an INNER JOIN or LEFT JOIN is needed.'
+              : 'Consider breaking the problem down and identifying which data structure offers the fastest lookups.',
+        approach:
+          typeof result?.approach === 'string'
+            ? result.approach
+            : isSql
+              ? '1. Determine the driving table and JOINs.\n2. Apply WHERE filters and GROUP BY.\n3. Compute aggregates and sort with ORDER BY.'
+              : '1. Define the input bounds. 2. Track seen elements with an efficient lookup table. 3. Return the result.',
+        complexity_tip:
+          typeof result?.complexity_tip === 'string'
+            ? result.complexity_tip
+            : isSql
+              ? 'Target an Index Scan or Hash Join avoiding quadratic nested loops.'
+              : 'Optimal target: O(N) time and O(N) auxiliary space.',
       };
     } catch (error: any) {
       this.logger.error('Coding hint failed', error?.message || error);
+      if (isSql) {
+        return {
+          hint: 'Identify the primary driving table and which relational JOINs are required. Check which columns need aggregation.',
+          approach: '1. Specify FROM and required JOIN conditions.\n2. Filter rows with WHERE and group by primary keys.\n3. Apply HAVING filters and ORDER BY.',
+          complexity_tip: 'Leverage composite indexes on join and filter columns to avoid table scans.',
+        };
+      }
       return {
         hint: 'Break the problem down into smaller sub-problems. Identify the base case and examine if past state can be cached.',
         approach: '1. Validate constraints. 2. Choose an optimal data structure (Map, Set, or Two Pointers). 3. Iterate once while updating state.',
@@ -1086,8 +1268,35 @@ Output MUST be valid JSON exactly:
     code: string,
     language: string,
   ) {
+    const isSql = language.trim().toUpperCase() === 'SQL';
     try {
-      const prompt = `
+      const prompt = isSql
+        ? `
+You are an expert database query optimizer and SQL debugger. Analyze the candidate's SQL query for syntax errors, logical bugs, and database pitfalls.
+
+Question & Table Schemas:
+${question}
+
+Candidate SQL Query:
+${code.trim() ? code : '-- empty'}
+
+Common SQL Issues to check:
+- Unaggregated columns in SELECT missing from GROUP BY clause
+- Missing or incorrect ON condition in JOIN (causing Cartesian cross products)
+- Comparing with NULL using '=' instead of 'IS NULL' or 'IS NOT NULL'
+- Using aggregate functions in WHERE instead of HAVING
+- Subquery returning multiple rows in scalar comparison
+- Misplaced commas, misspelled SQL keywords, or unclosed parentheses
+
+Output MUST be valid JSON exactly:
+{
+  "has_issues": boolean,
+  "issues": ["Concise description of SQL issue 1", "Issue 2..."],
+  "suggestions": ["Specific tip on how to fix issue 1", "Tip 2..."],
+  "fixed_code": "Optional corrected SQL snippet if applicable"
+}
+`
+        : `
 You are an expert compiler and code reviewer. Analyze the candidate's code for syntax errors, logical bugs, off-by-one errors, edge cases, and infinite loops.
 
 Question:
@@ -1115,6 +1324,13 @@ Output MUST be valid JSON exactly:
       };
     } catch (error: any) {
       this.logger.error('Coding debug failed', error?.message || error);
+      if (isSql) {
+        return {
+          has_issues: false,
+          issues: ['Could not run deep query plan analysis at this moment.'],
+          suggestions: ['Verify all non-aggregated SELECT columns are in GROUP BY, and verify all JOIN conditions.'],
+        };
+      }
       return {
         has_issues: false,
         issues: ['Could not run deep static analysis at this moment.'],

@@ -170,9 +170,11 @@ export function InterviewBotPanel({ resumeId, jobTitle, jobDescription }: Props)
     }
   };
 
-  const handleGenerateCodingQuestions = async (): Promise<CodingPracticeSet> => {
+  const handleGenerateCodingQuestions = async (lang?: string): Promise<CodingPracticeSet> => {
     if (!session) return { questions: [] };
-    const { data } = await api.post(`/analysis/interview-bot/coding/${session.id}/questions`);
+    const { data } = await api.post(`/analysis/interview-bot/coding/${session.id}/questions`, {
+      language: lang || config?.language || 'JavaScript',
+    });
     return data;
   };
 

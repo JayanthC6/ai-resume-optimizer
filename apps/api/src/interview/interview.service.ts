@@ -171,7 +171,7 @@ export class InterviewService {
     return session;
   }
 
-  async generateCodingPractice(userId: string, sessionId: string) {
+  async generateCodingPractice(userId: string, sessionId: string, overrideLanguage?: string) {
     const session = await this.prisma.interviewSession.findUnique({ where: { id: sessionId } });
     if (!session || session.userId !== userId) {
       throw new NotFoundException('Session not found');
@@ -179,11 +179,13 @@ export class InterviewService {
 
     const resume = await this.prisma.resume.findUnique({ where: { id: session.resumeId } });
 
+    const effectiveLanguage = overrideLanguage || session.language || 'JavaScript';
+
     return this.aiService.generateCodingPracticeQuestions(
       resume?.rawText || '',
       session.jobDescription,
       session.jobTitle,
-      session.language || 'JavaScript',
+      effectiveLanguage,
     );
   }
 

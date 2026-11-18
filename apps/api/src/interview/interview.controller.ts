@@ -54,8 +54,8 @@ export class InterviewController {
   }
 
   @Post('coding/:id/questions')
-  codingQuestions(@Req() req: any, @Param('id') id: string) {
-    return this.interviewService.generateCodingPractice(req.user.id, id);
+  codingQuestions(@Req() req: any, @Param('id') id: string, @Body() body?: { language?: string }) {
+    return this.interviewService.generateCodingPractice(req.user.id, id, body?.language);
   }
 
   @Post('coding/:id/evaluate')

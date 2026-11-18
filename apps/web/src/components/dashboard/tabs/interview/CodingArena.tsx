@@ -17,7 +17,7 @@ import {
 
 interface Props {
   onBackToInterview: () => void;
-  onGenerateCodingQuestions: () => Promise<CodingPracticeSet>;
+  onGenerateCodingQuestions: (language?: string) => Promise<CodingPracticeSet>;
   onEvaluateCode: (question: string, code: string, language?: string) => Promise<CodingEvaluation>;
   onGetHint?: (question: string, code: string, language?: string) => Promise<CodingHintResponse>;
   onDebugCode?: (question: string, code: string, language?: string) => Promise<CodingDebugResponse>;
@@ -51,6 +51,12 @@ const SUPPORTED_LANGUAGES: Record<string, LanguageSpec> = {
     monacoLang: 'python',
     filename: 'main.py',
     starter: '# Write your Python solution below\ndef solution():\n    pass\n',
+  },
+  SQL: {
+    name: 'SQL',
+    monacoLang: 'sql',
+    filename: 'query.sql',
+    starter: '-- Write your SQL query below\nSELECT \n    *\nFROM table_name;\n',
   },
   Java: {
     name: 'Java',
@@ -95,6 +101,13 @@ const BORDER = 'rgba(255,255,255,0.07)';
 // Generates an idiomatic starter function in the target language for the specific question
 function getStarterCodeForLanguage(q: CodingPracticeQuestion | undefined, lang: string): string {
   if (!q) return SUPPORTED_LANGUAGES[lang]?.starter || '// Write solution\n';
+
+  if (lang === 'SQL') {
+    if (q.starter_code && (q.starter_code.includes('SELECT') || q.starter_code.includes('WITH') || q.starter_code.includes('--'))) {
+      return q.starter_code;
+    }
+    return `-- ${q.title}\n-- Write your SQL query below\nSELECT \n    *\nFROM table_name;\n`;
+  }
   
   const rawWords = (q.title || 'solution').replace(/[^a-zA-Z0-9 ]/g, '').split(/\s+/).filter(Boolean);
   const camel = rawWords.map((w, i) => i === 0 ? w.toLowerCase() : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join('') || 'solution';
@@ -173,7 +186,8 @@ export function CodingArena({
   const categoryLabel = activeQuestion?.category 
     || (activeQuestion?.expected_topics?.[0] ? activeQuestion.expected_topics[0].toUpperCase() : 'ALGORITHMS');
 
-  const handleGenerate = async () => {
+  const handleGenerate = async (langOverride?: string) => {
+    const targetLang = langOverride || selectedLang;
     setIsGenerating(true);
     setError(null);
     setEvaluation(null);
@@ -182,16 +196,17 @@ export function CodingArena({
     setHintData(null);
     setDebugResult(null);
     setCodeCache({});
+    setQuestions([]);
     try {
-      const r = await onGenerateCodingQuestions();
+      const r = await onGenerateCodingQuestions(targetLang);
       const loaded = r.questions || [];
       setQuestions(loaded);
       setSelectedIdx(0);
       setSolvedSet(new Set());
       if (loaded.length > 0) {
-        const initialStarter = getStarterCodeForLanguage(loaded[0], selectedLang);
+        const initialStarter = getStarterCodeForLanguage(loaded[0], targetLang);
         setCode(initialStarter);
-        setCodeCache({ 0: { [selectedLang]: initialStarter } });
+        setCodeCache({ 0: { [targetLang]: initialStarter } });
       }
     } catch {
       setError('Could not generate questions. Please try again.');
@@ -202,6 +217,7 @@ export function CodingArena({
 
   const handleEvaluate = async () => {
     if (!activeQuestion || !code.trim()) return;
+    const isSql = selectedLang === 'SQL';
     setIsEvaluating(true);
     setError(null);
     setTestOutput([`Compiling and running against test suite (${selectedLang})...`]);
@@ -213,14 +229,20 @@ export function CodingArena({
       }
       setTestOutput([
         `Running tests for ${activeQuestion.title} [${selectedLang}]...`,
-        r.score >= 60 ? '✓ Test 1 Passed: Core functional requirements' : '✗ Test 1 Failed: Output mismatch',
-        r.score >= 75 ? '✓ Test 2 Passed: Edge cases and null checks' : '✗ Test 2 Failed: Edge cases failed',
-        r.score >= 85 ? `✓ Test 3 Passed: Output correctness verified` : '✗ Test 3 Failed: Verification failed',
+        r.score >= 60
+          ? (isSql ? '✓ Test 1 Passed: Query syntax and table join execution' : '✓ Test 1 Passed: Core functional requirements')
+          : (isSql ? '✗ Test 1 Failed: Query syntax or relational projection mismatch' : '✗ Test 1 Failed: Output mismatch'),
+        r.score >= 75
+          ? (isSql ? '✓ Test 2 Passed: Aggregations, GROUP BY and NULL handling' : '✓ Test 2 Passed: Edge cases and null checks')
+          : (isSql ? '✗ Test 2 Failed: Aggregation / NULL edge cases failed' : '✗ Test 2 Failed: Edge cases failed'),
+        r.score >= 85
+          ? (isSql ? '✓ Test 3 Passed: Query execution plan & index efficiency' : '✓ Test 3 Passed: Output correctness verified')
+          : (isSql ? '✗ Test 3 Failed: High query execution cost' : '✗ Test 3 Failed: Verification failed'),
         '──────────────────────────────────────────',
-        `⏱️  Time Complexity (TC) : ${r.time_complexity}`,
-        `💾  Space Complexity (SC): ${r.space_complexity}`,
+        `⏱️  ${isSql ? 'Execution Cost (TC)' : 'Time Complexity (TC)'} : ${r.time_complexity}`,
+        `💾  ${isSql ? 'Working Buffer (SC)' : 'Space Complexity (SC)'}: ${r.space_complexity}`,
         '──────────────────────────────────────────',
-        `Final Score: ${r.score}/100 (${r.score >= 60 ? 'Accepted' : 'Needs Optimization'})`,
+        `Final Score: ${r.score}/100 (${r.score >= 60 ? (isSql ? 'Query Accepted' : 'Accepted') : 'Needs Optimization'})`,
       ].filter(Boolean));
     } catch {
       setError('Could not evaluate code. Please try again.');
@@ -278,7 +300,16 @@ export function CodingArena({
       }
     }));
 
+    const isCurrentSql = selectedLang === 'SQL';
+    const isNewSql = newLang === 'SQL';
+
     setSelectedLang(newLang);
+
+    // If switching across SQL boundary (SQL query track <-> algorithmic track), regenerate track-tailored questions
+    if (isCurrentSql !== isNewSql) {
+      handleGenerate(newLang);
+      return;
+    }
 
     // If code for new language was cached previously, restore it
     const cachedForNewLang = codeCache[selectedIdx]?.[newLang];
@@ -386,6 +417,7 @@ export function CodingArena({
 
   /* ── Loading Screen ── */
   if (isGenerating && questions.length === 0) {
+    const isSql = selectedLang === 'SQL';
     return (
       <div className="flex flex-col h-[calc(100vh-56px)] items-center justify-center gap-6" style={{ background: '#0a0f1a' }}>
         <div className="relative">
@@ -395,8 +427,15 @@ export function CodingArena({
           </div>
         </div>
         <div className="text-center">
-          <p className="text-lg font-bold text-white">Generating Coding Challenges</p>
-          <p className="text-sm text-slate-400 mt-1">Creating LeetCode-style problems (Easy, Medium, Hard) for <span className="text-blue-400">{jobTitle}</span></p>
+          <p className="text-lg font-bold text-white">
+            {isSql ? 'Generating SQL Query Challenges' : 'Generating Coding Challenges'}
+          </p>
+          <p className="text-sm text-slate-400 mt-1">
+            {isSql
+              ? <>Creating progressive relational schema & query challenges for <span className="text-blue-400">{jobTitle}</span></>
+              : <>Creating LeetCode-style problems (Easy, Medium, Hard) for <span className="text-blue-400">{jobTitle}</span></>
+            }
+          </p>
         </div>
       </div>
     );
@@ -428,7 +467,7 @@ export function CodingArena({
             </span>
           </div>
           <button
-            onClick={handleGenerate}
+            onClick={() => handleGenerate()}
             disabled={isGenerating}
             className="flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold text-white transition hover:opacity-90"
             style={{ background: 'linear-gradient(90deg,#2563eb,#1d4ed8)' }}
@@ -844,20 +883,20 @@ export function CodingArena({
                       <div className="rounded-lg p-2.5" style={{ background: '#131826', border: '1px solid rgba(59,130,246,0.35)' }}>
                         <div className="flex items-center gap-1 text-[10px] font-black uppercase text-blue-400 mb-0.5">
                           <Timer className="h-3 w-3" />
-                          <span>TC (Time)</span>
+                          <span>{selectedLang === 'SQL' ? 'TC (Query Cost)' : 'TC (Time)'}</span>
                         </div>
                         <p className="text-base font-black font-mono text-white tracking-wide">{evaluation.time_complexity}</p>
-                        <p className="text-[9px] text-slate-400 mt-0.5">Asymptotic Runtime</p>
+                        <p className="text-[9px] text-slate-400 mt-0.5">{selectedLang === 'SQL' ? 'Query Plan & Index Cost' : 'Asymptotic Runtime'}</p>
                       </div>
 
                       {/* Space Complexity (SC) */}
                       <div className="rounded-lg p-2.5" style={{ background: '#131826', border: '1px solid rgba(168,85,247,0.35)' }}>
                         <div className="flex items-center gap-1 text-[10px] font-black uppercase text-purple-400 mb-0.5">
                           <span>💾</span>
-                          <span>SC (Space)</span>
+                          <span>{selectedLang === 'SQL' ? 'SC (Work Mem)' : 'SC (Space)'}</span>
                         </div>
                         <p className="text-base font-black font-mono text-white tracking-wide">{evaluation.space_complexity}</p>
-                        <p className="text-[9px] text-slate-400 mt-0.5">Auxiliary Memory</p>
+                        <p className="text-[9px] text-slate-400 mt-0.5">{selectedLang === 'SQL' ? 'Hash Table / Temp Buffer' : 'Auxiliary Memory'}</p>
                       </div>
                     </div>
                   </div>
@@ -1013,9 +1052,9 @@ export function CodingArena({
           <Sparkles className="h-10 w-10 text-blue-400 opacity-50" />
           <div className="text-center">
             <p className="text-base font-bold text-white mb-1">No challenges yet</p>
-            <p className="text-sm text-slate-500">Generate JD-tailored coding challenges</p>
+            <p className="text-sm text-slate-500">Generate JD-tailored coding & SQL challenges</p>
           </div>
-          <button onClick={handleGenerate} className="flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-bold text-white" style={{ background: 'linear-gradient(90deg,#2563eb,#1d4ed8)' }}>
+          <button onClick={() => handleGenerate()} className="flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-bold text-white" style={{ background: 'linear-gradient(90deg,#2563eb,#1d4ed8)' }}>
             <RefreshCw className="h-4 w-4" /> Generate Challenges
           </button>
         </div>

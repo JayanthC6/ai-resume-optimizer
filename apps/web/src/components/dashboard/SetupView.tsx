@@ -1,11 +1,12 @@
 import React, { useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
 import { ThemeSwitcher } from '@/components/theme/ThemeSwitcher';
-import { LogOut, Sparkles, Target, UploadCloud } from 'lucide-react';
+import { ArrowLeft, LogOut, Sparkles, Target, UploadCloud } from 'lucide-react';
 
 type Props = {
   file: File | null;
@@ -34,6 +35,7 @@ export function SetupView({
   onLogout,
   fileName,
 }: Props) {
+  const navigate = useNavigate();
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -53,12 +55,24 @@ export function SetupView({
       {/* Top bar */}
       <div className="relative z-10 mx-auto flex w-full max-w-3xl items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-cyan-500 shadow-md shadow-sky-200 dark:shadow-sky-900/30">
-            <Target className="h-5 w-5 text-white" />
-          </div>
-          <div>
-            <p className="text-sm font-bold text-slate-900 dark:text-white">HiredLens</p>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400">Optimization Workspace</p>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/home')}
+            className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span>Home</span>
+          </Button>
+          <div className="h-4 w-px bg-slate-200 dark:bg-slate-700" />
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-cyan-500 shadow-md shadow-sky-200 dark:shadow-sky-900/30">
+              <Target className="h-4 w-4 text-white" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-slate-900 dark:text-white leading-tight">HiredLens</p>
+              <p className="text-[10px] text-slate-500 dark:text-slate-400">Optimization Workspace</p>
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-2">

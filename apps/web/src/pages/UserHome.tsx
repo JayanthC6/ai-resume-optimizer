@@ -58,12 +58,12 @@ export default function UserHome() {
   ];
 
   const suggestedNextAction = history.length === 0 
-    ? { title: 'Run your first analysis', desc: 'Upload your resume and paste a job description to get started.', action: () => navigate('/dashboard') }
+    ? { title: 'Run your first analysis', desc: 'Upload your resume and paste a job description to get started.', action: () => navigate('/dashboard?new=true') }
     : { title: 'Practice for your next interview', desc: 'Try a mock interview based on your latest target role.', action: () => handleTabChange('mock-interview') };
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: 'var(--dash-bg)', transition: 'background 200ms ease' }}>
-      <DashboardSidebar activeTab="home" onTabChange={handleTabChange} onNewAnalysis={() => navigate('/dashboard')} />
+      <DashboardSidebar activeTab="home" onTabChange={handleTabChange} onNewAnalysis={() => navigate('/dashboard?new=true')} />
 
       <main className="flex-1 overflow-y-auto p-6 lg:p-10" style={{ background: 'var(--dash-bg)', transition: 'background 200ms ease' }}>
         <div className="max-w-6xl mx-auto space-y-10 pb-12">
@@ -78,7 +78,7 @@ export default function UserHome() {
                 Your AI-powered career intelligence center. Analyze resumes, discover skill gaps, and practice interviews to land your next dream role.
               </p>
               <div className="flex flex-wrap gap-4">
-                <Button size="lg" variant="secondary" onClick={() => navigate('/dashboard')} className="font-semibold text-blue-600">
+                <Button size="lg" variant="secondary" onClick={() => navigate('/dashboard?new=true')} className="font-semibold text-blue-600">
                   Analyze a resume
                 </Button>
                 <Button size="lg" variant="outline" onClick={() => handleTabChange('job-market')} className="bg-transparent border-white/30 text-white hover:bg-white/10 hover:text-white">

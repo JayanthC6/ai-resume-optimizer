@@ -14,6 +14,7 @@ type Props = {
 };
 
 const TAB_LABELS: Record<string, string> = {
+  home: 'Home',
   overview: 'Overview',
   keywords: 'Keywords',
   rewrites: 'Rewrites',
@@ -21,7 +22,13 @@ const TAB_LABELS: Record<string, string> = {
   interview: 'Q&A Prep',
   'mock-interview': 'Mock Interview',
   portfolio: 'Portfolio',
+  'job-market': 'Market Gap',
+  'plan-tracker': 'Plan Tracker',
+  outreach: 'Outreach',
+  'reverse-questions': 'Questions to Ask',
   history: 'History',
+  settings: 'Settings',
+  support: 'Support',
 };
 
 export function DashboardTopBar({

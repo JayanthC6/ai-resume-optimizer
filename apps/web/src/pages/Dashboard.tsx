@@ -356,8 +356,15 @@ export default function DashboardPage() {
 
   // Auto-navigate to results if result exists on mount or if query params specify a tab
   useEffect(() => {
+    const isNew = searchParams.get('new');
     const tabParam = searchParams.get('tab') as TabKey | null;
     const analysisIdParam = searchParams.get('analysisId');
+
+    if (isNew === 'true' || isNew === '1') {
+      handleNewAnalysis();
+      setSearchParams({});
+      return;
+    }
 
     if (tabParam) {
       if (analysisIdParam) {
@@ -393,7 +400,7 @@ export default function DashboardPage() {
     } else if (result && status === 'done') {
       setView('results');
     }
-  }, []);
+  }, [searchParams]);
 
   const handleSelectHistory = async (analysisId: string) => {
     try {

@@ -218,6 +218,7 @@ export function InterviewBotPanel({ resumeId, jobTitle, jobDescription }: Props)
         recommendation={recommendation}
         recommendationLoading={recommendationLoading}
         isLoading={loading}
+        jobTitle={jobTitle}
       />
     );
   }
@@ -232,8 +233,8 @@ export function InterviewBotPanel({ resumeId, jobTitle, jobDescription }: Props)
           </div>
         </div>
         <div className="text-center space-y-2">
-          <h3 className="text-2xl font-bold text-white tracking-tight">Compiling Evaluation Report</h3>
-          <p className="text-slate-400 max-w-xs mx-auto">
+          <h3 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Compiling Evaluation Report</h3>
+          <p className="text-slate-600 dark:text-slate-400 max-w-xs mx-auto">
             AI is reviewing your performance metrics and communication scores...
           </p>
         </div>

@@ -38,24 +38,27 @@ AI Resume Optimizer (HiredLens) is an end-to-end, full-stack AI career intellige
 - **Clear Placeholders**: Automatic standardized placeholders (`[Company Name]`, `[Hiring Manager]`, `[Your Phone/LinkedIn]`).
 - **Draft Management**: Save, edit, copy, and delete drafts; rate-limited at 10 generations per user/day via Redis.
 
-### 5. Plan Tracker & Automated Weekly Reminders
-- **Roadmap Synchronization**: Syncs the 30/60/90-day skill gap roadmap into interactive trackable tasks (`PlanTask`).
-- **Interactive Checklists**: Filter tasks by phase, mark tasks completed, track phase completion percentages, and build consecutive-day streak counters.
-- **BullMQ Scheduled Job**: Background daily queue processor (`04:00 UTC`) running on Redis to evaluate users with open tasks.
-- **Resilient Email Check-ins**:
-  - Delivers a weekly summary of remaining open tasks, progress, and streaks.
-  - Enforces a 6-day cooldown between emails per user.
-  - Integrates with **Resend** via native HTTP API.
-  - **Zero-Failure Mode**: If `RESEND_API_KEY` is not provided, dispatches are logged locally in mock mode without crashing the service or queue.
+### 5. Skill Gap Roadmap & Learning Resources
+- **30/60/90-Day Upskilling Plan**: Broken down into structured phases targeting foundational gaps, hands-on application, and mastery.
+- **Dynamic Learning Resources**: Automatically surfaces verified official documentation links, courses, and tutorials (e.g., Docker, SQL indexing, Kubernetes) based specifically on the user's analyzed skill gaps and target role.
+- **Plan Tracker Sync**: Syncs the roadmap directly into trackable tasks (`PlanTask`) with interactive checklists, completion percentages, and consecutive day streak counters.
+- **Automated Weekly Reminders**: BullMQ daily background queue running on Redis sends weekly check-in emails via Resend with 6-day user cooldown and zero-crash mock fallback.
 
-### 6. Interactive Mock Interview & GitHub Analyzer
-- **Interactive Technical Arena**: Behavioral, technical, and mixed interview sessions with live grading and STAR framework reports.
-- **GitHub Portfolio Alignment**: Analyzes public GitHub repositories to extract relevant technical contributions and translate them into resume-ready bullet points.
+### 6. Interactive Mock Interview & Live Code Arena
+- **Conversational AI Interviewer**: Modeled after advanced conversational agents (ChatGPT / Claude) with empathetic dialogue, intelligent greeting handling (does not skip questions on "hi"), clarification answering, and adaptive follow-up probing.
+- **Flexible Practice Modes**: Behavioral, Technical, and Mixed interview sessions tailored to the candidate's resume and target JD.
+- **Live Code Arena**: Built-in coding workbench with multi-language dialect support (JavaScript, TypeScript, Python, SQL), problem statements, constraints, test cases, and a real-time execution & debug console.
+- **Performance Analytics**: Instant post-interview STAR framework evaluation reports with Technical Accuracy and Communication metric percentages.
+- **GitHub Portfolio Alignment**: Analyzes public GitHub repositories to extract relevant technical contributions and translate them into verified, impact-driven resume bullet points.
 
 ### 7. User Home Hub & Persistent State
-- **Home Dashboard (`/home`)**: Dedicated landing hub featuring suggested next actions, feature cards, and recent analyses.
-- **Deep Linking**: Full query parameter routing (`?tab=...` and `?analysisId=...`) across all dashboard tabs.
-- **Persistent Auth**: Client-side Zustand session persistence with automatic token rehydration across page reloads (F5).
+- **Home Dashboard (`/home`)**: Dedicated landing hub featuring personalized greetings, suggested next steps, quick-access Tool Suite, and recent analyses.
+- **Deep Linking**: Full query parameter routing (`?tab=...`, `?analysisId=...`, and `?new=true`) across all dashboard tabs and workflows.
+- **Persistent Auth**: Client-side Zustand session persistence with automatic token rehydration across page reloads.
+
+### 8. Full Light & Dark Theme Support
+- **Universal Zero-Flash Theme Switcher**: Seamless light and dark mode styling across the entire application, including the complex Interview Workspace, Live Code Arena, and Analytics views.
+- **High Contrast & Accessibility**: Engineered for legibility and visual comfort with crisp typography, tailored border contrasts, and clear badge indicators in both modes.
 
 ---
 
@@ -245,6 +248,13 @@ docker compose up --build -d
 - `GET /outreach` — List saved drafts (optional `?analysisId=...` filter).
 - `PATCH /outreach/:id` — Update draft title or content.
 - `DELETE /outreach/:id` — Delete a saved draft.
+
+### Mock Interview & Coding Arena (`/interview`)
+- `POST /interview/start` — Initialize a new mock interview session with mode, duration, and target role.
+- `POST /interview/message` — Send user answer or casual query; returns conversational response or adaptive follow-up question.
+- `POST /interview/end` — Conclude interview session and generate STAR framework evaluation report.
+- `GET /interview/:id` — Retrieve past session transcripts and live evaluation scores.
+- `POST /interview/recommendation` — Generate dynamic session length and question recommendation based on target role.
 
 ### Plan Tracker & Reminders (`/plan-tracker`)
 - `POST /plan-tracker/sync/:analysisId` — Sync roadmap goals and mini-projects into trackable tasks.

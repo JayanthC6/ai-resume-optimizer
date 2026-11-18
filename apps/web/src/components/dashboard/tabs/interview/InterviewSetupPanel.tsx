@@ -51,8 +51,8 @@ export function InterviewSetupPanel({
           <div className="rounded-2xl p-5 bg-white dark:bg-[#161b27] border border-slate-200 dark:border-white/10 shadow-sm dark:shadow-none transition">
             <div className="h-10 w-10 rounded-xl flex items-center justify-center mb-4 bg-slate-100 dark:bg-white/5 border border-slate-200/60 dark:border-white/5">
               <svg viewBox="0 0 24 24" className="h-5 w-5 text-slate-600 dark:text-slate-400" fill="none" stroke="currentColor" strokeWidth={1.5}>
-                <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
-                <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+                <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" />
+                <rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" />
               </svg>
             </div>
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 mb-2">Interview Mode</p>
@@ -77,7 +77,7 @@ export function InterviewSetupPanel({
           <div className="rounded-2xl p-5 relative bg-white dark:bg-[#161b27] border border-slate-200 dark:border-white/10 shadow-sm dark:shadow-none transition">
             <div className="h-10 w-10 rounded-xl flex items-center justify-center mb-4 bg-slate-100 dark:bg-white/5 border border-slate-200/60 dark:border-white/5">
               <svg viewBox="0 0 24 24" className="h-5 w-5 text-slate-600 dark:text-slate-400" fill="none" stroke="currentColor" strokeWidth={1.5}>
-                <path d="M12 21C12 21 3 15 3 9a9 9 0 1118 0c0 6-9 12-9 12z"/><circle cx="12" cy="9" r="3"/>
+                <path d="M12 21C12 21 3 15 3 9a9 9 0 1118 0c0 6-9 12-9 12z" /><circle cx="12" cy="9" r="3" />
               </svg>
             </div>
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 mb-2">Language</p>
@@ -94,11 +94,10 @@ export function InterviewSetupPanel({
                 {LANGUAGES.map(l => (
                   <button
                     key={l}
-                    className={`w-full px-4 py-2.5 text-left text-sm transition flex items-center justify-between ${
-                      language === l
-                        ? 'font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40'
-                        : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5'
-                    }`}
+                    className={`w-full px-4 py-2.5 text-left text-sm transition flex items-center justify-between ${language === l
+                      ? 'font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40'
+                      : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5'
+                      }`}
                     onClick={() => { setLanguage(l); setLangOpen(false); }}
                   >
                     <span>{l}</span>
@@ -118,23 +117,21 @@ export function InterviewSetupPanel({
             <div className="flex gap-2">
               <button
                 onClick={() => setVoiceEnabled(true)}
-                className={`flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-bold transition ${
-                  voiceEnabled
-                    ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm'
-                    : 'bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-white/10 hover:bg-slate-200 dark:hover:bg-white/10'
-                }`}
+                className={`flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-bold transition ${voiceEnabled
+                  ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm'
+                  : 'bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-white/10 hover:bg-slate-200 dark:hover:bg-white/10'
+                  }`}
               >
                 <Mic className="h-3.5 w-3.5" /> Voice
               </button>
               <button
                 onClick={() => setVoiceEnabled(false)}
-                className={`flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-bold transition ${
-                  !voiceEnabled
-                    ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm'
-                    : 'bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-white/10 hover:bg-slate-200 dark:hover:bg-white/10'
-                }`}
+                className={`flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-bold transition ${!voiceEnabled
+                  ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm'
+                  : 'bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-white/10 hover:bg-slate-200 dark:hover:bg-white/10'
+                  }`}
               >
-                <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><rect x="3" y="5" width="18" height="14" rx="2"/></svg>
+                <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><rect x="3" y="5" width="18" height="14" rx="2" /></svg>
                 Text
               </button>
             </div>
@@ -143,69 +140,46 @@ export function InterviewSetupPanel({
         </div>
       </div>
 
-      {/* ── STEP 02: AI Interviewer ── */}
+      {/* ── STEP 02: AI Recommendation ── */}
       <div>
         <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-blue-600 dark:text-blue-400 mb-1">Step 02</p>
-        <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white mb-6">AI Interviewer Recommendation</h2>
+        <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white mb-6">AI Session Recommendation</h2>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Left: rationale */}
-          <div className="flex flex-col justify-center">
-            <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed mb-4">
-              Based on your target role:{' '}
-              <strong className="text-slate-900 dark:text-white font-extrabold">{jobTitle || 'Target Role'}</strong>. We've synthesized a profile optimised to challenge your specific portfolio gaps.
-            </p>
-            {recommendation && (
-              <div className="flex items-center gap-2 rounded-xl px-4 py-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/40 text-blue-800 dark:text-blue-300">
-                <span className="text-sm">Recommended: <strong className="font-bold">{recommendation.recommended_minutes} min</strong> — {recommendation.rationale}</span>
-              </div>
-            )}
+        <div className="rounded-2xl p-6 bg-white dark:bg-[#161b27] border border-slate-200 dark:border-white/10 shadow-sm dark:shadow-none transition space-y-5">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Target Role Alignment</p>
+              <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+                Tailored for:{' '}
+                <strong className="text-slate-900 dark:text-white font-extrabold">{jobTitle || 'Target Role'}</strong>.
+                Questions and evaluation metrics are dynamically generated from your resume and target job requirements.
+              </p>
+            </div>
             <button
               onClick={() => onGetRecommendation({ mode, language })}
               disabled={recommendationLoading}
-              className="mt-4 flex items-center gap-2 w-fit text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition"
+              className="flex items-center gap-2 shrink-0 px-4 py-2.5 rounded-xl text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/40 hover:bg-blue-100 dark:hover:bg-blue-900/60 transition disabled:opacity-50"
             >
               <RefreshCw className={`h-3.5 w-3.5 ${recommendationLoading ? 'animate-spin' : ''}`} />
-              {recommendationLoading ? 'Getting recommendation…' : 'Get Duration Recommendation'}
+              {recommendationLoading ? 'Analyzing Role & Experience…' : 'Get Duration Recommendation'}
             </button>
           </div>
 
-          {/* Right: Persona card */}
-          <div className="rounded-2xl p-5 bg-white dark:bg-[#161b27] border border-slate-200 dark:border-white/10 shadow-sm dark:shadow-none transition">
-            <div className="flex items-start gap-4">
-              {/* Avatar */}
-              <div className="relative shrink-0">
-                <div className="h-20 w-20 rounded-xl overflow-hidden bg-slate-100 dark:bg-[#0d1117] border border-slate-200 dark:border-white/10 flex items-center justify-center text-4xl shadow-inner">
-                  🤖
-                </div>
-                <span className="absolute -bottom-1.5 -right-1.5 px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-widest bg-amber-400 text-slate-950 shadow-sm">EXPERT</span>
+          {recommendation && (
+            <div className="flex items-start gap-3 rounded-xl p-4 bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/40 text-blue-900 dark:text-blue-200">
+              <div className="h-8 w-8 rounded-lg bg-blue-600 text-white flex items-center justify-center shrink-0 font-bold text-xs">
+                {recommendation.recommended_minutes}m
               </div>
-
-              <div className="flex-1 min-w-0">
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-0.5">Persona:</p>
-                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">"Elena V."</h3>
-                  </div>
-                  <div className="flex gap-1.5 shrink-0">
-                    <span className="px-2 py-0.5 rounded text-[9px] font-bold uppercase bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800/40">DESIGN</span>
-                    <span className="px-2 py-0.5 rounded text-[9px] font-bold uppercase bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-300 border border-blue-200/60 dark:border-blue-900/30">LEADER AI</span>
-                  </div>
-                </div>
-                <p className="text-xs text-slate-600 dark:text-slate-400 italic leading-relaxed mb-3">
-                  "Elena specialises in probing visual hierarchy logic and cross-functional collaboration strategies. Expect direct, high-stakes feedback."
+              <div className="text-sm space-y-0.5">
+                <p className="font-bold text-blue-950 dark:text-blue-100">
+                  Recommended Duration: {recommendation.recommended_minutes} Minutes
                 </p>
-                <div className="flex flex-wrap gap-1.5 mb-3">
-                  {['PORTFOLIO DEEP DIVE', 'SYSTEM THINKING', 'CONFLICT RES'].map(t => (
-                    <span key={t} className="px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-slate-100 dark:bg-white/5 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-white/10">{t}</span>
-                  ))}
-                </div>
-                <button className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition">
-                  <RefreshCw className="h-3 w-3" /> Change Profile
-                </button>
+                <p className="text-xs text-blue-800 dark:text-blue-300 leading-relaxed">
+                  {recommendation.rationale}
+                </p>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
 
@@ -227,7 +201,7 @@ export function InterviewSetupPanel({
             {isLoading ? <><div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Preparing Room…</> : <>Enter Simulation <Play className="h-5 w-5 fill-current" /></>}
           </button>
           <button className="flex items-center gap-2 rounded-xl px-6 py-4 text-sm font-semibold text-white transition hover:bg-white/10 border border-white/20">
-            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><circle cx="12" cy="12" r="10" /><path d="M12 8v4M12 16h.01" /></svg>
             Test Hardware
           </button>
         </div>
